@@ -11,6 +11,10 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 - [ ] **Etapa 7 — Armazém e notificações**: despensa integrada aos custos; sino em tempo real.
 - [ ] **Etapa 8 — Qualidade e deploy**: Playwright dos fluxos; acessibilidade e 375 px; revisão de segurança; Vercel (setup §6); páginas públicas `/privacidade` e `/termos` e publicação do app OAuth no Google (Branding + "Publicar app"); `docs/manual-do-grupo.md`.
 
+## Depois do MVP
+
+- [ ] **Chat geral do grupo**: ao vivo e com histórico, lista de membros, menção com @, marcar dúvida direcionada; menções e dúvidas no sino de notificações (decisão 46). Sem integração com WhatsApp.
+
 ## Registro
 
 - 24/11/2026: documentação copiada para o repositório; plano apresentado ao dono.
