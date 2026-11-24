@@ -9,7 +9,7 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 - [ ] **Etapa 5 — Presença e custos**: presença por pessoa; regras de rateio em `src/lib/finance/` com testes; "Minha parte".
 - [ ] **Etapa 6 — Baú (caixinha)**: configuração e QR Pix; depósitos e confirmação; saídas e estornos; painel; troca de Pix com aviso, notificação e e-mail (setup §5).
 - [ ] **Etapa 7 — Armazém e notificações**: despensa integrada aos custos; sino em tempo real.
-- [ ] **Etapa 8 — Qualidade e deploy**: Playwright dos fluxos; acessibilidade e 375 px; revisão de segurança; Vercel (setup §6); `docs/manual-do-grupo.md`.
+- [ ] **Etapa 8 — Qualidade e deploy**: Playwright dos fluxos; acessibilidade e 375 px; revisão de segurança; Vercel (setup §6); páginas públicas `/privacidade` e `/termos` e publicação do app OAuth no Google (Branding + "Publicar app"); `docs/manual-do-grupo.md`.
 
 ## Registro
 
@@ -19,3 +19,4 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 - 24/11/2026: Etapa 2 implementada: 3 migrações (schema, segurança, comprovantes), RLS em todas as tabelas, funções security definer e 30 testes de políticas (PGlite). Aguardando o dono aplicar as migrações (`.\scripts\db.ps1 link` e `push`).
 - 24/11/2026: migrações da Etapa 2 aplicadas no Supabase pelo dono. Etapa 2 concluída.
 - 24/11/2026: Etapa 3 implementada (login Google e link mágico, convite do grupo, "Aguardando aprovação", membros e tags, "Minha família", convite para adulto dependente). 45 testes Vitest e 4 Playwright passando. Aguardando o dono configurar o OAuth (setup §3) e aplicar a migração 4.
+- 24/11/2026: o Google só publica o app OAuth com links de página inicial e política de privacidade. Até o deploy, o app fica em "Testando" com os membros como usuários de teste (limite de 100).
