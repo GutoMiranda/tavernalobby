@@ -87,3 +87,33 @@ export function linkMapaEmbutido(
   u.searchParams.set("region", "BR");
   return u.toString();
 }
+
+/** Decodifica uma polyline codificada do Google (algoritmo público "Encoded Polyline") em pontos. */
+export function decodificarPolyline(codificada: string): { lat: number; lng: number }[] {
+  const pontos: { lat: number; lng: number }[] = [];
+  let i = 0;
+  let lat = 0;
+  let lng = 0;
+  const proximo = () => {
+    let resultado = 0;
+    let deslocamento = 0;
+    let b: number;
+    do {
+      b = codificada.charCodeAt(i++) - 63;
+      resultado |= (b & 0x1f) << deslocamento;
+      deslocamento += 5;
+    } while (b >= 0x20 && i < codificada.length + 1);
+    return resultado & 1 ? ~(resultado >> 1) : resultado >> 1;
+  };
+  while (i < codificada.length) {
+    lat += proximo();
+    lng += proximo();
+    pontos.push({ lat: lat / 1e5, lng: lng / 1e5 });
+  }
+  return pontos;
+}
+
+/** Converte o modo da Routes API para o modo usado nos links do Google Maps. */
+export function modoParaMapa(modo: "DRIVE" | "TWO_WHEELER" | "TRANSIT" | "WALK"): ModoMapa {
+  return modo === "TWO_WHEELER" ? "moto" : modo === "TRANSIT" ? "transporte" : modo === "WALK" ? "a_pe" : "carro";
+}

@@ -1,8 +1,8 @@
-import { CalendarClock, CheckCircle2, ListTodo } from "lucide-react";
+import { CalendarClock, CheckCircle2, ListTodo, Map as IconeMapa } from "lucide-react";
 import Link from "next/link";
 
 import { CopiarBotao } from "@/components/copiar-botao";
-import { type PontoMapa, MapaAventura } from "@/components/mapas/mapa-aventura";
+import { type EstalagemPainel, type OrigemPainel, PainelMapa } from "@/components/mapas/painel-mapa";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { exigirMembro } from "@/lib/auth";
 import { contagemRegressiva, FASE_INFO, pendencias, ranking } from "@/lib/aventura";
@@ -40,29 +40,39 @@ export default async function PainelAventuraPage({ params }: { params: Promise<{
         ? evento.accommodation_vote_deadline
         : null;
 
-  const pontos: PontoMapa[] = [
-    ...dados.nucleos
-      .filter((n) => n.origin_lat != null && n.origin_lng != null)
-      .map((n) => ({
-        id: `n-${n.id}`,
-        tipo: "origem" as const,
-        nome: n.name,
-        detalhe: n.origin_text ?? undefined,
-        lat: n.origin_lat!,
-        lng: n.origin_lng!,
-      })),
-    ...dados.estalagens
-      .filter((e) => e.lat != null && e.lng != null)
-      .map((e) => ({
-        id: `e-${e.id}`,
-        tipo: "estalagem" as const,
-        nome: e.name,
-        detalhe: formatarCentavos(e.total_price_cents),
-        lat: e.lat!,
-        lng: e.lng!,
-        escolhida: e.id === evento.chosen_accommodation_id,
-      })),
-  ];
+  const origens: OrigemPainel[] = dados.nucleos
+    .filter((n) => n.origin_lat != null && n.origin_lng != null)
+    .map((n) => ({
+      id: n.id,
+      nome: n.name,
+      detalhe: n.origin_text ?? undefined,
+      lat: n.origin_lat!,
+      lng: n.origin_lng!,
+      minha: n.id === pessoa.household_id,
+    }));
+  const encontro =
+    evento.meeting_lat != null && evento.meeting_lng != null
+      ? {
+          nome: `Ponto de encontro${evento.meeting_name ? `: ${evento.meeting_name}` : ""}`,
+          detalhe: evento.meeting_address ?? undefined,
+          lat: evento.meeting_lat,
+          lng: evento.meeting_lng,
+        }
+      : null;
+  const estalagensPainel: EstalagemPainel[] = estalagensRanking.map((e) => ({
+    id: e.id,
+    nome: e.name,
+    preco: formatarCentavos(e.total_price_cents),
+    capacidade: e.capacity,
+    foto: e.photos[0],
+    posicao: e.posicao,
+    curtidas: e.placar.curtidas,
+    descurtidas: e.placar.descurtidas,
+    escolhida: e.id === evento.chosen_accommodation_id,
+    lat: e.lat,
+    lng: e.lng,
+  }));
+  const inicial = (escolhida ?? estalagensRanking.find((e) => e.lat != null))?.id ?? null;
 
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const convite = [
@@ -144,6 +154,30 @@ export default async function PainelAventuraPage({ params }: { params: Promise<{
             )}
           </div>
           <div>
+            <p className="text-sm text-muted-foreground">Ponto de encontro</p>
+            {evento.meeting_address || evento.meeting_name ? (
+              <>
+                <p className="font-medium">{evento.meeting_name ?? evento.meeting_address}</p>
+                {evento.meeting_at && (
+                  <p className="text-sm text-muted-foreground">
+                    {new Intl.DateTimeFormat("pt-BR", {
+                      timeZone: "America/Sao_Paulo",
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    }).format(new Date(evento.meeting_at))}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-muted-foreground">
+                Ainda não definido.{" "}
+                <Link href={`/aventuras/${id}/geral`} className="text-bottle underline underline-offset-4">
+                  Ver aba Geral
+                </Link>
+              </p>
+            )}
+          </div>
+          <div>
             <p className="text-sm text-muted-foreground">{escolhida ? "Estalagem escolhida" : "Estalagem"}</p>
             {lider ? (
               <>
@@ -162,11 +196,22 @@ export default async function PainelAventuraPage({ params }: { params: Promise<{
 
       <Card className="lg:col-span-3">
         <CardHeader>
-          <CardTitle>Mapa</CardTitle>
-          <CardDescription>De onde cada núcleo sai e onde ficam as estalagens.</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <IconeMapa className="size-5 text-bottle" aria-hidden /> Mapa e rotas
+          </CardTitle>
+          <CardDescription>
+            Toque numa estalagem (na lista ou no mapa) para ver a rota da sua cidade (amarelo) e do ponto de encontro
+            (vermelho), com o tempo de cada jeito de ir.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <MapaAventura pontos={pontos} />
+          <PainelMapa
+            eventoId={id}
+            origens={origens}
+            encontro={encontro}
+            estalagens={estalagensPainel}
+            inicial={inicial}
+          />
         </CardContent>
       </Card>
     </div>

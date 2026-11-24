@@ -1,5 +1,7 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
 import { duracaoDaApi } from "./viagem";
 
 /** Um ponto com coordenadas. */
@@ -111,6 +113,8 @@ export type RotaResumo = {
   segundos: number | null;
   segundosSemTransito: number | null;
   metros: number | null;
+  /** Traçado da rota (Encoded Polyline), para desenhar no mapa. */
+  polyline: string | null;
 };
 
 /**
@@ -121,7 +125,7 @@ export async function calcularRotas(origem: Ponto, destino: Ponto, modos: ModoRo
   const ponto = (p: Ponto) => ({ location: { latLng: { latitude: p.lat, longitude: p.lng } } });
   return Promise.all(
     modos.map(async (modo): Promise<RotaResumo> => {
-      const vazio = { modo, segundos: null, segundosSemTransito: null, metros: null };
+      const vazio: RotaResumo = { modo, segundos: null, segundosSemTransito: null, metros: null, polyline: null };
       if (!CHAVE()) return vazio;
       try {
         const comTransito = modo === "DRIVE" || modo === "TWO_WHEELER";
@@ -130,7 +134,8 @@ export async function calcularRotas(origem: Ponto, destino: Ponto, modos: ModoRo
           headers: {
             "Content-Type": "application/json",
             "X-Goog-Api-Key": CHAVE(),
-            "X-Goog-FieldMask": "routes.duration,routes.staticDuration,routes.distanceMeters",
+            "X-Goog-FieldMask":
+              "routes.duration,routes.staticDuration,routes.distanceMeters,routes.polyline.encodedPolyline",
           },
           body: JSON.stringify({
             origin: ponto(origem),
@@ -145,7 +150,12 @@ export async function calcularRotas(origem: Ponto, destino: Ponto, modos: ModoRo
         });
         if (!res.ok) return vazio;
         const json = (await res.json()) as {
-          routes?: { duration?: string; staticDuration?: string; distanceMeters?: number }[];
+          routes?: {
+            duration?: string;
+            staticDuration?: string;
+            distanceMeters?: number;
+            polyline?: { encodedPolyline?: string };
+          }[];
         };
         const r = json.routes?.[0];
         if (!r) return vazio;
@@ -154,6 +164,7 @@ export async function calcularRotas(origem: Ponto, destino: Ponto, modos: ModoRo
           segundos: duracaoDaApi(r.duration),
           segundosSemTransito: duracaoDaApi(r.staticDuration),
           metros: r.distanceMeters ?? null,
+          polyline: r.polyline?.encodedPolyline ?? null,
         };
       } catch {
         return vazio;
@@ -161,3 +172,11 @@ export async function calcularRotas(origem: Ponto, destino: Ponto, modos: ModoRo
     }),
   );
 }
+
+/** calcularRotas com cache de 30 minutos por par de coordenadas e modos (economiza a cota do Google). */
+export const rotasEmCache = unstable_cache(
+  (o: { lat: number; lng: number }, d: { lat: number; lng: number }, modos: ModoRota[]) =>
+    calcularRotas({ id: "o", lat: o.lat, lng: o.lng }, { id: "d", lat: d.lat, lng: d.lng }, modos),
+  ["rotas-v2"],
+  { revalidate: 1800 },
+);

@@ -1,6 +1,5 @@
 import { ArrowRight, Flag, Home, MapPin } from "lucide-react";
 import type { Metadata } from "next";
-import { unstable_cache } from "next/cache";
 
 import { AcaoForm } from "@/components/acao-form";
 import { CampoLugar } from "@/components/mapas/campo-lugar";
@@ -11,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { exigirMembro } from "@/lib/auth";
 import { carregarAventura } from "@/lib/aventura-dados";
-import { calcularRotas, type ModoRota, type RotaResumo } from "@/lib/rotas";
+import { type ModoRota, type RotaResumo, rotasEmCache } from "@/lib/rotas";
 import { formatarDistancia, formatarDuracao } from "@/lib/viagem";
 
 import { salvarPontoEncontro } from "../../actions";
@@ -19,13 +18,6 @@ import { salvarPontoEncontro } from "../../actions";
 export const metadata: Metadata = { title: "Geral" };
 
 type Local = { chave: string; nome: string; detalhe?: string; lat: number; lng: number };
-
-const rotasEmCache = unstable_cache(
-  (o: { lat: number; lng: number }, d: { lat: number; lng: number }, modos: ModoRota[]) =>
-    calcularRotas({ id: "o", ...o }, { id: "d", ...d }, modos),
-  ["rotas"],
-  { revalidate: 1800 },
-);
 
 const NOME_MODO: Record<ModoRota, string> = {
   DRIVE: "Carro",

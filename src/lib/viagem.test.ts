@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  decodificarPolyline,
   duracaoDaApi,
+  modoParaMapa,
   formatarDistancia,
   formatarDuracao,
   indiceJustica,
@@ -68,5 +70,28 @@ describe("links do Google Maps", () => {
     const u = new URL(linkMapaEmbutido("CHAVE", a, b, "a_pe"));
     expect(u.pathname).toBe("/maps/embed/v1/directions");
     expect(u.searchParams.get("mode")).toBe("walking");
+  });
+});
+
+describe("decodificarPolyline", () => {
+  it("decodifica o exemplo oficial do Google", () => {
+    const pts = decodificarPolyline("_p~iF~ps|U_ulLnnqC_mqNvxq`@");
+    expect(pts).toEqual([
+      { lat: 38.5, lng: -120.2 },
+      { lat: 40.7, lng: -120.95 },
+      { lat: 43.252, lng: -126.453 },
+    ]);
+  });
+  it("vazio vira lista vazia", () => {
+    expect(decodificarPolyline("")).toEqual([]);
+  });
+});
+
+describe("modoParaMapa", () => {
+  it("converte os modos", () => {
+    expect(modoParaMapa("DRIVE")).toBe("carro");
+    expect(modoParaMapa("TWO_WHEELER")).toBe("moto");
+    expect(modoParaMapa("TRANSIT")).toBe("transporte");
+    expect(modoParaMapa("WALK")).toBe("a_pe");
   });
 });
