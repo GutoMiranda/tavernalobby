@@ -211,3 +211,60 @@ export async function escolherEstalagem(_: EstadoAcao, d: FormData): Promise<Est
   revalidatePath(`/aventuras/${eventId}`, "layout");
   return { ok: "Estalagem escolhida! Agora é confirmar a presença." };
 }
+
+// ---------------------------------------------------------------- preencher pelo link
+
+export type DadosPreenchidos = {
+  erro?: string;
+  aviso?: string;
+  nome?: string;
+  descricao?: string;
+  fotos?: string[];
+  preco?: string;
+  capacidade?: number;
+  endereco?: string;
+  lat?: number;
+  lng?: number;
+  lugarId?: string;
+};
+
+/** Lê o anúncio (Open Graph/JSON-LD) e, se faltar localização, procura pelo nome no Google. */
+export async function lerAnuncio(link: string, nomeDigitado: string): Promise<DadosPreenchidos> {
+  await exigirMembro();
+  const { preencherPorAnuncio } = await import("@/lib/buscar-anuncio");
+  const { centavosParaCampo } = await import("@/lib/dinheiro");
+  if (!/^https?:\/\/\S+$/i.test(link.trim())) return { erro: "Cole um link que comece com https://" };
+
+  const r = await preencherPorAnuncio(link.trim(), nomeDigitado.trim() || undefined);
+  const achou = [
+    r.nome && "nome",
+    r.descricao && "descrição",
+    r.fotos.length && "fotos",
+    r.precoCentavos && "preço",
+    r.capacidade && "capacidade",
+    r.lat !== undefined && (r.origemLocal === "anuncio" ? "localização do anúncio" : "endereço pelo Google"),
+  ].filter(Boolean) as string[];
+
+  let aviso: string;
+  if (!r.paginaLida && !r.lat) {
+    aviso =
+      "O site do anúncio não deixou ler a página (alguns, como o Booking, bloqueiam robôs). Preencha à mão ou digite o nome e tente de novo para buscar o endereço.";
+  } else if (achou.length === 0) {
+    aviso = "Não encontrei dados nesse anúncio. Preencha à mão.";
+  } else {
+    aviso = `Preenchido: ${achou.join(", ")}. Confira tudo antes de salvar${r.origemLocal === "busca" ? ", principalmente o endereço (achado pelo nome)" : ""}.`;
+  }
+
+  return {
+    aviso,
+    nome: r.nome,
+    descricao: r.descricao,
+    fotos: r.fotos,
+    preco: r.precoCentavos ? centavosParaCampo(r.precoCentavos) : undefined,
+    capacidade: r.capacidade,
+    endereco: r.endereco,
+    lat: r.lat,
+    lng: r.lng,
+    lugarId: r.lugarId,
+  };
+}

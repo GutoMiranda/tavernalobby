@@ -13,6 +13,10 @@ type Props = {
   id: string;
   rotulo: string;
   valorInicial?: string | null;
+  /** Coordenadas já conhecidas (ex.: preenchidas a partir do link do anúncio). */
+  latInicial?: number;
+  lngInicial?: number;
+  idInicial?: string;
   /** "cidade" para origens; "endereco" para estalagens. */
   tipo: "cidade" | "endereco";
   obrigatorio?: boolean;
@@ -24,7 +28,12 @@ type Props = {
  * Sem a chave do Maps, vira um campo de texto simples.
  */
 export function CampoLugar(props: Props) {
-  const [lugar, setLugar] = useState<Lugar>({ texto: props.valorInicial ?? "", lat: "", lng: "", id: "" });
+  const [lugar, setLugar] = useState<Lugar>({
+    texto: props.valorInicial ?? "",
+    lat: props.latInicial !== undefined ? String(props.latInicial) : "",
+    lng: props.lngInicial !== undefined ? String(props.lngInicial) : "",
+    id: props.idInicial ?? "",
+  });
 
   const ocultos = (
     <>

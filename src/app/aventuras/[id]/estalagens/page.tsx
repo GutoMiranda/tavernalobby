@@ -2,12 +2,10 @@ import { ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
 
 import { AcaoForm } from "@/components/acao-form";
+import { FormEstalagem } from "@/components/aventura/form-estalagem";
 import { ReacaoBotoes } from "@/components/aventura/reacao-botoes";
-import { CampoLugar } from "@/components/mapas/campo-lugar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { exigirMembro } from "@/lib/auth";
 import { custoPorAdulto, ranking } from "@/lib/aventura";
 import { carregarAventura } from "@/lib/aventura-dados";
@@ -15,12 +13,9 @@ import { formatarCentavos, formatarData } from "@/lib/format";
 import { temposDeViagem } from "@/lib/tempos-viagem";
 import { formatarDistancia, formatarDuracao, indiceJustica } from "@/lib/viagem";
 
-import { adicionarEstalagem, escolherEstalagem, removerEstalagem } from "../../actions";
+import { escolherEstalagem, removerEstalagem } from "../../actions";
 
 export const metadata: Metadata = { title: "Estalagens" };
-
-const classeTextarea =
-  "rounded-md border border-input bg-white px-3 py-2 text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm";
 
 export default async function EstalagensPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -156,39 +151,10 @@ export default async function EstalagensPage({ params }: { params: Promise<{ id:
         <Card>
           <CardHeader>
             <CardTitle>Sugerir estalagem</CardTitle>
-            <CardDescription>Cole o link do anúncio e o preço total da estadia.</CardDescription>
+            <CardDescription>Cole o link do anúncio e toque em “Preencher pelo link”. Confira e ajuste antes de salvar.</CardDescription>
           </CardHeader>
           <CardContent>
-            <AcaoForm action={adicionarEstalagem} textoBotao="Adicionar estalagem" limparAoConcluir>
-              <input type="hidden" name="evento" value={id} />
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="est-nome">Nome</Label>
-                <Input id="est-nome" name="nome" required maxLength={120} placeholder="Ex.: Chácara Recanto do Sol" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="est-link">Link do anúncio</Label>
-                <Input id="est-link" name="link" type="url" inputMode="url" placeholder="https://…" />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="est-preco">Preço total (R$)</Label>
-                  <Input id="est-preco" name="preco" required inputMode="decimal" placeholder="3.000,00" />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="est-capacidade">Capacidade (pessoas)</Label>
-                  <Input id="est-capacidade" name="capacidade" type="number" min={1} inputMode="numeric" />
-                </div>
-              </div>
-              <CampoLugar id="est-endereco" rotulo="Endereço" tipo="endereco" />
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="est-fotos">Links de fotos (um por linha, opcional)</Label>
-                <textarea id="est-fotos" name="fotos" rows={2} className={classeTextarea} placeholder="https://…" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="est-notas">Observações</Label>
-                <textarea id="est-notas" name="notas" rows={3} maxLength={2000} className={classeTextarea} />
-              </div>
-            </AcaoForm>
+            <FormEstalagem eventoId={id} />
           </CardContent>
         </Card>
       )}
