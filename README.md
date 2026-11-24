@@ -22,3 +22,5 @@ npm run dev                          # abre em http://localhost:3000
 | `npm run test:e2e` | Testes Playwright (antes, uma vez: `npx playwright install chromium`) |
 | `npm run icones` | Gera os ícones do PWA a partir de `public/icons/logo.svg` |
 | `.\scripts\db.ps1 push` | Aplica as migrações no Supabase (usa a senha do `.env.local`) |
+
+Os testes de permissões do banco (`tests/db`) rodam num Postgres em memória (PGlite), sem instalar nada.

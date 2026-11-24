@@ -11,3 +11,12 @@ Decisões que o escopo não cobre. Formato: data · decisão · motivo.
 7. **24/11/2026 · Só modo claro.** O escopo pede modo claro com cartões em pergaminho; não há modo escuro no MVP.
 8. **24/11/2026 · Service worker sem cache.** Existe só para o app ser instalável; os dados são em tempo real, então nada fica guardado offline.
 9. **24/11/2026 · Senha do banco no `.env.local`.** `SUPABASE_DB_PASSWORD` fica no `.env.local` do dono e é lida pelo `scripts/db.ps1`, a pedido dele, para não digitar a senha a cada migração.
+10. **24/11/2026 · Testes de RLS com PGlite.** Em vez de um Postgres instalado, os testes usam o PGlite (Postgres em WebAssembly, via npm), com uma simulação mínima do Supabase em `tests/db/supabase-shim.sql`. Rodam em qualquer PC com `npm test`, sem Docker. Substitui a decisão 4.
+11. **24/11/2026 · Permissões por coluna.** As migrações tiram todos os privilégios padrão de `anon`/`authenticated` e devolvem só o necessário, inclusive por coluna (ex.: ninguém altera `funds.pix_key`, `people.status` ou `fund_transactions.status` direto na tabela; só pelas funções auditadas).
+12. **24/11/2026 · Admin pelo e-mail gravado no banco.** O e-mail do admin fica na tabela interna `app_config` (não é segredo). O primeiro login com esse e-mail vira o único admin; um índice único garante que só existe um.
+13. **24/11/2026 · "Criança" é o campo `people.is_child`.** O escopo fala em "tag Criança"; para as regras de rateio é mais simples e seguro um campo do que uma tag. Tags de função ficam para Tesoureiro, Despensa e as que o admin criar.
+14. **24/11/2026 · Um baú por aventura.** `funds.event_id` é único; a meta é a soma dos custos quando `goal_cents` está vazio.
+15. **24/11/2026 · Presença com `days` nulo = período todo.** Mínimo 1 dia; o máximo (total do período) é validado na aplicação, porque depende das datas escolhidas.
+16. **24/11/2026 · Dependente sem login nasce aprovado.** Quem cadastra já é um membro aprovado do núcleo.
+17. **24/11/2026 · Troca de Pix só notifica quando já havia dados.** A primeira configuração do baú grava histórico, mas não dispara o aviso de 7 dias nem as notificações.
+18. **24/11/2026 · Comprovantes em `<id do usuário>/<arquivo>`.** Cada um só envia na própria pasta; membros aprovados leem (por URL assinada); ninguém apaga.
