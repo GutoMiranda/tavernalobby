@@ -1,10 +1,21 @@
 import { expect, test } from "@playwright/test";
 
-test("página inicial mostra o tema da taverna", async ({ page }) => {
+test("visitante é levado para a tela de entrar", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Taverna O Lobby" })).toBeVisible();
-  await expect(page.getByText("Baú", { exact: false }).first()).toBeVisible();
-  await expect(page.getByText("· caixinha", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/entrar$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Entrar na taverna" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Entrar com Google" })).toBeVisible();
+  await expect(page.getByLabel("Seu e-mail")).toBeVisible();
+});
+
+test("página protegida guarda o destino para depois do login", async ({ page }) => {
+  await page.goto("/familia");
+  await expect(page).toHaveURL(/\/entrar\?depois=%2Ffamilia$/);
+});
+
+test("convite inválido mostra aviso claro", async ({ page }) => {
+  await page.goto("/convite/codigo-que-nao-existe");
+  await expect(page.getByText("Convite inválido")).toBeVisible();
 });
 
 test("manifest do PWA está disponível com ícones", async ({ request }) => {

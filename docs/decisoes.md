@@ -20,3 +20,7 @@ Decisões que o escopo não cobre. Formato: data · decisão · motivo.
 16. **24/11/2026 · Dependente sem login nasce aprovado.** Quem cadastra já é um membro aprovado do núcleo.
 17. **24/11/2026 · Troca de Pix só notifica quando já havia dados.** A primeira configuração do baú grava histórico, mas não dispara o aviso de 7 dias nem as notificações.
 18. **24/11/2026 · Comprovantes em `<id do usuário>/<arquivo>`.** Cada um só envia na própria pasta; membros aprovados leem (por URL assinada); ninguém apaga.
+19. **24/11/2026 · Convite do grupo é a porta de entrada, não uma trava.** Qualquer conta Google pode entrar, mas fica "Aguardando aprovação" sem ver nada; o link de convite (`/convite/<código>`) é a página amigável que o grupo recebe no WhatsApp. O admin pode gerar um novo código e o antigo deixa de valer. Membros aprovados também veem o link.
+20. **24/11/2026 · Adulto dependente assume o perfil por link de 14 dias.** O núcleo gera o link em "Minha família"; quem abre entra com a própria conta e passa a ser aquela pessoa (histórico mantido), já aprovado, porque o núcleo já era aprovado. A conta precisa ser nova (sem família nem lançamentos próprios).
+21. **24/11/2026 · Tokens de convite em tabela sem acesso direto** (`claim_invites`), lidos só pelas funções.
+22. **24/11/2026 · Testes Playwright sem Supabase real.** Até a Etapa 8 (login simulado), os testes de interface rodam como visitante, apontando para um Supabase inexistente.
