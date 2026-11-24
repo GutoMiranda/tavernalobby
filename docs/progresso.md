@@ -13,6 +13,7 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 
 ## Depois do MVP
 
+- [ ] **Rebranding visual completo (pedido do dono)**: visual atual parece antigo (fonte datada, sem animação, sem ícones/ilustrações do tema). Objetivo: leve, mas com impacto positivo e a cara do grupo (taverna, RPG/d20, aventuras): tipografia moderna, ícones e ilustrações SVG próprias, microanimações (CSS, respeitando "reduzir movimento"). Antes de implementar, apresentar 2 ou 3 direções visuais para o dono escolher.
 - [ ] **Chat geral do grupo**: ao vivo e com histórico, lista de membros, menção com @, marcar dúvida direcionada; menções e dúvidas no sino de notificações (decisão 46). Sem integração com WhatsApp.
 
 ## Registro
