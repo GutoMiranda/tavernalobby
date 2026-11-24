@@ -6,7 +6,7 @@
 #   .\scripts\db.ps1 push     # aplica as migrações novas no banco
 #   .\scripts\db.ps1 status   # lista as migrações aplicadas e pendentes
 #
-# Antes da primeira vez, rode uma vez:  npx supabase login
+# Antes da primeira vez: npm install  e  npx --no-install supabase login
 
 param(
   [Parameter(Mandatory = $true)]
@@ -35,9 +35,11 @@ if (-not $senha) {
 $env:SUPABASE_DB_PASSWORD = $senha
 try {
   switch ($Comando) {
-    "link"   { npx supabase link --project-ref $ProjectRef }
-    "push"   { npx supabase db push }
-    "status" { npx supabase migration list }
+    # --no-install: usa a versão da CLI fixada no package.json (npm install), não a mais nova da internet.
+    # --linked: sempre o projeto do Supabase na nuvem, nunca um banco local (Docker).
+    "link"   { npx --no-install supabase link --project-ref $ProjectRef }
+    "push"   { npx --no-install supabase db push --linked }
+    "status" { npx --no-install supabase migration list --linked }
   }
 } finally {
   Remove-Item Env:\SUPABASE_DB_PASSWORD -ErrorAction SilentlyContinue
