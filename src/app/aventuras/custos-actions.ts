@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { exigirAdmin, exigirMembro } from "@/lib/auth";
+import { periodoEfetivo } from "@/lib/aventura";
 import { reaisParaCentavos } from "@/lib/dinheiro";
 import { type EstadoAcao, mensagemErro } from "@/lib/erros";
 import { diasDoPeriodo } from "@/lib/format";
@@ -37,7 +38,21 @@ export async function salvarPresenca(_: EstadoAcao, d: FormData): Promise<Estado
   if (!UUID.test(eventId) || ids.length === 0) return { erro: "Nada para salvar." };
 
   const { data: evento } = await supabase.from("events").select("start_date, end_date").eq("id", eventId).maybeSingle();
-  const maximo = evento?.start_date && evento?.end_date ? diasDoPeriodo(evento.start_date, evento.end_date) : null;
+  const { data: opcoes } = await supabase
+    .from("date_options")
+    .select("id, start_date, end_date, date_reactions(person_id, value)")
+    .eq("event_id", eventId)
+    .returns<
+      { id: string; start_date: string; end_date: string; date_reactions: { person_id: string; value: 1 | -1 }[] }[]
+    >();
+  const periodo = periodoEfetivo(
+    { start_date: evento?.start_date ?? null, end_date: evento?.end_date ?? null },
+    opcoes ?? [],
+    (opcoes ?? []).flatMap((o) =>
+      o.date_reactions.map((r) => ({ alvo_id: o.id, person_id: r.person_id, value: r.value })),
+    ),
+  );
+  const maximo = periodo ? diasDoPeriodo(periodo.inicio, periodo.fim) : null;
 
   for (const id of ids) {
     const status = txt(d, `status_${id}`, 10);

@@ -34,17 +34,17 @@ export default async function CustosPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const { supabase, pessoa } = await exigirMembro();
   const dados = await carregarAventura(supabase, id);
-  const { evento } = dados;
   const custos = await carregarCustos(supabase, dados);
-  const { pessoas, itens, itensRateio, rateio, totalDias, pesos } = custos;
+  const { pessoas, itens, itensRateio, rateio, totalDias, pesos, periodo } = custos;
 
   const nome = new Map(pessoas.map((p) => [p.id, p.name]));
   const doMeuNucleo = pessoas.filter((p) => p.household_id === pessoa.household_id);
   const minhaParteNucleo = rateio.porNucleo.get(pessoa.household_id) ?? 0;
   const hoje = hojeEmSaoPaulo();
-  const contagem = contagemRegressiva(evento.start_date, hoje);
+  const inicio = periodo?.inicio ?? null;
+  const contagem = contagemRegressiva(inicio, hoje);
   const deposito = depositosDoNucleo(custos.lancamentos, pessoa.household_id);
-  const plano = planoDeEconomia(minhaParteNucleo, deposito.confirmadoCentavos, hoje, evento.start_date);
+  const plano = planoDeEconomia(minhaParteNucleo, deposito.confirmadoCentavos, hoje, inicio);
   const porAdulto = doMeuNucleo
     .map((p) => ({ id: p.id, nome: p.name, parte: rateio.porPessoa.get(p.id) ?? 0 }))
     .filter((a) => a.parte > 0)
@@ -80,9 +80,11 @@ export default async function CustosPage({ params }: { params: Promise<{ id: str
           </CardTitle>
           <CardDescription className="flex items-center gap-2">
             <CalendarClock className="size-4" aria-hidden />
-            {evento.start_date
-              ? `${contagem ?? "A aventura já começou"} · começa em ${formatarDia(evento.start_date)}`
-              : "As datas ainda não foram fechadas; o plano mensal aparece quando houver data."}
+            {periodo
+              ? `${contagem ?? "A aventura já começou"} · começa em ${formatarDia(periodo.inicio)}${
+                  periodo.fonte === "mais_votada" ? " (prévia: data mais votada, até o admin fechar a data)" : ""
+                }`
+              : "Ainda não há datas candidatas; o plano mensal aparece quando houver uma."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -226,7 +228,9 @@ export default async function CustosPage({ params }: { params: Promise<{ id: str
           </CardTitle>
           <CardDescription>
             {formatarCentavos(rateio.totalCentavos)} em {itens.length} {itens.length === 1 ? "item" : "itens"}
-            {totalDias ? ` · ${totalDias} dias` : " · datas a definir"}
+            {totalDias
+              ? ` · ${totalDias} dias${periodo?.fonte === "mais_votada" ? " (prévia)" : ""}`
+              : " · datas a definir"}
           </CardDescription>
         </CardHeader>
         <CardContent>

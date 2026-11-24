@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { contagemRegressiva, custoPorAdulto, pendencias, placar, ranking, type Reacao } from "./aventura";
+import {
+  contagemRegressiva,
+  custoPorAdulto,
+  pendencias,
+  periodoEfetivo,
+  placar,
+  ranking,
+  type Reacao,
+} from "./aventura";
 import { diasDoPeriodo, formatarDia, formatarPeriodo, hojeEmSaoPaulo } from "./format";
 
 const r = (alvo_id: string, person_id: string, value: 1 | -1): Reacao => ({ alvo_id, person_id, value });
@@ -86,5 +94,54 @@ describe("datas sem fuso", () => {
   it("hoje em São Paulo vira o dia só à meia-noite de lá", () => {
     expect(hojeEmSaoPaulo(new Date("2027-01-09T02:30:00Z"))).toBe("2027-01-08");
     expect(hojeEmSaoPaulo(new Date("2027-01-09T03:30:00Z"))).toBe("2027-01-09");
+  });
+});
+
+describe("período efetivo para as contas", () => {
+  const datas = [
+    { id: "b", start_date: "2027-06-10", end_date: "2027-06-12" },
+    { id: "a", start_date: "2027-05-21", end_date: "2027-05-23" },
+    { id: "c", start_date: "2027-07-01", end_date: "2027-07-04" },
+  ];
+
+  it("data fechada pelo admin vale sempre", () => {
+    expect(periodoEfetivo({ start_date: "2027-08-01", end_date: "2027-08-03" }, datas, [r("c", "p1", 1)])).toEqual({
+      inicio: "2027-08-01",
+      fim: "2027-08-03",
+      fonte: "fechada",
+    });
+  });
+
+  it("sem data fechada, usa a mais votada (prévia)", () => {
+    const p = periodoEfetivo({ start_date: null, end_date: null }, datas, [
+      r("c", "p1", 1),
+      r("c", "p2", 1),
+      r("a", "p1", 1),
+    ]);
+    expect(p).toEqual({ inicio: "2027-07-01", fim: "2027-07-04", fonte: "mais_votada" });
+  });
+
+  it("empate no saldo: vence quem tem mais curtidas", () => {
+    // a: +2 −2 (saldo 0, 2 curtidas); b: +1 −1 (saldo 0, 1 curtida)
+    const p = periodoEfetivo({ start_date: null, end_date: null }, datas, [
+      r("a", "p1", 1),
+      r("a", "p2", 1),
+      r("a", "p3", -1),
+      r("a", "p4", -1),
+      r("b", "p1", 1),
+      r("b", "p2", -1),
+    ]);
+    expect(p?.inicio).toBe("2027-05-21");
+  });
+
+  it("empate total (ou sem votos): vence a data que começa antes", () => {
+    expect(periodoEfetivo({ start_date: null, end_date: null }, datas, [])?.inicio).toBe("2027-05-21");
+    expect(
+      periodoEfetivo({ start_date: null, end_date: null }, datas, [r("b", "p1", 1), r("c", "p1", 1)])?.inicio,
+    ).toBe("2027-06-10");
+  });
+
+  it("sem datas candidatas: sem período", () => {
+    expect(periodoEfetivo({ start_date: null, end_date: null }, [], [])).toBeNull();
   });
 });

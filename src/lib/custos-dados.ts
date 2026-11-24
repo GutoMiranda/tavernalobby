@@ -3,7 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cache } from "react";
 
-import { ranking } from "./aventura";
+import { periodoEfetivo, ranking } from "./aventura";
 import type { carregarAventura } from "./aventura-dados";
 import { type Categoria, type Elegibilidade, type ItemRateio, type PessoaRateio, ratearTudo } from "./finance/rateio";
 import type { Lancamento } from "./finance/economia";
@@ -109,7 +109,8 @@ export const carregarCustos = cache(
     const presencas = new Map((presencasR.data ?? []).map((p) => [p.person_id, p]));
     const pesos = pesosR.data ?? [];
     const adesoes = adesoesR.data ?? [];
-    const totalDias = evento.start_date && evento.end_date ? diasDoPeriodo(evento.start_date, evento.end_date) : null;
+    const periodo = periodoEfetivo(evento, dados.datas, dados.reacoesDatas);
+    const totalDias = periodo ? diasDoPeriodo(periodo.inicio, periodo.fim) : null;
 
     const pessoasRateio: PessoaRateio[] = pessoas.map((p) => {
       const pr = presencas.get(p.id);
@@ -163,6 +164,7 @@ export const carregarCustos = cache(
       pesos,
       adesoes,
       totalDias,
+      periodo,
       rateio,
     };
   },

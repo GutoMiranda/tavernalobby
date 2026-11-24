@@ -122,3 +122,27 @@ export function pendencias(params: {
   }
   return lista;
 }
+
+export type PeriodoEfetivo = {
+  inicio: string;
+  fim: string;
+  /** "fechada" = data definida pelo admin; "mais_votada" = prévia pela data candidata mais votada. */
+  fonte: "fechada" | "mais_votada";
+};
+
+/**
+ * Período usado nas contas (dias, custos, meses até a viagem, contagem regressiva).
+ * Data fechada pelo admin vale sempre; sem ela, a data candidata mais votada (prévia).
+ * Desempate da prévia: maior saldo, depois mais curtidas, depois a data que começa antes.
+ */
+export function periodoEfetivo(
+  evento: { start_date: string | null; end_date: string | null },
+  datas: { id: string; start_date: string; end_date: string }[],
+  reacoesDatas: Reacao[],
+): PeriodoEfetivo | null {
+  if (evento.start_date && evento.end_date)
+    return { inicio: evento.start_date, fim: evento.end_date, fonte: "fechada" };
+  const ordenadas = [...datas].sort((a, b) => a.start_date.localeCompare(b.start_date));
+  const lider = ranking(ordenadas, reacoesDatas)[0];
+  return lider ? { inicio: lider.start_date, fim: lider.end_date, fonte: "mais_votada" } : null;
+}

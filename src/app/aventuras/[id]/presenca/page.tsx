@@ -19,7 +19,7 @@ export default async function PresencaPage({ params }: { params: Promise<{ id: s
   const { id } = await params;
   const { supabase, pessoa } = await exigirMembro();
   const dados = await carregarAventura(supabase, id);
-  const { pessoas, presencas, totalDias } = await carregarCustos(supabase, dados);
+  const { pessoas, presencas, totalDias, periodo } = await carregarCustos(supabase, dados);
 
   const nucleos = dados.nucleos
     .map((n) => ({ ...n, membros: pessoas.filter((p) => p.household_id === n.id) }))
@@ -45,7 +45,11 @@ export default async function PresencaPage({ params }: { params: Promise<{ id: s
             Um adulto de cada núcleo confirma por todos da família: se vai, quantos dias fica e se entra no rateio das
             bebidas alcoólicas.{" "}
             {totalDias
-              ? `O período tem ${totalDias} ${totalDias === 1 ? "dia" : "dias"}.`
+              ? `O período tem ${totalDias} ${totalDias === 1 ? "dia" : "dias"}${
+                  periodo?.fonte === "mais_votada"
+                    ? " (prévia pela data mais votada; vale a data que o admin fechar)"
+                    : ""
+                }.`
               : "As datas ainda não foram fechadas; os dias ficam para depois."}
           </CardDescription>
         </CardHeader>
