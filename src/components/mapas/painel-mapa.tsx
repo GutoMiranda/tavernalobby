@@ -83,7 +83,12 @@ export function PainelMapa({
   }, [rotas, modo]);
 
   const comLocal = estalagens.filter((e) => e.lat != null && e.lng != null);
-  const enquadrar: LatLng[] = [...comLocal.map((e) => ({ lat: e.lat!, lng: e.lng! })), ...(encontro ? [encontro] : [])];
+  // Enquadra a sua saída, o ponto de encontro e as estalagens (as saídas dos outros núcleos ficam no mapa, fora do zoom).
+  const enquadrar: LatLng[] = [
+    ...comLocal.map((e) => ({ lat: e.lat!, lng: e.lng! })),
+    ...(encontro ? [encontro] : []),
+    ...(minhaOrigem ? [minhaOrigem] : []),
+  ];
   if (enquadrar.length === 0) enquadrar.push(...origens);
 
   return (
@@ -315,6 +320,13 @@ function Trecho({
               );
             })}
           </ul>
+          {rotas?.find((x) => x.erro) && (
+            <p className="text-xs break-words text-alert">
+              O Google recusou o cálculo
+              {rotas.some((x) => x.erro && x.segundos != null) ? " do traçado (tempos pela Distance Matrix)" : ""}:{" "}
+              {rotas.find((x) => x.erro)?.erro}
+            </p>
+          )}
           <a
             href={linkGoogleMaps(origem, destino, modoParaMapa(modo))}
             target="_blank"

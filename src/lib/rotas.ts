@@ -115,8 +115,8 @@ export type RotaResumo = {
   metros: number | null;
   /** Traçado da rota (Encoded Polyline), para desenhar no mapa. */
   polyline: string | null;
-  /** true quando o Google respondeu com erro (chave, API desativada, rede); diferente de "não existe rota". */
-  erro?: boolean;
+  /** Motivo quando o Google respondeu com erro (chave, API desativada, rede); diferente de "não existe rota". */
+  erro?: string;
 };
 
 /**
@@ -154,10 +154,9 @@ export async function calcularRotas(origem: Ponto, destino: Ponto, modos: ModoRo
           const corpo = (await res.json().catch(() => null)) as {
             error?: { status?: string; message?: string };
           } | null;
-          console.error(
-            `[rotas] Routes API (${modo}) respondeu ${res.status}: ${corpo?.error?.status ?? ""} ${corpo?.error?.message ?? ""}`,
-          );
-          return { ...vazio, erro: true };
+          const motivo = `Routes API respondeu ${res.status} ${corpo?.error?.status ?? ""}: ${corpo?.error?.message ?? ""}`;
+          console.error(`[rotas] ${modo}: ${motivo}`);
+          return { ...(await viaDistanceMatrixUmModo(origem, destino, modo)), erro: motivo.slice(0, 300) };
         }
         const json = (await res.json()) as {
           routes?: {
@@ -177,8 +176,9 @@ export async function calcularRotas(origem: Ponto, destino: Ponto, modos: ModoRo
           polyline: r.polyline?.encodedPolyline ?? null,
         };
       } catch (e) {
-        console.error(`[rotas] Routes API (${modo}) falhou: ${e instanceof Error ? e.message : String(e)}`);
-        return { ...vazio, erro: true };
+        const motivo = `Routes API falhou: ${e instanceof Error ? e.message : String(e)}`;
+        console.error(`[rotas] ${modo}: ${motivo}`);
+        return { ...(await viaDistanceMatrixUmModo(origem, destino, modo)), erro: motivo.slice(0, 300) };
       }
     }),
   );
@@ -205,16 +205,63 @@ export async function rotasEmCache(
     return await emCache({ lat: o.lat, lng: o.lng }, { lat: d.lat, lng: d.lng }, modos);
   } catch (e) {
     const resultado = (e as { resultado?: RotaResumo[] }).resultado;
-    return (
-      resultado ??
-      modos.map((modo) => ({
-        modo,
-        segundos: null,
-        segundosSemTransito: null,
-        metros: null,
-        polyline: null,
-        erro: true,
-      }))
-    );
+    if (resultado) return resultado;
+    const motivo = `Falha ao calcular: ${e instanceof Error ? e.message : String(e)}`.slice(0, 300);
+    console.error(`[rotas] ${motivo}`);
+    return modos.map((modo) => ({
+      modo,
+      segundos: null,
+      segundosSemTransito: null,
+      metros: null,
+      polyline: null,
+      erro: motivo,
+    }));
+  }
+}
+
+/**
+ * Plano B quando a Routes API falha: a Distance Matrix API dá tempo e distância (sem o traçado no mapa).
+ * Não tem modo moto.
+ */
+async function viaDistanceMatrixUmModo(origem: Ponto, destino: Ponto, modo: ModoRota): Promise<RotaResumo> {
+  const vazio: RotaResumo = { modo, segundos: null, segundosSemTransito: null, metros: null, polyline: null };
+  if (modo === "TWO_WHEELER") return vazio;
+  const url = new URL("https://maps.googleapis.com/maps/api/distancematrix/json");
+  url.searchParams.set("origins", `${origem.lat},${origem.lng}`);
+  url.searchParams.set("destinations", `${destino.lat},${destino.lng}`);
+  url.searchParams.set("mode", modo === "TRANSIT" ? "transit" : modo === "WALK" ? "walking" : "driving");
+  if (modo === "DRIVE") url.searchParams.set("departure_time", "now");
+  url.searchParams.set("language", "pt-BR");
+  url.searchParams.set("region", "br");
+  url.searchParams.set("key", CHAVE());
+  try {
+    const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return vazio;
+    const json = (await res.json()) as {
+      status: string;
+      error_message?: string;
+      rows?: {
+        elements: {
+          status: string;
+          duration?: { value: number };
+          duration_in_traffic?: { value: number };
+          distance?: { value: number };
+        }[];
+      }[];
+    };
+    const el = json.rows?.[0]?.elements[0];
+    if (json.status !== "OK" || !el || el.status !== "OK") {
+      if (json.status !== "OK") console.error(`[rotas] Distance Matrix: ${json.status} ${json.error_message ?? ""}`);
+      return vazio;
+    }
+    return {
+      modo,
+      segundos: el.duration_in_traffic?.value ?? el.duration?.value ?? null,
+      segundosSemTransito: el.duration?.value ?? null,
+      metros: el.distance?.value ?? null,
+      polyline: null,
+    };
+  } catch {
+    return vazio;
   }
 }

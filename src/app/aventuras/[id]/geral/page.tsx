@@ -282,6 +282,11 @@ export default async function GeralPage({
                       ))}
                     </ul>
                   )}
+                  {resumo.find((r) => r.erro) && (
+                    <p className="text-sm break-words text-alert">
+                      O Google recusou parte do cálculo: {resumo.find((r) => r.erro)?.erro}
+                    </p>
+                  )}
                   <RotaViewer key={`${de.chave}-${para.chave}`} origem={de} destino={para} />
                 </>
               ) : (
