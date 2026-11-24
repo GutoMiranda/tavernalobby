@@ -8,7 +8,7 @@ Site privado para o grupo organizar encontros (aventuras): datas, estalagens, pr
 ## Rodar no PC (PowerShell)
 
 ```powershell
-npm install
+npm ci                               # instala sem mexer no package-lock.json
 Copy-Item .env.example .env.local   # depois preencha as chaves (docs/setup.md)
 npm run dev                          # abre em http://localhost:3000
 ```
