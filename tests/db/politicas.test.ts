@@ -183,6 +183,37 @@ describe("membro aprovado", () => {
       ]),
     );
   });
+
+  it("admin também reage, e cada pessoa tem uma única reação por card (trocar só muda o valor)", async () => {
+    const [opcao] = await b.como<{ id: string }>(
+      admin,
+      "insert into public.date_options (event_id, start_date, end_date) values ($1, '2027-02-08', '2027-02-10') returning id",
+      [eventId],
+    );
+    const a = await b.pessoaDe(admin);
+    await b.como(admin, "insert into public.date_reactions (date_option_id, person_id, value) values ($1, $2, 1)", [
+      opcao.id,
+      a.id,
+    ]);
+    // Segunda reação da mesma pessoa no mesmo card é recusada (chave única).
+    await expect(
+      b.como(admin, "insert into public.date_reactions (date_option_id, person_id, value) values ($1, $2, -1)", [
+        opcao.id,
+        a.id,
+      ]),
+    ).rejects.toMatchObject({ code: "23505" });
+    // Trocar curtir por descurtir é um update do valor.
+    await b.como(admin, "update public.date_reactions set value = -1 where date_option_id = $1 and person_id = $2", [
+      opcao.id,
+      a.id,
+    ]);
+    const linhas = await b.como<{ value: number }>(
+      admin,
+      "select value from public.date_reactions where date_option_id = $1",
+      [opcao.id],
+    );
+    expect(linhas).toEqual([{ value: -1 }]);
+  });
 });
 
 describe("custos", () => {

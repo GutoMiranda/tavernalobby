@@ -19,7 +19,7 @@ export default async function PresencaPage({ params }: { params: Promise<{ id: s
   const { id } = await params;
   const { supabase, pessoa } = await exigirMembro();
   const dados = await carregarAventura(supabase, id);
-  const { pessoas, presencas, totalDias } = await carregarCustos(supabase, dados.evento);
+  const { pessoas, presencas, totalDias } = await carregarCustos(supabase, dados);
 
   const nucleos = dados.nucleos
     .map((n) => ({ ...n, membros: pessoas.filter((p) => p.household_id === n.id) }))

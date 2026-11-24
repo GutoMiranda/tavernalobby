@@ -158,13 +158,22 @@ export async function reagir(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
   const [tabela, coluna] =
     tipo === "data" ? ["date_reactions", "date_option_id"] : ["accommodation_reactions", "accommodation_id"];
 
-  const { error } =
-    atual === valor
-      ? // Tocar de novo na mesma reação desfaz.
-        await supabase.from(tabela).delete().eq(coluna, alvo).eq("person_id", pessoa.id)
-      : await supabase
-          .from(tabela)
-          .upsert({ [coluna]: alvo, person_id: pessoa.id, value: valor }, { onConflict: `${coluna},person_id` });
+  // Uma reação por pessoa em cada card: tocar de novo na mesma desfaz; tocar na outra troca.
+  // Sem upsert: o usuário só pode alterar a coluna "value" (o alvo e a pessoa não mudam).
+  let error;
+  if (atual === valor) {
+    ({ error } = await supabase.from(tabela).delete().eq(coluna, alvo).eq("person_id", pessoa.id));
+  } else {
+    const r = await supabase
+      .from(tabela)
+      .update({ value: valor }, { count: "exact" })
+      .eq(coluna, alvo)
+      .eq("person_id", pessoa.id);
+    error = r.error;
+    if (!error && !r.count) {
+      ({ error } = await supabase.from(tabela).insert({ [coluna]: alvo, person_id: pessoa.id, value: valor }));
+    }
+  }
   if (error) return { erro: mensagemErro(error) };
   revalidatePath(`/aventuras/${txt(d, "evento", 40)}`, "layout");
   return {};

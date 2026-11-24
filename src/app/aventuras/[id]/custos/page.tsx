@@ -1,4 +1,4 @@
-import { AlertTriangle, Receipt } from "lucide-react";
+import { AlertTriangle, CalendarClock, FileText, PiggyBank, Receipt } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -8,11 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { exigirMembro } from "@/lib/auth";
+import { contagemRegressiva } from "@/lib/aventura";
 import { carregarAventura } from "@/lib/aventura-dados";
 import { carregarCustos, type ItemCusto } from "@/lib/custos-dados";
 import { centavosParaCampo } from "@/lib/dinheiro";
 import { type ItemRateio, NOME_CATEGORIA, type ParteRateio, type RateioItem, elegiveis } from "@/lib/finance/rateio";
-import { formatarCentavos, formatarData } from "@/lib/format";
+import { depositosDoNucleo, planoDeEconomia } from "@/lib/finance/economia";
+import { formatarCentavos, formatarData, formatarDia, hojeEmSaoPaulo } from "@/lib/format";
 
 import {
   ajustarPeso,
@@ -33,20 +35,124 @@ export default async function CustosPage({ params }: { params: Promise<{ id: str
   const { supabase, pessoa } = await exigirMembro();
   const dados = await carregarAventura(supabase, id);
   const { evento } = dados;
-  const custos = await carregarCustos(supabase, evento);
+  const custos = await carregarCustos(supabase, dados);
   const { pessoas, itens, itensRateio, rateio, totalDias, pesos } = custos;
 
   const nome = new Map(pessoas.map((p) => [p.id, p.name]));
   const doMeuNucleo = pessoas.filter((p) => p.household_id === pessoa.household_id);
   const minhaParteNucleo = rateio.porNucleo.get(pessoa.household_id) ?? 0;
-  const escolhida = dados.estalagens.find((e) => e.id === evento.chosen_accommodation_id);
-  const jaTemAcomodacao = itens.some((i) => i.category === "acomodacao");
+  const hoje = hojeEmSaoPaulo();
+  const contagem = contagemRegressiva(evento.start_date, hoje);
+  const deposito = depositosDoNucleo(custos.lancamentos, pessoa.household_id);
+  const plano = planoDeEconomia(minhaParteNucleo, deposito.confirmadoCentavos, hoje, evento.start_date);
+  const meusLancamentos = custos.lancamentos.filter(
+    (l) => l.kind === "entrada" && l.household_id === pessoa.household_id,
+  );
+  const comprovantes = await Promise.all(
+    meusLancamentos
+      .filter((l) => l.receipt_path)
+      .map(async (l) => {
+        const { data } = await supabase.storage.from("comprovantes").createSignedUrl(l.receipt_path!, 3600);
+        return { ...l, link: data?.signedUrl ?? null };
+      }),
+  );
   const nomeNucleo = new Map(dados.nucleos.map((n) => [n.id, n.name]));
   const porNucleo = [...rateio.porNucleo.entries()].sort((a, b) => b[1] - a[1]);
   const ninguemConfirmou = !custos.pessoas.some((p) => custos.presencas.get(p.id)?.status === "vai");
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-3">
+      <Card className="lg:col-span-3">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <PiggyBank className="size-5 text-bottle" aria-hidden /> Sua meta até a aventura
+          </CardTitle>
+          <CardDescription className="flex items-center gap-2">
+            <CalendarClock className="size-4" aria-hidden />
+            {evento.start_date
+              ? `${contagem ?? "A aventura já começou"} · começa em ${formatarDia(evento.start_date)}`
+              : "As datas ainda não foram fechadas; o plano mensal aparece quando houver data."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" aria-label="Resumo da sua meta">
+            <Indicador rotulo="Minha parte (núcleo)" valor={formatarCentavos(minhaParteNucleo)} />
+            <Indicador
+              rotulo="Já enviei ao baú"
+              valor={formatarCentavos(deposito.confirmadoCentavos)}
+              detalhe="confirmado pelo tesoureiro"
+            />
+            <Indicador rotulo="Aguardando confirmação" valor={formatarCentavos(deposito.pendenteCentavos)} />
+            <Indicador
+              rotulo="Falta"
+              valor={formatarCentavos(plano.faltaCentavos)}
+              destaque={plano.faltaCentavos > 0}
+            />
+            <Indicador
+              rotulo="Guardar por mês"
+              valor={formatarCentavos(plano.porMesCentavos)}
+              detalhe={plano.meses ? `por ${plano.meses} ${plano.meses === 1 ? "mês" : "meses"}` : "sem data definida"}
+              destaque
+            />
+            <Indicador
+              rotulo="Progresso"
+              valor={`${minhaParteNucleo ? Math.min(100, Math.floor((deposito.confirmadoCentavos * 100) / minhaParteNucleo)) : 0}%`}
+              detalhe="da sua parte"
+            />
+          </ul>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div>
+              <p className="mb-1 flex items-center gap-2 font-medium">
+                <FileText className="size-4" aria-hidden /> Meus depósitos e comprovantes
+              </p>
+              {meusLancamentos.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum depósito registrado ainda.</p>
+              ) : (
+                <ul className="flex flex-col gap-1 text-sm">
+                  {meusLancamentos.map((l) => {
+                    const c = comprovantes.find((x) => x.id === l.id);
+                    return (
+                      <li key={l.id} className="flex flex-wrap justify-between gap-2">
+                        <span>
+                          {formatarDia(l.occurred_on)} · {formatarCentavos(l.amount_cents)} ·{" "}
+                          {l.status === "confirmado"
+                            ? "confirmado"
+                            : l.status === "pendente"
+                              ? "aguardando"
+                              : "recusado"}
+                        </span>
+                        {c?.link && (
+                          <a
+                            href={c.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-bottle underline underline-offset-4"
+                          >
+                            Ver comprovante
+                          </a>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+            <div className="rounded-md bg-white/50 p-3 text-sm">
+              <p className="font-medium">Próximo depósito</p>
+              <p>
+                {plano.faltaCentavos === 0
+                  ? "Sua parte está coberta. Loot guardado!"
+                  : `Sugestão: ${formatarCentavos(plano.porMesCentavos)} por mês${plano.meses ? ` até ${formatarDia(evento.start_date!)}` : ""}.`}
+              </p>
+              <p className="mt-1 text-muted-foreground">
+                O envio de depósitos com comprovante, a programação dos próximos pagamentos e os lembretes chegam com o
+                Baú (próxima etapa).
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="border-gold/60 lg:col-span-2">
         <CardHeader>
           <CardDescription>Minha parte · {doMeuNucleo.length > 1 ? "seu núcleo inteiro" : "você"}</CardDescription>
@@ -132,6 +238,7 @@ export default async function CustosPage({ params }: { params: Promise<{ id: str
                       <CardDescription className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline">{NOME_CATEGORIA[item.category]}</Badge>
                         {optIn && <Badge variant="outline">Opt-in</Badge>}
+                        {item.automatico && <Badge>Automático</Badge>}
                       </CardDescription>
                       <CardTitle className="text-lg">{item.description}</CardTitle>
                     </CardHeader>
@@ -173,7 +280,24 @@ export default async function CustosPage({ params }: { params: Promise<{ id: str
                         </AcaoForm>
                       )}
 
-                      {pessoa.is_admin && (
+                      {item.automatico && (
+                        <p className="text-xs text-muted-foreground">
+                          {item.automatico === "mais_votada"
+                            ? "Prévia com a estalagem mais votada. Quando o admin escolher a estalagem, a conta passa a usar a escolhida."
+                            : "Calculado com o preço da estalagem escolhida."}
+                        </p>
+                      )}
+                      {pessoa.is_admin && item.automatico === "escolhida" && (
+                        <AcaoForm
+                          action={custoDaEstalagem}
+                          textoBotao="Fixar como item (para ajustar pesos)"
+                          variante="outline"
+                          tamanho="sm"
+                        >
+                          <input type="hidden" name="evento" value={id} />
+                        </AcaoForm>
+                      )}
+                      {pessoa.is_admin && !item.automatico && (
                         <div className="mt-auto flex flex-col gap-2 border-t border-border pt-2">
                           <details>
                             <summary className="cursor-pointer font-medium text-bottle">Editar item</summary>
@@ -221,20 +345,31 @@ export default async function CustosPage({ params }: { params: Promise<{ id: str
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            {escolhida && !jaTemAcomodacao && (
-              <AcaoForm
-                action={custoDaEstalagem}
-                textoBotao={`Usar a estalagem escolhida (${formatarCentavos(escolhida.total_price_cents)})`}
-                variante="outline"
-              >
-                <input type="hidden" name="evento" value={id} />
-              </AcaoForm>
-            )}
             <FormItem eventoId={id} acao="criar" />
           </CardContent>
         </Card>
       )}
     </div>
+  );
+}
+
+function Indicador({
+  rotulo,
+  valor,
+  detalhe,
+  destaque,
+}: {
+  rotulo: string;
+  valor: string;
+  detalhe?: string;
+  destaque?: boolean;
+}) {
+  return (
+    <li className={`rounded-md border p-3 ${destaque ? "border-gold bg-gold/10" : "border-border bg-white/50"}`}>
+      <p className="text-sm text-muted-foreground">{rotulo}</p>
+      <p className="text-xl font-semibold text-wood">{valor}</p>
+      {detalhe && <p className="text-xs text-muted-foreground">{detalhe}</p>}
+    </li>
   );
 }
 

@@ -32,7 +32,7 @@ export default async function PainelAventuraPage({
   const { evento } = dados;
 
   const meuNucleo = dados.nucleos.find((n) => n.id === pessoa.household_id);
-  const custos = await carregarCustos(supabase, evento);
+  const custos = await carregarCustos(supabase, dados);
   const minhaParte = custos.rateio.porNucleo.get(pessoa.household_id) ?? 0;
   const presencasPendentes = custos.pessoas.filter(
     (p) => p.household_id === pessoa.household_id && (custos.presencas.get(p.id)?.status ?? "pendente") === "pendente",
