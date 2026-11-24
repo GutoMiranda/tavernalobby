@@ -394,6 +394,53 @@ describe("baú: depósitos", () => {
   });
 });
 
+describe("baú: plano de depósitos", () => {
+  it("cada núcleo cria e altera só o próprio plano; todos veem", async () => {
+    const p = await b.pessoaDe(participante);
+    const t = await b.pessoaDe(tesoureiro);
+    await b.como(
+      participante,
+      "insert into public.deposit_plans (fund_id, household_id, amount_cents, day_of_month) values ($1, $2, 15000, 10)",
+      [fundId, p.household_id],
+    );
+    await negado(
+      b.como(
+        participante,
+        "insert into public.deposit_plans (fund_id, household_id, amount_cents, day_of_month) values ($1, $2, 15000, 10)",
+        [fundId, t.household_id],
+      ),
+    );
+    await b.como(
+      tesoureiro,
+      "insert into public.deposit_plans (fund_id, household_id, amount_cents, day_of_month) values ($1, $2, 9000, 5)",
+      [fundId, t.household_id],
+    );
+    const alterados = await b.como(
+      participante,
+      "update public.deposit_plans set amount_cents = 1 where household_id = $1 returning household_id",
+      [t.household_id],
+    );
+    expect(alterados).toHaveLength(0);
+    const todos = await b.como(participante, "select household_id from public.deposit_plans where fund_id = $1", [
+      fundId,
+    ]);
+    expect(todos).toHaveLength(2);
+  });
+
+  it("dia do mês entre 1 e 28", async () => {
+    const p = await b.pessoaDe(participante);
+    await expect(
+      b.como(participante, "update public.deposit_plans set day_of_month = 31 where household_id = $1", [
+        p.household_id,
+      ]),
+    ).rejects.toMatchObject({ code: "23514" });
+  });
+
+  it("pendente não vê planos", async () => {
+    expect(await b.como(pendente, "select 1 from public.deposit_plans")).toHaveLength(0);
+  });
+});
+
 describe("baú: banco e chave Pix", () => {
   it("tesoureiro não altera Pix", async () => {
     await negado(

@@ -152,10 +152,18 @@ export const carregarCustos = cache(
           .order("occurred_on", { ascending: false })
           .returns<(Lancamento & { occurred_on: string; receipt_path: string | null; description: string | null })[]>()
       : { data: [] };
+    const { data: planos } = fundo
+      ? await supabase
+          .from("deposit_plans")
+          .select("household_id, amount_cents, day_of_month")
+          .eq("fund_id", fundo.id)
+          .returns<{ household_id: string; amount_cents: number; day_of_month: number }[]>()
+      : { data: [] };
 
     return {
       lancamentos: lancamentos ?? [],
       temBau: !!fundo,
+      planos: planos ?? [],
       pessoas,
       pessoasRateio,
       presencas,

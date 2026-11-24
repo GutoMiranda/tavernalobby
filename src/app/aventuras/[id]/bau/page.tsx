@@ -1,0 +1,719 @@
+import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, Coins, History, QrCode, Undo2 } from "lucide-react";
+import type { Metadata } from "next";
+import QRCode from "qrcode";
+
+import { AcaoForm } from "@/components/acao-form";
+import { CampoComprovante } from "@/components/bau/campo-comprovante";
+import { CopiarBotao } from "@/components/copiar-botao";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { exigirMembro } from "@/lib/auth";
+import { carregarAventura } from "@/lib/aventura-dados";
+import { carregarCustos } from "@/lib/custos-dados";
+import { centavosParaCampo } from "@/lib/dinheiro";
+import { avisoPixAtivo, lembreteDoPlano, saldoDoBau } from "@/lib/finance/bau";
+import { depositosDoNucleo, planoDeEconomia } from "@/lib/finance/economia";
+import { pixCopiaECola } from "@/lib/finance/pix";
+import { formatarCentavos, formatarData, formatarDia, hojeEmSaoPaulo } from "@/lib/format";
+
+import {
+  abrirBau,
+  confirmarDeposito,
+  estornarLancamento,
+  recusarDeposito,
+  registrarDeposito,
+  registrarSaida,
+  removerPlano,
+  salvarDadosPix,
+  salvarMeta,
+  salvarPlano,
+} from "../../bau-actions";
+
+export const metadata: Metadata = { title: "Baú" };
+
+type Fundo = {
+  id: string;
+  bank: string | null;
+  holder: string | null;
+  pix_key: string | null;
+  goal_cents: number | null;
+  pix_changed_at: string | null;
+};
+type Historico = {
+  id: string;
+  changed_by: string | null;
+  changed_at: string;
+  old_bank: string | null;
+  new_bank: string | null;
+  old_holder: string | null;
+  new_holder: string | null;
+  old_pix_key: string | null;
+  new_pix_key: string | null;
+};
+type Lanc = {
+  id: string;
+  kind: "entrada" | "saida" | "estorno";
+  household_id: string | null;
+  amount_cents: number;
+  occurred_on: string;
+  description: string | null;
+  receipt_path: string | null;
+  status: "pendente" | "confirmado" | "recusado";
+  reverses_id: string | null;
+  created_by: string | null;
+  reviewed_by: string | null;
+  review_note: string | null;
+  created_at: string;
+};
+
+export default async function BauPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { supabase, pessoa, user, tags } = await exigirMembro();
+  const dados = await carregarAventura(supabase, id);
+  const custos = await carregarCustos(supabase, dados);
+  const tesoureiro = tags.includes("Tesoureiro");
+  const hoje = hojeEmSaoPaulo();
+
+  const { data: fundo } = await supabase
+    .from("funds")
+    .select("id, bank, holder, pix_key, goal_cents, pix_changed_at")
+    .eq("event_id", id)
+    .maybeSingle<Fundo>();
+
+  if (!fundo) {
+    return (
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Coins className="size-5 text-gold" aria-hidden /> Baú · caixinha
+          </CardTitle>
+          <CardDescription>
+            O dinheiro fica numa conta real de um membro (ex.: cofrinho de banco digital). O site não guarda nem
+            movimenta dinheiro: ele controla e mostra.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {pessoa.is_admin ? (
+            <AcaoForm action={abrirBau} textoBotao="Abrir o baú desta aventura">
+              <input type="hidden" name="evento" value={id} />
+            </AcaoForm>
+          ) : (
+            <p className="text-muted-foreground">O Mestre da Taverna (admin) ainda não abriu o baú desta aventura.</p>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const [lancR, histR, planosR] = await Promise.all([
+    supabase
+      .from("fund_transactions")
+      .select(
+        "id, kind, household_id, amount_cents, occurred_on, description, receipt_path, status, reverses_id, created_by, reviewed_by, review_note, created_at",
+      )
+      .eq("fund_id", fundo.id)
+      .order("occurred_on", { ascending: false })
+      .order("created_at", { ascending: false })
+      .returns<Lanc[]>(),
+    supabase
+      .from("fund_settings_history")
+      .select("id, changed_by, changed_at, old_bank, new_bank, old_holder, new_holder, old_pix_key, new_pix_key")
+      .eq("fund_id", fundo.id)
+      .order("changed_at", { ascending: false })
+      .returns<Historico[]>(),
+    supabase
+      .from("deposit_plans")
+      .select("household_id, amount_cents, day_of_month")
+      .eq("fund_id", fundo.id)
+      .returns<{ household_id: string; amount_cents: number; day_of_month: number }[]>(),
+  ]);
+  const lancamentos = lancR.data ?? [];
+  const historico = histR.data ?? [];
+  const meuPlano = (planosR.data ?? []).find((p) => p.household_id === pessoa.household_id);
+
+  const nomePessoa = new Map(custos.pessoas.map((p) => [p.id, p.name]));
+  const nomeNucleo = new Map(dados.nucleos.map((n) => [n.id, n.name]));
+  const { saldoCentavos, entradasCentavos, saidasCentavos } = saldoDoBau(lancamentos);
+  const meta = fundo.goal_cents ?? custos.rateio.totalCentavos;
+  const progresso = meta > 0 ? Math.min(100, Math.floor((entradasCentavos * 100) / meta)) : 0;
+  const estornados = new Set(lancamentos.filter((l) => l.kind === "estorno").map((l) => l.reverses_id));
+  const pendentes = lancamentos.filter((l) => l.kind === "entrada" && l.status === "pendente");
+
+  const minhaParte = custos.rateio.porNucleo.get(pessoa.household_id) ?? 0;
+  const meuDeposito = depositosDoNucleo(lancamentos, pessoa.household_id);
+  const plano = planoDeEconomia(minhaParte, meuDeposito.confirmadoCentavos, hoje, custos.periodo?.inicio ?? null);
+  const lembrete = meuPlano
+    ? lembreteDoPlano(
+        meuPlano,
+        lancamentos.filter((l) => l.household_id === pessoa.household_id),
+        hoje,
+      )
+    : null;
+  const valorSugerido = meuPlano?.amount_cents ?? plano.porMesCentavos;
+
+  const pix = fundo.pix_key
+    ? pixCopiaECola({
+        chave: fundo.pix_key,
+        nome: fundo.holder ?? "Taverna",
+        valorCentavos: valorSugerido || undefined,
+      })
+    : null;
+  const pixSemValor = fundo.pix_key ? pixCopiaECola({ chave: fundo.pix_key, nome: fundo.holder ?? "Taverna" }) : null;
+  const qr = pix
+    ? await QRCode.toString(pix, { type: "svg", margin: 1, color: { dark: "#3B2A1E", light: "#FFFFFF" } })
+    : null;
+
+  const links = new Map(
+    await Promise.all(
+      lancamentos
+        .filter((l) => l.receipt_path)
+        .map(async (l) => {
+          const { data } = await supabase.storage.from("comprovantes").createSignedUrl(l.receipt_path!, 3600);
+          return [l.id, data?.signedUrl ?? null] as const;
+        }),
+    ),
+  );
+
+  const nucleosComParte = [...custos.rateio.porNucleo.entries()]
+    .map(([nid, parte]) => ({ nid, parte, ...depositosDoNucleo(lancamentos, nid) }))
+    .sort((a, b) => (nomeNucleo.get(a.nid) ?? "").localeCompare(nomeNucleo.get(b.nid) ?? ""));
+
+  return (
+    <div className="grid items-start gap-4 lg:grid-cols-3">
+      {avisoPixAtivo(fundo.pix_changed_at) && (
+        <div
+          role="alert"
+          className="flex gap-3 rounded-lg border-2 border-alert bg-alert/10 p-4 text-alert lg:col-span-3"
+        >
+          <AlertTriangle className="size-6 shrink-0" aria-hidden />
+          <div>
+            <p className="font-semibold">
+              Atenção: os dados de pagamento do baú mudaram em {formatarData(fundo.pix_changed_at!)}.
+            </p>
+            <p className="text-sm">
+              Confira banco, titular e chave Pix abaixo antes de depositar. Veja o histórico de alterações no fim da
+              página.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <Card className="lg:col-span-2">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Coins className="size-5 text-gold" aria-hidden /> Pilha de tesouro
+          </CardTitle>
+          <CardDescription>
+            Saldo confirmado = entradas confirmadas − saídas (estornos já considerados).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <p className="text-4xl font-bold text-wood">{formatarCentavos(saldoCentavos)}</p>
+          <div>
+            <div className="mb-1 flex justify-between text-sm">
+              <span>
+                Arrecadado {formatarCentavos(entradasCentavos)} de {formatarCentavos(meta)}
+                {fundo.goal_cents == null && " (soma dos custos)"}
+              </span>
+              <span className="font-medium">{progresso}%</span>
+            </div>
+            <div
+              className="h-3 overflow-hidden rounded-full bg-muted"
+              role="progressbar"
+              aria-valuenow={progresso}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Progresso da meta"
+            >
+              <div className="h-full rounded-full bg-gold transition-all" style={{ width: `${progresso}%` }} />
+            </div>
+          </div>
+          <ul className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+            <li className="rounded-md bg-white/50 p-2">
+              <p className="text-muted-foreground">Entradas</p>
+              <p className="font-semibold">{formatarCentavos(entradasCentavos)}</p>
+            </li>
+            <li className="rounded-md bg-white/50 p-2">
+              <p className="text-muted-foreground">Saídas</p>
+              <p className="font-semibold">{formatarCentavos(saidasCentavos)}</p>
+            </li>
+            <li className="rounded-md bg-white/50 p-2">
+              <p className="text-muted-foreground">Aguardando confirmação</p>
+              <p className="font-semibold">{formatarCentavos(pendentes.reduce((s, l) => s + l.amount_cents, 0))}</p>
+            </li>
+            <li className="rounded-md bg-white/50 p-2">
+              <p className="text-muted-foreground">Falta para a meta</p>
+              <p className="font-semibold">{formatarCentavos(Math.max(0, meta - entradasCentavos))}</p>
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <QrCode className="size-5 text-bottle" aria-hidden /> Pagar com Pix
+          </CardTitle>
+          <CardDescription>Use o app do seu banco. Confira o titular antes de confirmar.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 text-sm">
+          {!fundo.pix_key ? (
+            <p className="text-muted-foreground">O admin ainda não cadastrou a chave Pix.</p>
+          ) : (
+            <>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                <dt className="text-muted-foreground">Banco</dt>
+                <dd>{fundo.bank ?? "—"}</dd>
+                <dt className="text-muted-foreground">Titular</dt>
+                <dd>{fundo.holder ?? "—"}</dd>
+                <dt className="text-muted-foreground">Chave</dt>
+                <dd className="break-all font-medium">{fundo.pix_key}</dd>
+              </dl>
+              {qr && (
+                <div
+                  className="mx-auto w-48 rounded-md border border-border bg-white p-2"
+                  role="img"
+                  aria-label={`QR code Pix${valorSugerido ? ` de ${formatarCentavos(valorSugerido)}` : ""}`}
+                  // SVG gerado no servidor pela biblioteca qrcode a partir do código Pix.
+                  dangerouslySetInnerHTML={{ __html: qr }}
+                />
+              )}
+              {valorSugerido > 0 && (
+                <p className="text-center">
+                  QR com o valor do seu mês: <strong>{formatarCentavos(valorSugerido)}</strong>
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2">
+                {pix && <CopiarBotao texto={pix} rotulo="Copiar Pix com valor" />}
+                {pixSemValor && <CopiarBotao texto={pixSemValor} rotulo="Copiar Pix sem valor" />}
+                <CopiarBotao texto={fundo.pix_key} rotulo="Copiar chave" />
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ArrowDownCircle className="size-5 text-bottle" aria-hidden /> Registrar depósito
+          </CardTitle>
+          <CardDescription>
+            Depois de fazer o Pix, registre aqui. Fica “aguardando” até o Tesoureiro confirmar.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AcaoForm action={registrarDeposito} textoBotao="Registrar depósito" limparAoConcluir>
+            <input type="hidden" name="evento" value={id} />
+            <input type="hidden" name="fundo" value={fundo.id} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="dep-valor">Valor (R$)</Label>
+                <Input
+                  id="dep-valor"
+                  name="valor"
+                  inputMode="decimal"
+                  required
+                  defaultValue={valorSugerido ? centavosParaCampo(valorSugerido) : ""}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="dep-data">Data</Label>
+                <Input id="dep-data" name="data" type="date" required max={hoje} defaultValue={hoje} />
+              </div>
+            </div>
+            <CampoComprovante userId={user.id} />
+          </AcaoForm>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Plano de depósitos do seu núcleo</CardTitle>
+          <CardDescription>
+            Combine um valor e um dia do mês. O site lembra seu núcleo a partir desse dia, até o depósito do mês ser
+            registrado. Sugestão para cobrir sua parte: {formatarCentavos(plano.porMesCentavos)} por mês
+            {plano.meses ? ` por ${plano.meses} ${plano.meses === 1 ? "mês" : "meses"}` : ""}.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          {lembrete && (
+            <p
+              className={`rounded-md p-2 text-sm ${lembrete.situacao === "atrasado" ? "bg-alert/10 font-medium text-alert" : "bg-white/50"}`}
+            >
+              {lembrete.situacao === "atrasado"
+                ? `Depósito do mês pendente: ${formatarCentavos(lembrete.valorCentavos)} (combinado para ${formatarDia(lembrete.data)}).`
+                : lembrete.situacao === "feito"
+                  ? `Depósito deste mês registrado. Próximo: ${formatarCentavos(lembrete.valorCentavos)} em ${formatarDia(lembrete.data)}.`
+                  : `Próximo depósito: ${formatarCentavos(lembrete.valorCentavos)} em ${formatarDia(lembrete.data)}.`}
+            </p>
+          )}
+          <AcaoForm action={salvarPlano} textoBotao={meuPlano ? "Atualizar plano" : "Criar plano"}>
+            <input type="hidden" name="evento" value={id} />
+            <input type="hidden" name="fundo" value={fundo.id} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="plano-valor">Valor por mês (R$)</Label>
+                <Input
+                  id="plano-valor"
+                  name="valor"
+                  inputMode="decimal"
+                  required
+                  defaultValue={centavosParaCampo(meuPlano?.amount_cents ?? plano.porMesCentavos)}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="plano-dia">Dia do mês</Label>
+                <Input
+                  id="plano-dia"
+                  name="dia"
+                  type="number"
+                  min={1}
+                  max={28}
+                  required
+                  defaultValue={meuPlano?.day_of_month ?? 10}
+                />
+              </div>
+            </div>
+          </AcaoForm>
+          {meuPlano && (
+            <AcaoForm action={removerPlano} textoBotao="Remover plano" variante="ghost" tamanho="sm" textoEnviando="…">
+              <input type="hidden" name="evento" value={id} />
+              <input type="hidden" name="fundo" value={fundo.id} />
+            </AcaoForm>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Pix automático (débito automático) exige contrato pago com banco; por isso o site usa lembrete + QR Pix.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Por núcleo</CardTitle>
+          <CardDescription>Parte de cada núcleo nos custos e quanto já foi confirmado.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {nucleosComParte.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Aparece quando houver custos e presenças confirmadas.</p>
+          ) : (
+            <ul className="flex flex-col gap-2 text-sm">
+              {nucleosComParte.map((n) => {
+                const falta = Math.max(0, n.parte - n.confirmadoCentavos);
+                return (
+                  <li key={n.nid} className="flex flex-col">
+                    <span className={n.nid === pessoa.household_id ? "font-semibold" : "font-medium"}>
+                      {nomeNucleo.get(n.nid) ?? "Núcleo"}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {formatarCentavos(n.confirmadoCentavos)} de {formatarCentavos(n.parte)} ·{" "}
+                      {falta === 0 ? "parte coberta ✓" : `faltam ${formatarCentavos(falta)}`}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {tesoureiro && (
+        <Card className="border-gold/60 lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Guardião do Baú · tesoureiro</CardTitle>
+            <CardDescription>
+              Confira cada depósito no extrato antes de confirmar. Nada é apagado: erros viram estorno.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-6 lg:grid-cols-2">
+            <section aria-labelledby="pend">
+              <h3 id="pend" className="mb-2 font-medium">
+                Depósitos aguardando ({pendentes.length})
+              </h3>
+              {pendentes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nada pendente.</p>
+              ) : (
+                <ul className="flex flex-col gap-3">
+                  {pendentes.map((l) => (
+                    <li key={l.id} className="rounded-md border border-border bg-white/50 p-3 text-sm">
+                      <p className="font-medium">
+                        {formatarCentavos(l.amount_cents)} · {nomeNucleo.get(l.household_id ?? "") ?? "Núcleo"} ·{" "}
+                        {formatarDia(l.occurred_on)}
+                      </p>
+                      <p className="text-muted-foreground">
+                        Registrado por {nomePessoa.get(l.created_by ?? "") ?? "alguém"}
+                        {links.get(l.id) && (
+                          <>
+                            {" · "}
+                            <a
+                              href={links.get(l.id)!}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-bottle underline"
+                            >
+                              ver comprovante
+                            </a>
+                          </>
+                        )}
+                      </p>
+                      <div className="mt-2 flex flex-wrap items-end gap-3">
+                        <AcaoForm action={confirmarDeposito} textoBotao="Confirmar" tamanho="sm" textoEnviando="…">
+                          <input type="hidden" name="id" value={l.id} />
+                          <input type="hidden" name="evento" value={id} />
+                        </AcaoForm>
+                        <details>
+                          <summary className="cursor-pointer text-alert">Recusar</summary>
+                          <AcaoForm
+                            action={recusarDeposito}
+                            textoBotao="Recusar depósito"
+                            variante="destructive"
+                            tamanho="sm"
+                            className="mt-2"
+                          >
+                            <input type="hidden" name="id" value={l.id} />
+                            <input type="hidden" name="evento" value={id} />
+                            <Label htmlFor={`motivo-${l.id}`}>Motivo</Label>
+                            <Input
+                              id={`motivo-${l.id}`}
+                              name="motivo"
+                              required
+                              maxLength={300}
+                              placeholder="Ex.: não apareceu no extrato"
+                            />
+                          </AcaoForm>
+                        </details>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+            <section aria-labelledby="saida">
+              <h3 id="saida" className="mb-2 flex items-center gap-2 font-medium">
+                <ArrowUpCircle className="size-4 text-alert" aria-hidden /> Registrar saída (pagamento com o dinheiro do
+                baú)
+              </h3>
+              <AcaoForm action={registrarSaida} textoBotao="Registrar saída" limparAoConcluir>
+                <input type="hidden" name="evento" value={id} />
+                <input type="hidden" name="fundo" value={fundo.id} />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="sai-valor">Valor (R$)</Label>
+                    <Input id="sai-valor" name="valor" inputMode="decimal" required />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="sai-data">Data</Label>
+                    <Input id="sai-data" name="data" type="date" required max={hoje} defaultValue={hoje} />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="sai-desc">Descrição</Label>
+                  <Input id="sai-desc" name="descricao" required maxLength={200} placeholder="Ex.: sinal da casa" />
+                </div>
+                <CampoComprovante userId={user.id} />
+              </AcaoForm>
+            </section>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="lg:col-span-3">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="size-5 text-bottle" aria-hidden /> Histórico do baú
+          </CardTitle>
+          <CardDescription>Todos os lançamentos, visíveis a todos. Nada é apagado.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {lancamentos.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum lançamento ainda.</p>
+          ) : (
+            <ul className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+              {lancamentos.map((l) => {
+                const podeEstornar =
+                  (tesoureiro || pessoa.is_admin) &&
+                  l.kind !== "estorno" &&
+                  l.status === "confirmado" &&
+                  !estornados.has(l.id);
+                return (
+                  <li
+                    key={l.id}
+                    className="flex flex-col gap-1 rounded-md border border-border bg-white/40 p-3 text-sm"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-semibold">
+                        {l.kind === "saida" ||
+                        (l.kind === "estorno" && lancamentos.find((x) => x.id === l.reverses_id)?.kind === "entrada")
+                          ? "−"
+                          : "+"}
+                        {formatarCentavos(l.amount_cents)}
+                      </span>
+                      <span className="flex gap-1">
+                        <Badge variant="outline">
+                          {l.kind === "entrada" ? "Depósito" : l.kind === "saida" ? "Saída" : "Estorno"}
+                        </Badge>
+                        {l.kind !== "estorno" && (
+                          <Badge
+                            variant={
+                              l.status === "confirmado"
+                                ? "default"
+                                : l.status === "recusado"
+                                  ? "destructive"
+                                  : "outline"
+                            }
+                          >
+                            {l.status === "confirmado"
+                              ? "Confirmado"
+                              : l.status === "recusado"
+                                ? "Recusado"
+                                : "Aguardando"}
+                          </Badge>
+                        )}
+                        {estornados.has(l.id) && <Badge variant="destructive">Estornado</Badge>}
+                      </span>
+                    </div>
+                    <p className="text-muted-foreground">
+                      {formatarDia(l.occurred_on)}
+                      {l.household_id && ` · ${nomeNucleo.get(l.household_id) ?? "Núcleo"}`}
+                      {l.created_by && ` · por ${nomePessoa.get(l.created_by) ?? "alguém"}`}
+                    </p>
+                    {l.description && <p>{l.kind === "estorno" ? `Motivo: ${l.description}` : l.description}</p>}
+                    {l.review_note && <p className="text-alert">Recusado: {l.review_note}</p>}
+                    {links.get(l.id) && (
+                      <a
+                        href={links.get(l.id)!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-bottle underline underline-offset-4"
+                      >
+                        Ver comprovante
+                      </a>
+                    )}
+                    {podeEstornar && (
+                      <details>
+                        <summary className="flex cursor-pointer items-center gap-1 text-alert">
+                          <Undo2 className="size-4" aria-hidden /> Estornar
+                        </summary>
+                        <AcaoForm
+                          action={estornarLancamento}
+                          textoBotao="Confirmar estorno"
+                          variante="destructive"
+                          tamanho="sm"
+                          className="mt-2"
+                        >
+                          <input type="hidden" name="id" value={l.id} />
+                          <input type="hidden" name="evento" value={id} />
+                          <Label htmlFor={`est-${l.id}`}>Motivo</Label>
+                          <Input id={`est-${l.id}`} name="motivo" required maxLength={300} />
+                        </AcaoForm>
+                      </details>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {pessoa.is_admin && (
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Configuração do baú (admin)</CardTitle>
+            <CardDescription>
+              Trocar banco ou chave Pix grava histórico, avisa todos no site e por e-mail e mostra um alerta aqui por 7
+              dias.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-6 md:grid-cols-2">
+            <AcaoForm action={salvarDadosPix} textoBotao="Salvar dados de pagamento">
+              <input type="hidden" name="evento" value={id} />
+              <input type="hidden" name="fundo" value={fundo.id} />
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="cfg-banco">Banco</Label>
+                <Input
+                  id="cfg-banco"
+                  name="banco"
+                  maxLength={80}
+                  defaultValue={fundo.bank ?? ""}
+                  placeholder="Ex.: Nubank (caixinha)"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="cfg-titular">Titular</Label>
+                <Input id="cfg-titular" name="titular" maxLength={80} defaultValue={fundo.holder ?? ""} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="cfg-chave">Chave Pix</Label>
+                <Input
+                  id="cfg-chave"
+                  name="chave"
+                  required
+                  maxLength={120}
+                  defaultValue={fundo.pix_key ?? ""}
+                  aria-describedby="cfg-chave-ajuda"
+                />
+                <p id="cfg-chave-ajuda" className="text-xs text-muted-foreground">
+                  E-mail, CPF (só números), telefone no formato +5511999998888 ou chave aleatória.
+                </p>
+              </div>
+            </AcaoForm>
+            <AcaoForm action={salvarMeta} textoBotao="Salvar meta">
+              <input type="hidden" name="evento" value={id} />
+              <input type="hidden" name="fundo" value={fundo.id} />
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="cfg-meta">Meta total (R$)</Label>
+                <Input
+                  id="cfg-meta"
+                  name="meta"
+                  inputMode="decimal"
+                  defaultValue={fundo.goal_cents != null ? centavosParaCampo(fundo.goal_cents) : ""}
+                  placeholder={`Vazio = soma dos custos (${formatarCentavos(custos.rateio.totalCentavos)})`}
+                />
+              </div>
+            </AcaoForm>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className={pessoa.is_admin ? undefined : "lg:col-span-3"}>
+        <CardHeader>
+          <CardTitle>Alterações de banco e Pix</CardTitle>
+          <CardDescription>Histórico permanente.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {historico.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma alteração.</p>
+          ) : (
+            <ul className="flex flex-col gap-2 text-sm">
+              {historico.map((h) => (
+                <li key={h.id} className="rounded-md bg-white/50 p-2">
+                  <p className="font-medium">
+                    {formatarData(h.changed_at)} · {nomePessoa.get(h.changed_by ?? "") ?? "admin"}
+                  </p>
+                  {h.old_pix_key !== h.new_pix_key && (
+                    <p>
+                      Chave: {h.old_pix_key ?? "—"} → {h.new_pix_key ?? "—"}
+                    </p>
+                  )}
+                  {h.old_bank !== h.new_bank && (
+                    <p>
+                      Banco: {h.old_bank ?? "—"} → {h.new_bank ?? "—"}
+                    </p>
+                  )}
+                  {h.old_holder !== h.new_holder && (
+                    <p>
+                      Titular: {h.old_holder ?? "—"} → {h.new_holder ?? "—"}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

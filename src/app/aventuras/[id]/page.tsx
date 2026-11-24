@@ -13,7 +13,8 @@ import { exigirMembro } from "@/lib/auth";
 import { contagemRegressiva, FASE_INFO, pendencias, ranking } from "@/lib/aventura";
 import { carregarAventura } from "@/lib/aventura-dados";
 import { carregarCustos } from "@/lib/custos-dados";
-import { formatarCentavos, formatarData, formatarPeriodo } from "@/lib/format";
+import { lembreteDoPlano } from "@/lib/finance/bau";
+import { formatarCentavos, formatarData, formatarPeriodo, hojeEmSaoPaulo } from "@/lib/format";
 import { type ModoRota, rotasEmCache } from "@/lib/rotas";
 
 const MODOS: ModoRota[] = ["DRIVE", "TWO_WHEELER", "TRANSIT", "WALK"];
@@ -48,6 +49,16 @@ export default async function PainelAventuraPage({
     reacoesEstalagens: dados.reacoesEstalagens,
     nucleoTemOrigem: !!meuNucleo?.origin_text,
     presencasPendentes,
+    depositoAtrasado: (() => {
+      const plano = custos.planos.find((x) => x.household_id === pessoa.household_id);
+      if (!plano) return null;
+      const l = lembreteDoPlano(
+        plano,
+        custos.lancamentos.filter((x) => x.household_id === pessoa.household_id),
+        hojeEmSaoPaulo(),
+      );
+      return l.situacao === "atrasado" ? formatarCentavos(l.valorCentavos) : null;
+    })(),
   });
 
   const contagem = contagemRegressiva(evento.start_date);

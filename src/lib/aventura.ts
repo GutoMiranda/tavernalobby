@@ -81,6 +81,8 @@ export function pendencias(params: {
   nucleoTemOrigem: boolean;
   /** Pessoas do meu núcleo ainda sem resposta de presença (opcional). */
   presencasPendentes?: number;
+  /** Depósito do mês do plano do núcleo que passou do dia combinado (texto já formatado). */
+  depositoAtrasado?: string | null;
 }): Pendencia[] {
   const p = params;
   const base = `/aventuras/${p.eventoId}`;
@@ -116,6 +118,9 @@ export function pendencias(params: {
       texto: `Confirmar a presença de ${n} ${n === 1 ? "pessoa" : "pessoas"} do seu núcleo`,
       href: `${base}/presenca`,
     });
+  }
+  if (p.depositoAtrasado) {
+    lista.push({ texto: `Fazer o depósito do mês no baú: ${p.depositoAtrasado}`, href: `${base}/bau` });
   }
   if (["datas", "estalagens", "presenca"].includes(p.fase) && !p.nucleoTemOrigem) {
     lista.push({ texto: "Informar a cidade de saída do seu núcleo", href: "/familia#origem" });

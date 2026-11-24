@@ -190,7 +190,11 @@ export default async function CustosPage({ params }: { params: Promise<{ id: str
                 </>
               )}
               <p className="mt-2 text-muted-foreground">
-                O envio de depósitos com comprovante e os lembretes chegam com o Baú (próxima etapa).
+                Para depositar, enviar comprovante e combinar o dia do mês com lembrete, vá ao{" "}
+                <Link href={`/aventuras/${id}/bau`} className="text-bottle underline underline-offset-4">
+                  Baú
+                </Link>
+                .
               </p>
             </div>
           </div>

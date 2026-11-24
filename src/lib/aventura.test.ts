@@ -78,6 +78,11 @@ describe("pendências", () => {
     ]);
   });
 
+  it("lembra o depósito do mês atrasado do plano", () => {
+    const lista = pendencias({ ...base, fase: "preparativos", nucleoTemOrigem: true, depositoAtrasado: "R$ 150,00" });
+    expect(lista).toEqual([{ texto: "Fazer o depósito do mês no baú: R$ 150,00", href: "/aventuras/e1/bau" }]);
+  });
+
   it("sem pendências quando está tudo feito", () => {
     expect(pendencias({ ...base, fase: "preparativos", nucleoTemOrigem: true })).toEqual([]);
   });

@@ -32,6 +32,9 @@ export default async function AventuraLayout({
           "cost_items",
           "cost_weights",
           "cost_item_optins",
+          "funds",
+          "fund_transactions",
+          "deposit_plans",
         ]}
       />
       <section>
