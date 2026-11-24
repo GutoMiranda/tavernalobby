@@ -1,0 +1,8 @@
+# Decisões — Taverna O Lobby
+
+Decisões que o escopo não cobre. Formato: data · decisão · motivo.
+
+1. **24/11/2026 · Desenvolvimento na nuvem, teste no PC do dono.** O código é escrito numa sessão do Claude Code na nuvem e enviado para o branch `claude/project-thread-bn1yfh`, com um PR por etapa para `main`. O dono testa no Windows com `git pull`, `npm install` e o seu `.env.local`. Motivo: os segredos ficam só no PC do dono e na Vercel, nunca na sessão.
+2. **24/11/2026 · Migrações aplicadas pelo dono.** Os comandos da CLI do Supabase que precisam da senha do banco (`npx supabase link` e `npx supabase db push`) rodam no PowerShell do dono. Motivo: a senha do banco nunca passa pela conversa.
+3. **24/11/2026 · Gerenciador de pacotes: npm.** Motivo: já vem com o Node no Windows; nada a instalar.
+4. **24/11/2026 · Testes de RLS com Postgres local.** As políticas são testadas com Vitest contra um Postgres de teste com o schema das migrações, simulando os papéis (`auth.uid()`), sem tocar no projeto real. Motivo: testar permissões sem chaves nem custo.
