@@ -35,6 +35,7 @@ export async function SiteHeader() {
         <nav aria-label="Principal" className="border-t border-gold/20">
           <ul className="mx-auto flex w-full max-w-3xl gap-1 overflow-x-auto px-2 py-1 text-sm">
             <ItemMenu href="/">Taverna</ItemMenu>
+            <ItemMenu href="/aventuras">Aventuras</ItemMenu>
             <ItemMenu href="/familia">Minha família</ItemMenu>
             {pessoa?.is_admin && <ItemMenu href="/admin/membros">Membros</ItemMenu>}
           </ul>

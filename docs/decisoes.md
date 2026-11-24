@@ -24,3 +24,10 @@ Decisões que o escopo não cobre. Formato: data · decisão · motivo.
 20. **24/11/2026 · Adulto dependente assume o perfil por link de 14 dias.** O núcleo gera o link em "Minha família"; quem abre entra com a própria conta e passa a ser aquela pessoa (histórico mantido), já aprovado, porque o núcleo já era aprovado. A conta precisa ser nova (sem família nem lançamentos próprios).
 21. **24/11/2026 · Tokens de convite em tabela sem acesso direto** (`claim_invites`), lidos só pelas funções.
 22. **24/11/2026 · Testes Playwright sem Supabase real.** Até a Etapa 8 (login simulado), os testes de interface rodam como visitante, apontando para um Supabase inexistente.
+23. **24/11/2026 · Fases da aventura.** `datas` → `estalagens` → `presenca` → `preparativos` → `concluida` (ou `cancelada`). Fechar a data leva para "estalagens"; escolher a estalagem leva para "presenca". O admin pode corrigir a fase em "Editar".
+24. **24/11/2026 · Reagir de novo desfaz.** Tocar na mesma reação (curtir ou descurtir) remove a reação; tocar na outra troca.
+25. **24/11/2026 · Custo estimado por pessoa da estalagem.** Preço total ÷ adultos confirmados; enquanto ninguém confirmou presença, ÷ todos os adultos aprovados do grupo. Arredondado para cima no centavo (é só estimativa; o rateio oficial é o da Etapa 5).
+26. **24/11/2026 · Fotos das estalagens por link.** Os membros colam links de fotos (https) dos anúncios, em vez de enviar arquivos, para não gastar armazenamento do plano gratuito.
+27. **24/11/2026 · Origem do núcleo fica em "Minha família".** Vale para todas as aventuras; a pendência aparece no painel enquanto não estiver preenchida.
+28. **24/11/2026 · Mapa com `DEMO_MAP_ID`.** Os marcadores avançados do Google exigem um Map ID; o de demonstração é gratuito e basta para um mapa simples.
+29. **24/11/2026 · Tempo real por recarga.** Ao chegar uma mudança (Supabase Realtime), a página recarrega os dados do servidor (`router.refresh`), em vez de manter estado duplicado no navegador.

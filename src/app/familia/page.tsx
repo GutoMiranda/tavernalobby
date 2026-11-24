@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 
 import { AcaoForm } from "@/components/acao-form";
+import { CampoLugar } from "@/components/mapas/campo-lugar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { COLUNAS_PESSOA, exigirMembro, type Pessoa } from "@/lib/auth";
 
-import { adicionarDependente, renomearNucleo } from "./actions";
+import { adicionarDependente, renomearNucleo, salvarOrigem } from "./actions";
 import { PessoaItem } from "./pessoa-item";
 
 export const metadata: Metadata = { title: "Minha família" };
@@ -15,7 +16,11 @@ export default async function FamiliaPage() {
   const { supabase, pessoa } = await exigirMembro();
 
   const [{ data: nucleo }, { data: membros }] = await Promise.all([
-    supabase.from("households").select("id, name").eq("id", pessoa.household_id).single<{ id: string; name: string }>(),
+    supabase
+      .from("households")
+      .select("id, name, origin_text")
+      .eq("id", pessoa.household_id)
+      .single<{ id: string; name: string; origin_text: string | null }>(),
     supabase
       .from("people")
       .select(COLUNAS_PESSOA)
@@ -82,6 +87,21 @@ export default async function FamiliaPage() {
               <input type="checkbox" name="crianca" className="size-4 accent-bottle" />
               É criança (não entra no rateio de custos)
             </label>
+          </AcaoForm>
+        </CardContent>
+      </Card>
+
+      <Card id="origem">
+        <CardHeader>
+          <CardTitle>Cidade de saída</CardTitle>
+          <CardDescription>
+            De onde o núcleo parte para as aventuras. Aparece no mapa
+            {nucleo?.origin_text ? `. Atual: ${nucleo.origin_text}` : ""}.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AcaoForm action={salvarOrigem} textoBotao="Salvar cidade">
+            <CampoLugar id="origem-cidade" rotulo="Cidade" tipo="cidade" valorInicial={nucleo?.origin_text} obrigatorio />
           </AcaoForm>
         </CardContent>
       </Card>

@@ -1,18 +1,25 @@
-import { CalendarDays, Coins, House, ShieldCheck, Users, Wheat } from "lucide-react";
+import { Coins, Plus, ShieldCheck, Users, Wheat } from "lucide-react";
 import Link from "next/link";
 
+import { ListaAventuras } from "@/components/aventura/lista-aventuras";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { exigirMembro } from "@/lib/auth";
+import { COLUNAS_EVENTO, type Evento } from "@/lib/aventura-dados";
 
 const emBreve = [
-  { icone: CalendarDays, termo: "Aventuras", comum: "encontros", texto: "Datas, votação e contagem regressiva." },
-  { icone: House, termo: "Estalagens", comum: "hospedagens", texto: "Opções de casa, preço por pessoa e escolha final." },
   { icone: Coins, termo: "Baú", comum: "caixinha", texto: "Depósitos, saldo e quanto falta para a meta." },
   { icone: Wheat, termo: "Armazém", comum: "despensa", texto: "Comida e bebida, quem compra e quanto custa." },
 ];
 
 export default async function TavernaPage() {
-  const { pessoa } = await exigirMembro();
+  const { supabase, pessoa } = await exigirMembro();
+  const { data: eventos } = await supabase
+    .from("events")
+    .select(COLUNAS_EVENTO)
+    .not("phase", "in", "(concluida,cancelada)")
+    .order("created_at", { ascending: false })
+    .returns<Evento[]>();
   const primeiroNome = pessoa.name.split(" ")[0];
 
   return (
@@ -21,6 +28,22 @@ export default async function TavernaPage() {
         <p className="text-sm text-muted-foreground">Taverna · página inicial</p>
         <h1 className="text-2xl font-bold text-wood">Salve, {primeiroNome}!</h1>
         <p className="text-muted-foreground">A party se reúne aqui antes de cada aventura.</p>
+      </section>
+
+      <section aria-labelledby="aventuras" className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="aventuras" className="text-lg font-semibold text-wood">
+            Aventuras em andamento
+          </h2>
+          {pessoa.is_admin && (
+            <Button asChild size="sm">
+              <Link href="/aventuras/nova">
+                <Plus aria-hidden /> Nova aventura
+              </Link>
+            </Button>
+          )}
+        </div>
+        <ListaAventuras eventos={eventos ?? []} />
       </section>
 
       <div className="grid gap-3 sm:grid-cols-2">

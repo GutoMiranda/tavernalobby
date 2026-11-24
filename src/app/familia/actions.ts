@@ -83,3 +83,26 @@ export async function aceitarConvite(token: string): Promise<EstadoAcao> {
   revalidatePath("/", "layout");
   redirect("/");
 }
+
+export async function salvarOrigem(_: EstadoAcao, dados: FormData): Promise<EstadoAcao> {
+  const { supabase, pessoa } = await exigirMembro();
+  const textoOrigem = texto(dados, "lugar_texto", 300);
+  if (!textoOrigem) return { erro: "Informe a cidade de saída." };
+  const latTexto = String(dados.get("lugar_lat") ?? "");
+  const lngTexto = String(dados.get("lugar_lng") ?? "");
+  const lat = Number(latTexto);
+  const lng = Number(lngTexto);
+  const temCoordenadas = latTexto !== "" && lngTexto !== "" && Number.isFinite(lat) && Number.isFinite(lng);
+  const { error } = await supabase
+    .from("households")
+    .update({
+      origin_text: textoOrigem,
+      origin_lat: temCoordenadas ? lat : null,
+      origin_lng: temCoordenadas ? lng : null,
+      origin_place_id: texto(dados, "lugar_id", 300) || null,
+    })
+    .eq("id", pessoa.household_id);
+  if (error) return { erro: mensagemErro(error) };
+  revalidatePath("/", "layout");
+  return { ok: "Cidade de saída salva." };
+}
