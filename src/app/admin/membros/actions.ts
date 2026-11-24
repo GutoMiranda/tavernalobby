@@ -6,7 +6,9 @@ import { exigirAdmin } from "@/lib/auth";
 import { type EstadoAcao, mensagemErro } from "@/lib/erros";
 
 function valor(dados: FormData, campo: string, max = 80) {
-  return String(dados.get(campo) ?? "").trim().slice(0, max);
+  return String(dados.get(campo) ?? "")
+    .trim()
+    .slice(0, max);
 }
 
 export async function decidirMembro(_: EstadoAcao, dados: FormData): Promise<EstadoAcao> {

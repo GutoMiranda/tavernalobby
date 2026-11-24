@@ -37,7 +37,7 @@ export default async function DatasPage({ params }: { params: Promise<{ id: stri
           {lista.length === 0 ? (
             <p className="text-muted-foreground">Nenhuma data candidata ainda. O Mestre da Taverna vai cadastrar.</p>
           ) : (
-            <ol className="flex flex-col gap-3">
+            <ol className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {lista.map((d) => {
                 const rotulo = formatarPeriodo(d.start_date, d.end_date);
                 const escolhida = d.id === evento.chosen_date_option_id;
@@ -50,19 +50,38 @@ export default async function DatasPage({ params }: { params: Promise<{ id: stri
                       <span className="font-display text-lg font-semibold text-wood">{d.posicao}º</span>
                       <span className="font-medium">{rotulo}</span>
                       <span className="text-sm text-muted-foreground">
-                        · {diasDoPeriodo(d.start_date, d.end_date)} {diasDoPeriodo(d.start_date, d.end_date) === 1 ? "dia" : "dias"}
+                        · {diasDoPeriodo(d.start_date, d.end_date)}{" "}
+                        {diasDoPeriodo(d.start_date, d.end_date) === 1 ? "dia" : "dias"}
                       </span>
                       {escolhida && <Badge>Data escolhida</Badge>}
                     </div>
                     {d.note && <p className="text-sm text-muted-foreground">Motivo: {d.note}</p>}
-                    <ReacaoBotoes tipo="data" alvoId={d.id} eventoId={id} placar={d.placar} rotulo={rotulo} desativado={fechada} />
+                    <ReacaoBotoes
+                      tipo="data"
+                      alvoId={d.id}
+                      eventoId={id}
+                      placar={d.placar}
+                      rotulo={rotulo}
+                      desativado={fechada}
+                    />
                     {pessoa.is_admin && !fechada && (
                       <div className="flex flex-wrap gap-2 border-t border-border pt-2">
-                        <AcaoForm action={fecharDatas} textoBotao="Fechar com esta data" tamanho="sm" textoEnviando="Fechando…">
+                        <AcaoForm
+                          action={fecharDatas}
+                          textoBotao="Fechar com esta data"
+                          tamanho="sm"
+                          textoEnviando="Fechando…"
+                        >
                           <input type="hidden" name="id" value={d.id} />
                           <input type="hidden" name="evento" value={id} />
                         </AcaoForm>
-                        <AcaoForm action={removerData} textoBotao="Remover" variante="ghost" tamanho="sm" textoEnviando="…">
+                        <AcaoForm
+                          action={removerData}
+                          textoBotao="Remover"
+                          variante="ghost"
+                          tamanho="sm"
+                          textoEnviando="…"
+                        >
                           <input type="hidden" name="id" value={d.id} />
                           <input type="hidden" name="evento" value={id} />
                         </AcaoForm>
@@ -77,7 +96,7 @@ export default async function DatasPage({ params }: { params: Promise<{ id: stri
       </Card>
 
       {pessoa.is_admin && !fechada && (
-        <Card>
+        <Card className="max-w-3xl">
           <CardHeader>
             <CardTitle>Adicionar data candidata</CardTitle>
             <CardDescription>Só o Mestre da Taverna (admin) cadastra e fecha as datas.</CardDescription>
@@ -88,20 +107,11 @@ export default async function DatasPage({ params }: { params: Promise<{ id: stri
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="inicio">Início</Label>
-                  <Input
-                    id="inicio"
-                    name="inicio"
-                    type="date"
-                    required
-                  />
+                  <Input id="inicio" name="inicio" type="date" required />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="fim">Fim</Label>
-                  <Input
-                    id="fim"
-                    name="fim"
-                    type="date"
-                  />
+                  <Input id="fim" name="fim" type="date" />
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">

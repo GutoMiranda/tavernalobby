@@ -17,7 +17,7 @@ export default async function NovaAventuraPage() {
         <p className="text-sm text-muted-foreground">Aventuras · encontros</p>
         <h1 className="text-2xl font-bold text-wood">Nova aventura</h1>
       </section>
-      <Card>
+      <Card className="max-w-3xl">
         <CardHeader>
           <CardTitle>Quadro de missões</CardTitle>
           <CardDescription>Depois de criar, cadastre as datas candidatas para a party votar.</CardDescription>

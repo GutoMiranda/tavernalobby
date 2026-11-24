@@ -52,74 +52,84 @@ export default async function FamiliaPage() {
         </p>
       </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Quem é da família</CardTitle>
-          <CardDescription>Crianças contam para comida e camas, mas não entram no rateio dos custos.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ul className="flex flex-col gap-3">
-            {lista.map((m) => (
-              <PessoaItem key={m.id} pessoa={m} />
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <Card className="lg:row-span-3">
+          <CardHeader>
+            <CardTitle>Quem é da família</CardTitle>
+            <CardDescription>Crianças contam para comida e camas, mas não entram no rateio dos custos.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="flex flex-col gap-3">
+              {lista.map((m) => (
+                <PessoaItem key={m.id} pessoa={m} />
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Adicionar pessoa</CardTitle>
-          <CardDescription>Dependentes não precisam de login. Um adulto pode ganhar login próprio depois.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AcaoForm action={adicionarDependente} textoBotao="Adicionar à família" limparAoConcluir>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="novo-nome">Nome</Label>
-                <Input id="novo-nome" name="nome" required maxLength={80} autoComplete="off" />
+        <Card>
+          <CardHeader>
+            <CardTitle>Adicionar pessoa</CardTitle>
+            <CardDescription>
+              Dependentes não precisam de login. Um adulto pode ganhar login próprio depois.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AcaoForm action={adicionarDependente} textoBotao="Adicionar à família" limparAoConcluir>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="novo-nome">Nome</Label>
+                  <Input id="novo-nome" name="nome" required maxLength={80} autoComplete="off" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="novo-parentesco">Parentesco</Label>
+                  <Input id="novo-parentesco" name="parentesco" maxLength={40} placeholder="cônjuge, filho, mãe…" />
+                </div>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="novo-parentesco">Parentesco</Label>
-                <Input id="novo-parentesco" name="parentesco" maxLength={40} placeholder="cônjuge, filho, mãe…" />
-              </div>
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="crianca" className="size-4 accent-bottle" />
-              É criança (não entra no rateio de custos)
-            </label>
-          </AcaoForm>
-        </CardContent>
-      </Card>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="crianca" className="size-4 accent-bottle" />É criança (não entra no rateio
+                de custos)
+              </label>
+            </AcaoForm>
+          </CardContent>
+        </Card>
 
-      <Card id="origem">
-        <CardHeader>
-          <CardTitle>Cidade de saída</CardTitle>
-          <CardDescription>
-            De onde o núcleo parte para as aventuras. Aparece no mapa
-            {nucleo?.origin_text ? `. Atual: ${nucleo.origin_text}` : ""}.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AcaoForm action={salvarOrigem} textoBotao="Salvar cidade">
-            <CampoLugar id="origem-cidade" rotulo="Cidade" tipo="cidade" valorInicial={nucleo?.origin_text} obrigatorio />
-          </AcaoForm>
-        </CardContent>
-      </Card>
+        <Card id="origem">
+          <CardHeader>
+            <CardTitle>Cidade de saída</CardTitle>
+            <CardDescription>
+              De onde o núcleo parte para as aventuras. Aparece no mapa
+              {nucleo?.origin_text ? `. Atual: ${nucleo.origin_text}` : ""}.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AcaoForm action={salvarOrigem} textoBotao="Salvar cidade">
+              <CampoLugar
+                id="origem-cidade"
+                rotulo="Cidade"
+                tipo="cidade"
+                valorInicial={nucleo?.origin_text}
+                obrigatorio
+              />
+            </AcaoForm>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Nome do núcleo</CardTitle>
-          <CardDescription>Como sua família aparece para o grupo.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AcaoForm action={renomearNucleo} textoBotao="Salvar nome">
-            <Label htmlFor="nucleo-nome" className="sr-only">
-              Nome do núcleo
-            </Label>
-            <Input id="nucleo-nome" name="nome" defaultValue={nucleo?.name ?? ""} required maxLength={80} />
-          </AcaoForm>
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Nome do núcleo</CardTitle>
+            <CardDescription>Como sua família aparece para o grupo.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AcaoForm action={renomearNucleo} textoBotao="Salvar nome">
+              <Label htmlFor="nucleo-nome" className="sr-only">
+                Nome do núcleo
+              </Label>
+              <Input id="nucleo-nome" name="nome" defaultValue={nucleo?.name ?? ""} required maxLength={80} />
+            </AcaoForm>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -20,7 +20,14 @@ export function ipPrivado(ip: string): boolean {
   if (isIP(ip) === 6) {
     const s = ip.toLowerCase();
     if (s.startsWith("::ffff:")) return ipPrivado(s.slice(7));
-    return s === "::" || s === "::1" || s.startsWith("fc") || s.startsWith("fd") || s.startsWith("fe80") || s.startsWith("ff");
+    return (
+      s === "::" ||
+      s === "::1" ||
+      s.startsWith("fc") ||
+      s.startsWith("fd") ||
+      s.startsWith("fe80") ||
+      s.startsWith("ff")
+    );
   }
   return true;
 }

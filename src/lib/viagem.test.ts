@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { duracaoDaApi, formatarDistancia, formatarDuracao, indiceJustica, type Tempo } from "./viagem";
+import {
+  duracaoDaApi,
+  formatarDistancia,
+  formatarDuracao,
+  indiceJustica,
+  linkGoogleMaps,
+  linkMapaEmbutido,
+  type Tempo,
+} from "./viagem";
 
 describe("formatação", () => {
   it("formata duração e distância", () => {
@@ -32,10 +40,33 @@ describe("índice de justiça", () => {
   });
 
   it("pode considerar só alguns núcleos", () => {
-    expect(indiceJustica(tempos, "e1", new Set(["n1"]))).toEqual({ mediaSegundos: 3600, maximoSegundos: 3600, nucleos: 1 });
+    expect(indiceJustica(tempos, "e1", new Set(["n1"]))).toEqual({
+      mediaSegundos: 3600,
+      maximoSegundos: 3600,
+      nucleos: 1,
+    });
   });
 
   it("sem tempos, sem índice", () => {
     expect(indiceJustica(tempos, "e9")).toBeNull();
+  });
+});
+
+describe("links do Google Maps", () => {
+  const a = { lat: -22.9, lng: -47.06 };
+  const b = { lat: -22.59, lng: -46.52 };
+
+  it("abre a rota no Google Maps no modo certo", () => {
+    const u = new URL(linkGoogleMaps(a, b, "transporte"));
+    expect(u.searchParams.get("origin")).toBe("-22.9,-47.06");
+    expect(u.searchParams.get("destination")).toBe("-22.59,-46.52");
+    expect(u.searchParams.get("travelmode")).toBe("transit");
+    expect(new URL(linkGoogleMaps(a, b, "moto")).searchParams.get("travelmode")).toBe("driving");
+  });
+
+  it("monta o mapa embutido", () => {
+    const u = new URL(linkMapaEmbutido("CHAVE", a, b, "a_pe"));
+    expect(u.pathname).toBe("/maps/embed/v1/directions");
+    expect(u.searchParams.get("mode")).toBe("walking");
   });
 });

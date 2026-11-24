@@ -46,8 +46,13 @@ export default async function TavernaPage() {
         <ListaAventuras eventos={eventos ?? []} />
       </section>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Atalho href="/familia" icone={Users} titulo="Minha família" texto="Cadastre quem vai com você nas aventuras." />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <Atalho
+          href="/familia"
+          icone={Users}
+          titulo="Minha família"
+          texto="Cadastre quem vai com você nas aventuras."
+        />
         {pessoa.is_admin && (
           <Atalho
             href="/admin/membros"
@@ -62,7 +67,7 @@ export default async function TavernaPage() {
         <h2 id="em-breve" className="text-lg font-semibold text-wood">
           Em breve na taverna
         </h2>
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {emBreve.map(({ icone: Icone, termo, comum, texto }) => (
             <li key={termo}>
               <Card className="h-full py-4 opacity-90">

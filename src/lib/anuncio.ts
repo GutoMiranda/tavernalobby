@@ -95,7 +95,11 @@ function precoParaCentavos(v: unknown): number | undefined {
   if (typeof v !== "string") return undefined;
   const s = v.replace(/[^\d.,]/g, "");
   if (!s) return undefined;
-  const normalizado = s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : /^\d{1,3}(\.\d{3})+$/.test(s) ? s.replace(/\./g, "") : s;
+  const normalizado = s.includes(",")
+    ? s.replace(/\./g, "").replace(",", ".")
+    : /^\d{1,3}(\.\d{3})+$/.test(s)
+      ? s.replace(/\./g, "")
+      : s;
   const n = Number(normalizado);
   return Number.isFinite(n) && n > 0 ? Math.round(n * 100) : undefined;
 }
@@ -140,9 +144,17 @@ export function extrairDadosDoAnuncio(html: string, urlBase: string): DadosAnunc
   }
 
   // Open Graph e outras metatags completam o que faltou.
-  dados.nome ??= m("og:title") ?? m("twitter:title") ?? decodificar(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "") ?? undefined;
+  dados.nome ??=
+    m("og:title") ??
+    m("twitter:title") ??
+    decodificar(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "") ??
+    undefined;
   dados.descricao ??= m("og:description") ?? m("description") ?? m("twitter:description");
-  dados.fotos.push(...(meta.get("og:image") ?? []), ...(meta.get("og:image:secure_url") ?? []), ...(meta.get("twitter:image") ?? []));
+  dados.fotos.push(
+    ...(meta.get("og:image") ?? []),
+    ...(meta.get("og:image:secure_url") ?? []),
+    ...(meta.get("twitter:image") ?? []),
+  );
   dados.lat ??= numero(m("place:location:latitude") ?? m("og:latitude"));
   dados.lng ??= numero(m("place:location:longitude") ?? m("og:longitude"));
   dados.precoCentavos ??= precoParaCentavos(m("product:price:amount") ?? m("og:price:amount"));

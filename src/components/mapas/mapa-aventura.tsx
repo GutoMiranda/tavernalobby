@@ -80,21 +80,11 @@ function Pontos({ pontos }: { pontos: PontoMapa[] }) {
   return (
     <>
       {pontos.map((p) => (
-        <AdvancedMarker
-          key={p.id}
-          position={{ lat: p.lat, lng: p.lng }}
-          title={p.nome}
-          onClick={() => setAberto(p.id)}
-        >
+        <AdvancedMarker key={p.id} position={{ lat: p.lat, lng: p.lng }} title={p.nome} onClick={() => setAberto(p.id)}>
           {p.tipo === "origem" ? (
             <Pin background="#1F4D3A" borderColor="#F3E7CF" glyphColor="#F3E7CF" />
           ) : (
-            <Pin
-              background="#E0A030"
-              borderColor="#3B2A1E"
-              glyphColor="#3B2A1E"
-              scale={p.escolhida ? 1.4 : 1}
-            />
+            <Pin background="#E0A030" borderColor="#3B2A1E" glyphColor="#3B2A1E" scale={p.escolhida ? 1.4 : 1} />
           )}
         </AdvancedMarker>
       ))}

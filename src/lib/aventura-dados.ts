@@ -20,6 +20,12 @@ export type Evento = {
   chosen_accommodation_id: string | null;
   date_vote_deadline: string | null;
   accommodation_vote_deadline: string | null;
+  meeting_name: string | null;
+  meeting_address: string | null;
+  meeting_lat: number | null;
+  meeting_lng: number | null;
+  meeting_at: string | null;
+  meeting_notes: string | null;
   created_at: string;
 };
 
@@ -49,7 +55,7 @@ export type Nucleo = {
 };
 
 export const COLUNAS_EVENTO =
-  "id, name, description, region, phase, candidate_start, candidate_end, start_date, end_date, chosen_date_option_id, chosen_accommodation_id, date_vote_deadline, accommodation_vote_deadline, created_at";
+  "id, name, description, region, phase, candidate_start, candidate_end, start_date, end_date, chosen_date_option_id, chosen_accommodation_id, date_vote_deadline, accommodation_vote_deadline, meeting_name, meeting_address, meeting_lat, meeting_lng, meeting_at, meeting_notes, created_at";
 
 /** Carrega a aventura e o que o painel, datas e estalagens precisam. Cacheado por requisição. */
 export const carregarAventura = cache(async (supabase: SupabaseClient, id: string) => {

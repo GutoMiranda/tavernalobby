@@ -30,7 +30,9 @@ export async function temposDeViagem(
 
   const { data } = await supabase
     .from("travel_times")
-    .select("household_id, accommodation_id, duration_seconds, distance_meters, origin_lat, origin_lng, dest_lat, dest_lng")
+    .select(
+      "household_id, accommodation_id, duration_seconds, distance_meters, origin_lat, origin_lng, dest_lat, dest_lng",
+    )
     .in(
       "accommodation_id",
       destinos.map((d) => d.id),
@@ -76,7 +78,9 @@ export async function temposDeViagem(
     if (novos.length) {
       await admin.from("travel_times").upsert(novos, { onConflict: "household_id,accommodation_id" });
       for (const n of novos) {
-        const i = guardados.findIndex((g) => g.household_id === n.household_id && g.accommodation_id === n.accommodation_id);
+        const i = guardados.findIndex(
+          (g) => g.household_id === n.household_id && g.accommodation_id === n.accommodation_id,
+        );
         if (i >= 0) guardados[i] = n;
         else guardados.push(n);
       }

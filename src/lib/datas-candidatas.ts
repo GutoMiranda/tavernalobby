@@ -13,7 +13,14 @@ export function lerDatasCandidatas(d: FormData) {
     if (!inicio) continue;
     const fim = valida(fins[i]) ?? inicio;
     if (fim < inicio) return { erro: `Na opção ${i + 1}, o fim precisa ser depois do início.` };
-    datas.push({ start_date: inicio, end_date: fim, note: String(motivos[i] ?? "").trim().slice(0, 200) || null });
+    datas.push({
+      start_date: inicio,
+      end_date: fim,
+      note:
+        String(motivos[i] ?? "")
+          .trim()
+          .slice(0, 200) || null,
+    });
   }
   return { datas };
 }

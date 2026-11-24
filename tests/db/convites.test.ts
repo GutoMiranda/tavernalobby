@@ -49,8 +49,14 @@ describe("adulto dependente assume o próprio perfil", () => {
       [p.household_id],
     );
     // Histórico do dependente (presença numa aventura).
-    const [{ id: eventId }] = await b.como<{ id: string }>(admin, "insert into public.events (name) values ('Praia') returning id");
-    await b.como(membro, "insert into public.attendances (event_id, person_id, status) values ($1, $2, 'vai')", [eventId, depId]);
+    const [{ id: eventId }] = await b.como<{ id: string }>(
+      admin,
+      "insert into public.events (name) values ('Praia') returning id",
+    );
+    await b.como(membro, "insert into public.attendances (event_id, person_id, status) values ($1, $2, 'vai')", [
+      eventId,
+      depId,
+    ]);
   });
 
   it("não dá para convidar criança nem gente de outro núcleo", async () => {

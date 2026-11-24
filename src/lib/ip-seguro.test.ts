@@ -4,7 +4,17 @@ import { ipPrivado } from "./ip-seguro";
 
 describe("ipPrivado", () => {
   it("bloqueia endereços internos", () => {
-    for (const ip of ["127.0.0.1", "10.1.2.3", "172.16.0.1", "192.168.0.10", "169.254.169.254", "::1", "fd00::1", "::ffff:127.0.0.1", "0.0.0.0"]) {
+    for (const ip of [
+      "127.0.0.1",
+      "10.1.2.3",
+      "172.16.0.1",
+      "192.168.0.10",
+      "169.254.169.254",
+      "::1",
+      "fd00::1",
+      "::ffff:127.0.0.1",
+      "0.0.0.0",
+    ]) {
       expect(ipPrivado(ip), ip).toBe(true);
     }
   });

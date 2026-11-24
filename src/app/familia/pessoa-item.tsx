@@ -82,11 +82,23 @@ export function PessoaItem({ pessoa }: { pessoa: PessoaDaFamilia }) {
 
         {dependente &&
           (confirmarRemocao ? (
-            <AcaoForm action={removerDependente} textoBotao={`Sim, remover ${pessoa.name}`} variante="destructive" tamanho="sm" textoEnviando="Removendo…">
+            <AcaoForm
+              action={removerDependente}
+              textoBotao={`Sim, remover ${pessoa.name}`}
+              variante="destructive"
+              tamanho="sm"
+              textoEnviando="Removendo…"
+            >
               <input type="hidden" name="id" value={pessoa.id} />
             </AcaoForm>
           ) : (
-            <Button type="button" variant="ghost" size="sm" className="text-alert" onClick={() => setConfirmarRemocao(true)}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-alert"
+              onClick={() => setConfirmarRemocao(true)}
+            >
               Remover
             </Button>
           ))}
@@ -99,7 +111,9 @@ export function PessoaItem({ pessoa }: { pessoa: PessoaDaFamilia }) {
       )}
       {convite.link && (
         <div className="flex flex-col gap-2 rounded-md bg-bottle/10 p-3 text-sm" role="status">
-          <p>{convite.ok} Envie este link para {pessoa.name}:</p>
+          <p>
+            {convite.ok} Envie este link para {pessoa.name}:
+          </p>
           <code className="break-all">{convite.link}</code>
           <div>
             <CopiarBotao texto={convite.link} rotulo="Copiar link" />

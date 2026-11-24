@@ -7,7 +7,9 @@ import { exigirMembro, getSessao } from "@/lib/auth";
 import { type EstadoAcao, mensagemErro } from "@/lib/erros";
 
 function texto(dados: FormData, campo: string, max = 80) {
-  return String(dados.get(campo) ?? "").trim().slice(0, max);
+  return String(dados.get(campo) ?? "")
+    .trim()
+    .slice(0, max);
 }
 
 export async function adicionarDependente(_: EstadoAcao, dados: FormData): Promise<EstadoAcao> {

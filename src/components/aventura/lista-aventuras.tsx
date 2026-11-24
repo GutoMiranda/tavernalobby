@@ -15,7 +15,7 @@ export function ListaAventuras({ eventos }: { eventos: Evento[] }) {
     );
   }
   return (
-    <ul className="flex flex-col gap-3">
+    <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
       {eventos.map((e) => {
         const contagem = contagemRegressiva(e.start_date);
         return (
@@ -24,11 +24,13 @@ export function ListaAventuras({ eventos }: { eventos: Evento[] }) {
               href={`/aventuras/${e.id}`}
               className="block rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
-              <Card className="transition-shadow hover:shadow-md">
+              <Card className="h-full transition-shadow hover:shadow-md">
                 <CardHeader>
                   <div className="flex flex-wrap items-center gap-2">
                     <CardTitle>{e.name}</CardTitle>
-                    <Badge variant={e.phase === "cancelada" ? "destructive" : "secondary"}>{FASE_INFO[e.phase].nome}</Badge>
+                    <Badge variant={e.phase === "cancelada" ? "destructive" : "secondary"}>
+                      {FASE_INFO[e.phase].nome}
+                    </Badge>
                   </div>
                   <CardDescription>
                     {e.start_date && e.end_date ? formatarPeriodo(e.start_date, e.end_date) : "Data a definir"}

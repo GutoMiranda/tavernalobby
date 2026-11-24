@@ -76,7 +76,12 @@ export async function buscarLugarPorTexto(texto: string): Promise<LugarEncontrad
     };
     const p = json.places?.[0];
     if (!p?.location) return null;
-    return { endereco: p.formattedAddress ?? texto, lat: p.location.latitude, lng: p.location.longitude, placeId: p.id };
+    return {
+      endereco: p.formattedAddress ?? texto,
+      lat: p.location.latitude,
+      lng: p.location.longitude,
+      placeId: p.id,
+    };
   } catch {
     return null;
   }
@@ -123,7 +128,13 @@ export async function preencherPorAnuncio(link: string, nomeDigitado?: string): 
   const termo = dados.endereco ?? nomeDigitado ?? dados.nome?.split(/[·|–-]/)[0];
   const lugar = termo ? await buscarLugarPorTexto(termo) : null;
   if (lugar) {
-    Object.assign(dados, { endereco: lugar.endereco, lat: lugar.lat, lng: lugar.lng, lugarId: lugar.placeId, origemLocal: "busca" });
+    Object.assign(dados, {
+      endereco: lugar.endereco,
+      lat: lugar.lat,
+      lng: lugar.lng,
+      lugarId: lugar.placeId,
+      origemLocal: "busca",
+    });
   }
   return dados;
 }

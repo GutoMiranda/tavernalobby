@@ -10,7 +10,9 @@ import { reaisParaCentavos } from "@/lib/dinheiro";
 import { type EstadoAcao, mensagemErro } from "@/lib/erros";
 
 function txt(d: FormData, campo: string, max = 200) {
-  return String(d.get(campo) ?? "").trim().slice(0, max);
+  return String(d.get(campo) ?? "")
+    .trim()
+    .slice(0, max);
 }
 function dataOuNull(d: FormData, campo: string) {
   const v = txt(d, campo, 10);
@@ -52,7 +54,12 @@ export async function criarAventura(_: EstadoAcao, d: FormData): Promise<EstadoA
       ...campos,
       // Período candidato = da primeira à última data candidata.
       candidate_start: datas.length ? datas.map((x) => x.start_date).sort()[0] : null,
-      candidate_end: datas.length ? datas.map((x) => x.end_date).sort().at(-1) : null,
+      candidate_end: datas.length
+        ? datas
+            .map((x) => x.end_date)
+            .sort()
+            .at(-1)
+        : null,
       created_by: pessoa.id,
     })
     .select("id")
@@ -106,7 +113,10 @@ export async function adicionarData(_: EstadoAcao, d: FormData): Promise<EstadoA
 
 export async function removerData(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
   const { supabase } = await exigirAdmin();
-  const { error } = await supabase.from("date_options").delete().eq("id", txt(d, "id", 40));
+  const { error } = await supabase
+    .from("date_options")
+    .delete()
+    .eq("id", txt(d, "id", 40));
   if (error) return { erro: mensagemErro(error) };
   revalidatePath(`/aventuras/${txt(d, "evento", 40)}`, "layout");
   return { ok: "Removida." };
@@ -173,9 +183,7 @@ function urlOuNull(v: string) {
   return /^https?:\/\/\S+$/i.test(v) ? v : null;
 }
 
-export async function adicionarEstalagem(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
-  const { supabase, pessoa } = await exigirMembro();
-  const eventId = txt(d, "evento", 40);
+function camposEstalagem(d: FormData) {
   const nome = txt(d, "nome", 120);
   const preco = reaisParaCentavos(txt(d, "preco", 30));
   if (!nome) return { erro: "Dê um nome para a estalagem." };
@@ -183,24 +191,49 @@ export async function adicionarEstalagem(_: EstadoAcao, d: FormData): Promise<Es
   const capacidade = numeroOuNull(d, "capacidade");
   const linkTexto = txt(d, "link", 500);
   if (linkTexto && !urlOuNull(linkTexto)) return { erro: "O link precisa começar com https://" };
+  return {
+    campos: {
+      name: nome,
+      url: urlOuNull(linkTexto),
+      address: txt(d, "lugar_texto", 300) || null,
+      lat: numeroOuNull(d, "lugar_lat"),
+      lng: numeroOuNull(d, "lugar_lng"),
+      place_id: txt(d, "lugar_id", 300) || null,
+      total_price_cents: preco,
+      capacity: capacidade && capacidade > 0 ? Math.floor(capacidade) : null,
+      photos: fotos(d),
+      notes: txt(d, "notas", 2000) || null,
+    },
+  };
+}
 
-  const { error } = await supabase.from("accommodations").insert({
-    event_id: eventId,
-    name: nome,
-    url: urlOuNull(linkTexto),
-    address: txt(d, "lugar_texto", 300) || null,
-    lat: numeroOuNull(d, "lugar_lat"),
-    lng: numeroOuNull(d, "lugar_lng"),
-    place_id: txt(d, "lugar_id", 300) || null,
-    total_price_cents: preco,
-    capacity: capacidade && capacidade > 0 ? Math.floor(capacidade) : null,
-    photos: fotos(d),
-    notes: txt(d, "notas", 2000) || null,
-    created_by: pessoa.id,
-  });
+export async function adicionarEstalagem(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
+  const { supabase, pessoa } = await exigirMembro();
+  const eventId = txt(d, "evento", 40);
+  const r = camposEstalagem(d);
+  if ("erro" in r) return { erro: r.erro };
+  const { error } = await supabase
+    .from("accommodations")
+    .insert({ ...r.campos, event_id: eventId, created_by: pessoa.id });
   if (error) return { erro: mensagemErro(error) };
   revalidatePath(`/aventuras/${eventId}`, "layout");
   return { ok: "Estalagem adicionada. Agora a party pode reagir!" };
+}
+
+export async function editarEstalagem(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
+  const { supabase } = await exigirMembro();
+  const eventId = txt(d, "evento", 40);
+  const r = camposEstalagem(d);
+  if ("erro" in r) return { erro: r.erro };
+  const { error, count } = await supabase
+    .from("accommodations")
+    .update(r.campos, { count: "exact" })
+    .eq("id", txt(d, "id", 40))
+    .eq("event_id", eventId);
+  if (error) return { erro: mensagemErro(error) };
+  if (!count) return { erro: "Só quem cadastrou ou o admin pode editar." };
+  revalidatePath(`/aventuras/${eventId}`, "layout");
+  return { ok: "Estalagem atualizada." };
 }
 
 export async function removerEstalagem(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
@@ -282,4 +315,27 @@ export async function lerAnuncio(link: string, nomeDigitado: string): Promise<Da
     lng: r.lng,
     lugarId: r.lugarId,
   };
+}
+
+// ---------------------------------------------------------------- ponto de encontro
+
+export async function salvarPontoEncontro(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
+  const { supabase } = await exigirAdmin();
+  const eventId = txt(d, "evento", 40);
+  const quando = txt(d, "quando", 16); // datetime-local: AAAA-MM-DDTHH:MM (horário de São Paulo)
+  const { error } = await supabase
+    .from("events")
+    .update({
+      meeting_name: txt(d, "nome", 120) || null,
+      meeting_address: txt(d, "lugar_texto", 300) || null,
+      meeting_lat: numeroOuNull(d, "lugar_lat"),
+      meeting_lng: numeroOuNull(d, "lugar_lng"),
+      meeting_place_id: txt(d, "lugar_id", 300) || null,
+      meeting_at: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(quando) ? `${quando}:00-03:00` : null,
+      meeting_notes: txt(d, "notas", 1000) || null,
+    })
+    .eq("id", eventId);
+  if (error) return { erro: mensagemErro(error) };
+  revalidatePath(`/aventuras/${eventId}`, "layout");
+  return { ok: "Ponto de encontro salvo." };
 }

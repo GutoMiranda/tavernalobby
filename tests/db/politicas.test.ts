@@ -45,9 +45,7 @@ beforeAll(async () => {
     "insert into public.funds (event_id, goal_cents) values ($1, 300000) returning id",
     [eventId],
   );
-  await b.como(admin, "select public.update_fund_banking($1, 'Banco A', 'Gus Miranda', 'chave-antiga@pix')", [
-    fundId,
-  ]);
+  await b.como(admin, "select public.update_fund_banking($1, 'Banco A', 'Gus Miranda', 'chave-antiga@pix')", [fundId]);
 });
 
 describe("primeiro login e admin", () => {
@@ -86,7 +84,10 @@ describe("primeiro login e admin", () => {
 
 describe("membro não aprovado", () => {
   it("só lê o próprio status", async () => {
-    const pessoas = await b.como<{ user_id: string; status: string }>(pendente, "select user_id, status from public.people");
+    const pessoas = await b.como<{ user_id: string; status: string }>(
+      pendente,
+      "select user_id, status from public.people",
+    );
     expect(pessoas).toHaveLength(1);
     expect(pessoas[0]).toMatchObject({ user_id: pendente, status: "pending" });
   });
@@ -99,9 +100,7 @@ describe("membro não aprovado", () => {
   });
 
   it("não escreve nada", async () => {
-    await negado(
-      b.como(pendente, "insert into public.events (name) values ('Aventura pirata')"),
-    );
+    await negado(b.como(pendente, "insert into public.events (name) values ('Aventura pirata')"));
     const p = await b.pessoaDe(pendente);
     await negado(
       b.como(
@@ -171,10 +170,11 @@ describe("membro aprovado", () => {
       [eventId],
     );
     const p = await b.pessoaDe(participante);
-    await b.como(participante, "insert into public.date_reactions (date_option_id, person_id, value) values ($1, $2, 1)", [
-      opcao.id,
-      p.id,
-    ]);
+    await b.como(
+      participante,
+      "insert into public.date_reactions (date_option_id, person_id, value) values ($1, $2, 1)",
+      [opcao.id, p.id],
+    );
     const t = await b.pessoaDe(tesoureiro);
     await negado(
       b.como(participante, "insert into public.date_reactions (date_option_id, person_id, value) values ($1, $2, -1)", [
@@ -195,7 +195,9 @@ describe("baú: depósitos", () => {
       "insert into public.fund_transactions (fund_id, kind, household_id, amount_cents, created_by) values ($1, 'entrada', $2, 50000, $3) returning id, status",
       [fundId, p.household_id, p.id],
     );
-    const [tx] = await b.admin<{ status: string }>("select status from public.fund_transactions where id = $1", [depositoId]);
+    const [tx] = await b.admin<{ status: string }>("select status from public.fund_transactions where id = $1", [
+      depositoId,
+    ]);
     expect(tx.status).toBe("pendente");
   });
 
@@ -238,7 +240,10 @@ describe("baú: depósitos", () => {
   });
 
   it("cada um só vê as próprias notificações", async () => {
-    const doTesoureiro = await b.como<{ kind: string }>(tesoureiro, "select kind from public.notifications where kind = 'loot_guardado'");
+    const doTesoureiro = await b.como<{ kind: string }>(
+      tesoureiro,
+      "select kind from public.notifications where kind = 'loot_guardado'",
+    );
     expect(doTesoureiro).toHaveLength(0);
   });
 
@@ -259,13 +264,13 @@ describe("baú: depósitos", () => {
       [estornoId],
     );
     expect(estorno).toMatchObject({ kind: "estorno", amount_cents: 50000, reverses_id: depositoId });
-    await expect(b.como(tesoureiro, "select public.reverse_transaction($1, 'de novo')", [depositoId])).rejects.toThrow();
+    await expect(
+      b.como(tesoureiro, "select public.reverse_transaction($1, 'de novo')", [depositoId]),
+    ).rejects.toThrow();
   });
 
   it("só o tesoureiro registra saídas", async () => {
-    await negado(
-      b.como(participante, "select public.register_withdrawal($1, 20000, null, 'Sinal da casa')", [fundId]),
-    );
+    await negado(b.como(participante, "select public.register_withdrawal($1, 20000, null, 'Sinal da casa')", [fundId]));
     const [{ register_withdrawal: id }] = await b.como<{ register_withdrawal: string }>(
       tesoureiro,
       "select public.register_withdrawal($1, 20000, null, 'Sinal da casa')",

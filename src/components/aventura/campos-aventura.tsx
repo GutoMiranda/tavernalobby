@@ -15,7 +15,14 @@ export function CamposAventura({ evento }: { evento?: Evento }) {
     <>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="nome">Nome da aventura</Label>
-        <Input id="nome" name="nome" required maxLength={120} defaultValue={evento?.name} placeholder="Ex.: Chácara de verão" />
+        <Input
+          id="nome"
+          name="nome"
+          required
+          maxLength={120}
+          defaultValue={evento?.name}
+          placeholder="Ex.: Chácara de verão"
+        />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="descricao">Descrição</Label>
@@ -30,7 +37,13 @@ export function CamposAventura({ evento }: { evento?: Evento }) {
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="regiao">Região desejada</Label>
-        <Input id="regiao" name="regiao" maxLength={120} defaultValue={evento?.region ?? ""} placeholder="Ex.: Serra da Mantiqueira" />
+        <Input
+          id="regiao"
+          name="regiao"
+          maxLength={120}
+          defaultValue={evento?.region ?? ""}
+          placeholder="Ex.: Serra da Mantiqueira"
+        />
       </div>
       {!evento && <DatasCandidatasCampos />}
       <fieldset className="grid gap-3 sm:grid-cols-2">

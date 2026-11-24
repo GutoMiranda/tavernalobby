@@ -43,10 +43,7 @@ export function ranking<T extends { id: string }>(
 ): (T & { placar: Placar; posicao: number })[] {
   return itens
     .map((item, ordem) => ({ item, ordem, placar: placar(reacoes, item.id, minhaPessoaId) }))
-    .sort(
-      (a, b) =>
-        b.placar.saldo - a.placar.saldo || b.placar.curtidas - a.placar.curtidas || a.ordem - b.ordem,
-    )
+    .sort((a, b) => b.placar.saldo - a.placar.saldo || b.placar.curtidas - a.placar.curtidas || a.ordem - b.ordem)
     .map((x, i) => ({ ...x.item, placar: x.placar, posicao: i + 1 }));
 }
 
@@ -92,9 +89,13 @@ export function pendencias(params: {
   if (p.fase === "datas") {
     const faltam = p.datas.filter((d) => !reagiu(p.reacoesDatas, d.id)).length;
     if (faltam > 0) {
-      lista.push({ texto: `Votar em ${faltam} ${faltam === 1 ? "data candidata" : "datas candidatas"}`, href: `${base}/datas` });
+      lista.push({
+        texto: `Votar em ${faltam} ${faltam === 1 ? "data candidata" : "datas candidatas"}`,
+        href: `${base}/datas`,
+      });
     }
-    if (p.souAdmin && p.datas.length === 0) lista.push({ texto: "Cadastrar as datas candidatas", href: `${base}/datas` });
+    if (p.souAdmin && p.datas.length === 0)
+      lista.push({ texto: "Cadastrar as datas candidatas", href: `${base}/datas` });
   }
   if (p.fase === "estalagens") {
     const faltam = p.estalagens.filter((e) => !reagiu(p.reacoesEstalagens, e.id)).length;
@@ -104,7 +105,8 @@ export function pendencias(params: {
         href: `${base}/estalagens`,
       });
     }
-    if (p.estalagens.length === 0) lista.push({ texto: "Sugerir uma estalagem (hospedagem)", href: `${base}/estalagens` });
+    if (p.estalagens.length === 0)
+      lista.push({ texto: "Sugerir uma estalagem (hospedagem)", href: `${base}/estalagens` });
   }
   if (["datas", "estalagens", "presenca"].includes(p.fase) && !p.nucleoTemOrigem) {
     lista.push({ texto: "Informar a cidade de saída do seu núcleo", href: "/familia#origem" });

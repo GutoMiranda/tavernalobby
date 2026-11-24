@@ -16,7 +16,10 @@ beforeAll(async () => {
 
 it("membros leem tempos de viagem, mas só o servidor grava", async () => {
   const p = await b.pessoaDe(membro);
-  const [{ id: ev }] = await b.como<{ id: string }>(admin, "insert into public.events (name) values ('X') returning id");
+  const [{ id: ev }] = await b.como<{ id: string }>(
+    admin,
+    "insert into public.events (name) values ('X') returning id",
+  );
   const [{ id: est }] = await b.como<{ id: string }>(
     membro,
     "insert into public.accommodations (event_id, name, total_price_cents, created_by) values ($1, 'Casa', 100000, $2) returning id",

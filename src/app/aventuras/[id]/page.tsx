@@ -5,7 +5,7 @@ import { CopiarBotao } from "@/components/copiar-botao";
 import { type PontoMapa, MapaAventura } from "@/components/mapas/mapa-aventura";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { exigirMembro } from "@/lib/auth";
-import { contagemRegressiva, custoPorAdulto, FASE_INFO, pendencias, ranking } from "@/lib/aventura";
+import { contagemRegressiva, FASE_INFO, pendencias, ranking } from "@/lib/aventura";
 import { carregarAventura } from "@/lib/aventura-dados";
 import { formatarCentavos, formatarData, formatarPeriodo } from "@/lib/format";
 
@@ -34,7 +34,11 @@ export default async function PainelAventuraPage({ params }: { params: Promise<{
   const escolhida = dados.estalagens.find((e) => e.id === evento.chosen_accommodation_id);
   const lider = escolhida ?? estalagensRanking[0];
   const prazo =
-    evento.phase === "datas" ? evento.date_vote_deadline : evento.phase === "estalagens" ? evento.accommodation_vote_deadline : null;
+    evento.phase === "datas"
+      ? evento.date_vote_deadline
+      : evento.phase === "estalagens"
+        ? evento.accommodation_vote_deadline
+        : null;
 
   const pontos: PontoMapa[] = [
     ...dados.nucleos
@@ -64,14 +68,16 @@ export default async function PainelAventuraPage({ params }: { params: Promise<{
   const convite = [
     `⚔️ Nova aventura na Taverna O Lobby: *${evento.name}*`,
     evento.region ? `Região: ${evento.region}` : null,
-    evento.start_date && evento.end_date ? `Quando: ${formatarPeriodo(evento.start_date, evento.end_date)}` : "Vote nas datas!",
+    evento.start_date && evento.end_date
+      ? `Quando: ${formatarPeriodo(evento.start_date, evento.end_date)}`
+      : "Vote nas datas!",
     `${base}/aventuras/${id}`,
   ]
     .filter(Boolean)
     .join("\n");
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="grid items-start gap-4 lg:grid-cols-3">
       <Card className="border-gold/60">
         <CardHeader>
           <CardDescription>Fase atual · {FASE_INFO[evento.phase].nome}</CardDescription>
@@ -85,7 +91,9 @@ export default async function PainelAventuraPage({ params }: { params: Promise<{
               {contagem ?? `Prazo da votação: ${formatarData(prazo!)}`}
             </p>
           )}
-          {evento.description && <p className="text-sm whitespace-pre-line text-muted-foreground">{evento.description}</p>}
+          {evento.description && (
+            <p className="text-sm whitespace-pre-line text-muted-foreground">{evento.description}</p>
+          )}
           <div>
             <CopiarBotao texto={convite} rotulo="Copiar convite para o WhatsApp" />
           </div>
@@ -121,7 +129,7 @@ export default async function PainelAventuraPage({ params }: { params: Promise<{
         <CardHeader>
           <CardTitle>Resumo</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
+        <CardContent className="grid gap-4">
           <div>
             <p className="text-sm text-muted-foreground">Data</p>
             {evento.start_date && evento.end_date ? (
@@ -143,11 +151,7 @@ export default async function PainelAventuraPage({ params }: { params: Promise<{
                   {escolhida ? "" : "Liderando: "}
                   {lider.name}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  {formatarCentavos(lider.total_price_cents)} no total
-                  {custoPorAdulto(lider.total_price_cents, dados.adultosParaEstimativa) !== null &&
-                    ` · cerca de ${formatarCentavos(custoPorAdulto(lider.total_price_cents, dados.adultosParaEstimativa)!)} por adulto`}
-                </p>
+                <p className="text-sm text-muted-foreground">{formatarCentavos(lider.total_price_cents)} no total</p>
               </>
             ) : (
               <p className="text-muted-foreground">Nenhuma estalagem sugerida ainda.</p>
@@ -156,7 +160,7 @@ export default async function PainelAventuraPage({ params }: { params: Promise<{
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="lg:col-span-3">
         <CardHeader>
           <CardTitle>Mapa</CardTitle>
           <CardDescription>De onde cada núcleo sai e onde ficam as estalagens.</CardDescription>

@@ -3,7 +3,9 @@
 import { Wand2 } from "lucide-react";
 import { useState, useTransition } from "react";
 
-import { adicionarEstalagem, type DadosPreenchidos, lerAnuncio } from "@/app/aventuras/actions";
+import { useRouter } from "next/navigation";
+
+import { adicionarEstalagem, type DadosPreenchidos, editarEstalagem, lerAnuncio } from "@/app/aventuras/actions";
 import { AcaoForm } from "@/components/acao-form";
 import { CampoLugar } from "@/components/mapas/campo-lugar";
 import { Button } from "@/components/ui/button";
@@ -13,15 +15,35 @@ import { Label } from "@/components/ui/label";
 const classeTextarea =
   "rounded-md border border-input bg-white px-3 py-2 text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm";
 
-/** Formulário de nova estalagem, com "Preencher pelo link" (tudo continua editável). */
-export function FormEstalagem({ eventoId }: { eventoId: string }) {
-  const [link, setLink] = useState("");
-  const [nome, setNome] = useState("");
-  const [preco, setPreco] = useState("");
-  const [capacidade, setCapacidade] = useState("");
-  const [fotos, setFotos] = useState("");
-  const [notas, setNotas] = useState("");
+export type EstalagemInicial = {
+  id: string;
+  name: string;
+  url: string | null;
+  preco: string;
+  capacity: number | null;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+  photos: string[];
+  notes: string | null;
+};
+
+/**
+ * Formulário de estalagem (nova ou edição), com "Preencher pelo link".
+ * Tudo continua editável antes de salvar.
+ */
+export function FormEstalagem({ eventoId, inicial }: { eventoId: string; inicial?: EstalagemInicial }) {
+  const router = useRouter();
+  const [link, setLink] = useState(inicial?.url ?? "");
+  const [nome, setNome] = useState(inicial?.name ?? "");
+  const [preco, setPreco] = useState(inicial?.preco ?? "");
+  const [capacidade, setCapacidade] = useState(inicial?.capacity ? String(inicial.capacity) : "");
+  const [fotos, setFotos] = useState(inicial?.photos.join("\n") ?? "");
+  const [notas, setNotas] = useState(inicial?.notes ?? "");
   const [lugar, setLugar] = useState<{ texto?: string; lat?: number; lng?: number; id?: string; versao: number }>({
+    texto: inicial?.address ?? undefined,
+    lat: inicial?.lat ?? undefined,
+    lng: inicial?.lng ?? undefined,
     versao: 0,
   });
   const [resultado, setResultado] = useState<DadosPreenchidos | null>(null);
@@ -55,14 +77,20 @@ export function FormEstalagem({ eventoId }: { eventoId: string }) {
   }
 
   const acao: typeof adicionarEstalagem = async (estado, dados) => {
+    if (inicial) {
+      const r = await editarEstalagem(estado, dados);
+      if (r.ok) router.push(`/aventuras/${eventoId}/estalagens`);
+      return r;
+    }
     const r = await adicionarEstalagem(estado, dados);
     if (r.ok) limpar();
     return r;
   };
 
   return (
-    <AcaoForm action={acao} textoBotao="Adicionar estalagem">
+    <AcaoForm action={acao} textoBotao={inicial ? "Salvar alterações" : "Adicionar estalagem"}>
       <input type="hidden" name="evento" value={eventoId} />
+      {inicial && <input type="hidden" name="id" value={inicial.id} />}
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="est-link">Link do anúncio</Label>
         <div className="flex flex-col gap-2 sm:flex-row">

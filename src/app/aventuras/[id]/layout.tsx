@@ -21,7 +21,14 @@ export default async function AventuraLayout({
     <div className="flex flex-col gap-5">
       <AoVivo
         canal={`aventura-${id}`}
-        tabelas={["events", "date_options", "date_reactions", "accommodations", "accommodation_reactions", "households"]}
+        tabelas={[
+          "events",
+          "date_options",
+          "date_reactions",
+          "accommodations",
+          "accommodation_reactions",
+          "households",
+        ]}
       />
       <section>
         <p className="text-sm text-muted-foreground">Aventura · encontro</p>

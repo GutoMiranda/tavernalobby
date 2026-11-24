@@ -1,13 +1,15 @@
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Pencil } from "lucide-react";
+import Link from "next/link";
 import type { Metadata } from "next";
 
 import { AcaoForm } from "@/components/acao-form";
 import { FormEstalagem } from "@/components/aventura/form-estalagem";
 import { ReacaoBotoes } from "@/components/aventura/reacao-botoes";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { exigirMembro } from "@/lib/auth";
-import { custoPorAdulto, ranking } from "@/lib/aventura";
+import { ranking } from "@/lib/aventura";
 import { carregarAventura } from "@/lib/aventura-dados";
 import { formatarCentavos, formatarData } from "@/lib/format";
 import { temposDeViagem } from "@/lib/tempos-viagem";
@@ -26,7 +28,6 @@ export default async function EstalagensPage({ params }: { params: Promise<{ id:
   const tempos = await temposDeViagem(supabase, dados.nucleos, dados.estalagens).catch(() => []);
   const nomeNucleo = new Map(dados.nucleos.map((n) => [n.id, n.name]));
   const escolhida = evento.chosen_accommodation_id;
-  const base = dados.adultosConfirmados ? `${dados.adultosConfirmados} adultos confirmados` : `${dados.adultosDoGrupo} adultos do grupo`;
 
   return (
     <div className="flex flex-col gap-4">
@@ -34,8 +35,8 @@ export default async function EstalagensPage({ params }: { params: Promise<{ id:
         <CardHeader>
           <CardTitle>Estalagens · hospedagens</CardTitle>
           <CardDescription>
-            Qualquer membro sugere. Curta ou descurta; o Mestre da Taverna (admin) escolhe a final. Custo por pessoa
-            estimado dividindo o preço total entre {base} (crianças não pagam).
+            Qualquer membro sugere. Curta ou descurta; o Mestre da Taverna (admin) escolhe a final. A parte de cada um
+            aparece depois, em Custos, conforme a presença confirmada.
             {evento.accommodation_vote_deadline && ` Prazo: ${formatarData(evento.accommodation_vote_deadline)}.`}
           </CardDescription>
         </CardHeader>
@@ -43,15 +44,14 @@ export default async function EstalagensPage({ params }: { params: Promise<{ id:
           {lista.length === 0 ? (
             <p className="text-muted-foreground">Nenhuma estalagem sugerida ainda. Seja o primeiro a achar uma boa!</p>
           ) : (
-            <ol className="flex flex-col gap-4">
+            <ol className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {lista.map((e) => {
-                const porAdulto = custoPorAdulto(e.total_price_cents, dados.adultosParaEstimativa);
                 const ehEscolhida = e.id === escolhida;
                 const possoRemover = pessoa.is_admin || e.created_by === pessoa.id;
                 return (
                   <li
                     key={e.id}
-                    className={`flex flex-col gap-3 rounded-lg border p-3 ${ehEscolhida ? "border-bottle bg-bottle/10" : "border-border bg-white/40"}`}
+                    className={`flex h-full flex-col gap-3 rounded-lg border p-3 ${ehEscolhida ? "border-bottle bg-bottle/10" : "border-border bg-white/40"}`}
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-display text-lg font-semibold text-wood">{e.posicao}º</span>
@@ -70,7 +70,7 @@ export default async function EstalagensPage({ params }: { params: Promise<{ id:
                             alt={`Foto ${i + 1} de ${e.name}`}
                             loading="lazy"
                             referrerPolicy="no-referrer"
-                            className="h-28 w-40 shrink-0 rounded-md object-cover"
+                            className="h-36 w-56 shrink-0 rounded-md object-cover"
                           />
                         ))}
                       </div>
@@ -79,8 +79,6 @@ export default async function EstalagensPage({ params }: { params: Promise<{ id:
                     <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                       <dt className="text-muted-foreground">Preço total</dt>
                       <dd className="font-medium">{formatarCentavos(e.total_price_cents)}</dd>
-                      <dt className="text-muted-foreground">Por adulto (estimado)</dt>
-                      <dd className="font-medium">{porAdulto !== null ? formatarCentavos(porAdulto) : "—"}</dd>
                       {e.capacity && (
                         <>
                           <dt className="text-muted-foreground">Capacidade</dt>
@@ -124,15 +122,33 @@ export default async function EstalagensPage({ params }: { params: Promise<{ id:
                     />
 
                     {(possoRemover || (pessoa.is_admin && !escolhida)) && (
-                      <div className="flex flex-wrap gap-2 border-t border-border pt-2">
+                      <div className="mt-auto flex flex-wrap gap-2 border-t border-border pt-2">
+                        {possoRemover && (
+                          <Button asChild variant="outline" size="sm">
+                            <Link href={`/aventuras/${id}/estalagens/${e.id}`}>
+                              <Pencil aria-hidden /> Editar
+                            </Link>
+                          </Button>
+                        )}
                         {pessoa.is_admin && !escolhida && (
-                          <AcaoForm action={escolherEstalagem} textoBotao="Escolher esta estalagem" tamanho="sm" textoEnviando="Escolhendo…">
+                          <AcaoForm
+                            action={escolherEstalagem}
+                            textoBotao="Escolher esta estalagem"
+                            tamanho="sm"
+                            textoEnviando="Escolhendo…"
+                          >
                             <input type="hidden" name="id" value={e.id} />
                             <input type="hidden" name="evento" value={id} />
                           </AcaoForm>
                         )}
                         {possoRemover && !ehEscolhida && (
-                          <AcaoForm action={removerEstalagem} textoBotao="Remover" variante="ghost" tamanho="sm" textoEnviando="…">
+                          <AcaoForm
+                            action={removerEstalagem}
+                            textoBotao="Remover"
+                            variante="ghost"
+                            tamanho="sm"
+                            textoEnviando="…"
+                          >
                             <input type="hidden" name="id" value={e.id} />
                             <input type="hidden" name="evento" value={id} />
                           </AcaoForm>
@@ -148,10 +164,12 @@ export default async function EstalagensPage({ params }: { params: Promise<{ id:
       </Card>
 
       {!escolhida && (
-        <Card>
+        <Card className="max-w-3xl">
           <CardHeader>
             <CardTitle>Sugerir estalagem</CardTitle>
-            <CardDescription>Cole o link do anúncio e toque em “Preencher pelo link”. Confira e ajuste antes de salvar.</CardDescription>
+            <CardDescription>
+              Cole o link do anúncio e toque em “Preencher pelo link”. Confira e ajuste antes de salvar.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <FormEstalagem eventoId={id} />
@@ -184,7 +202,12 @@ function TemposDaEstalagem({
     <div className="rounded-md bg-white/50 p-2 text-sm">
       <p>
         <span className="font-medium">Viagem de carro</span>
-        {meu?.duration_seconds != null && <> · do seu núcleo: <strong>{formatarDuracao(meu.duration_seconds)}</strong></>}
+        {meu?.duration_seconds != null && (
+          <>
+            {" "}
+            · do seu núcleo: <strong>{formatarDuracao(meu.duration_seconds)}</strong>
+          </>
+        )}
       </p>
       {indice && (
         <p className="text-muted-foreground">

@@ -18,7 +18,7 @@ export default async function EditarAventuraPage({ params }: { params: Promise<{
   const { evento } = await carregarAventura(supabase, id);
 
   return (
-    <Card>
+    <Card className="max-w-3xl">
       <CardHeader>
         <CardTitle>Editar aventura</CardTitle>
         <CardDescription>Só o Mestre da Taverna (admin) vê esta aba.</CardDescription>

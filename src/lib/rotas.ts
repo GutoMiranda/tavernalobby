@@ -104,3 +104,60 @@ async function viaDistanceMatrix(origens: Ponto[], destinos: Ponto[]): Promise<R
     return null;
   }
 }
+
+export type ModoRota = "DRIVE" | "TWO_WHEELER" | "TRANSIT" | "WALK";
+export type RotaResumo = {
+  modo: ModoRota;
+  segundos: number | null;
+  segundosSemTransito: number | null;
+  metros: number | null;
+};
+
+/**
+ * Uma rota (Routes API, Compute Routes) para cada modo pedido. Carro e moto consideram o trânsito do momento.
+ * Modos sem rota disponível (ex.: moto ou transporte público fora das áreas cobertas pelo Google) voltam com null.
+ */
+export async function calcularRotas(origem: Ponto, destino: Ponto, modos: ModoRota[]): Promise<RotaResumo[]> {
+  const ponto = (p: Ponto) => ({ location: { latLng: { latitude: p.lat, longitude: p.lng } } });
+  return Promise.all(
+    modos.map(async (modo): Promise<RotaResumo> => {
+      const vazio = { modo, segundos: null, segundosSemTransito: null, metros: null };
+      if (!CHAVE()) return vazio;
+      try {
+        const comTransito = modo === "DRIVE" || modo === "TWO_WHEELER";
+        const res = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": CHAVE(),
+            "X-Goog-FieldMask": "routes.duration,routes.staticDuration,routes.distanceMeters",
+          },
+          body: JSON.stringify({
+            origin: ponto(origem),
+            destination: ponto(destino),
+            travelMode: modo,
+            ...(comTransito ? { routingPreference: "TRAFFIC_AWARE" } : {}),
+            languageCode: "pt-BR",
+            regionCode: "BR",
+          }),
+          signal: AbortSignal.timeout(8000),
+          cache: "no-store",
+        });
+        if (!res.ok) return vazio;
+        const json = (await res.json()) as {
+          routes?: { duration?: string; staticDuration?: string; distanceMeters?: number }[];
+        };
+        const r = json.routes?.[0];
+        if (!r) return vazio;
+        return {
+          modo,
+          segundos: duracaoDaApi(r.duration),
+          segundosSemTransito: duracaoDaApi(r.staticDuration),
+          metros: r.distanceMeters ?? null,
+        };
+      } catch {
+        return vazio;
+      }
+    }),
+  );
+}

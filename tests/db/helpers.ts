@@ -12,7 +12,9 @@ export async function criarBanco() {
   const db = new PGlite();
   await db.exec(readFileSync(join(raiz, "tests/db/supabase-shim.sql"), "utf8"));
   const pasta = join(raiz, "supabase/migrations");
-  for (const arquivo of readdirSync(pasta).filter((f) => f.endsWith(".sql")).sort()) {
+  for (const arquivo of readdirSync(pasta)
+    .filter((f) => f.endsWith(".sql"))
+    .sort()) {
     await db.exec(readFileSync(join(pasta, arquivo), "utf8"));
   }
   return new BancoDeTeste(db);

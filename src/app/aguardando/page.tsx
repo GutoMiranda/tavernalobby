@@ -18,7 +18,10 @@ export default async function AguardandoPage() {
     <div className="mx-auto flex max-w-md flex-col gap-6 pt-6">
       <Card>
         <CardHeader>
-          <span className="mb-1 inline-flex size-12 items-center justify-center rounded-full bg-wood text-gold" aria-hidden>
+          <span
+            className="mb-1 inline-flex size-12 items-center justify-center rounded-full bg-wood text-gold"
+            aria-hidden
+          >
             <Hourglass className="size-6" />
           </span>
           <CardTitle>{recusado ? "Acesso não aprovado" : "Aguardando aprovação"}</CardTitle>

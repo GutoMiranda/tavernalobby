@@ -58,7 +58,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           Pular para o conteúdo
         </a>
         <SiteHeader />
-        <main id="conteudo" className="mx-auto w-full max-w-3xl px-4 pt-5 pb-[max(2rem,env(safe-area-inset-bottom))]">
+        <main
+          id="conteudo"
+          className="mx-auto w-full max-w-screen-2xl px-4 pt-5 sm:px-6 lg:px-8 pb-[max(2rem,env(safe-area-inset-bottom))]"
+        >
           {children}
         </main>
         <RegistrarServiceWorker />
