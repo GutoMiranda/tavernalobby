@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { exigirMembro } from "@/lib/auth";
 import { contagemRegressiva, FASE_INFO, pendencias, ranking } from "@/lib/aventura";
 import { carregarAventura } from "@/lib/aventura-dados";
+import { carregarCustos } from "@/lib/custos-dados";
 import { formatarCentavos, formatarData, formatarPeriodo } from "@/lib/format";
 import { type ModoRota, rotasEmCache } from "@/lib/rotas";
 
@@ -31,6 +32,11 @@ export default async function PainelAventuraPage({
   const { evento } = dados;
 
   const meuNucleo = dados.nucleos.find((n) => n.id === pessoa.household_id);
+  const custos = await carregarCustos(supabase, evento);
+  const minhaParte = custos.rateio.porNucleo.get(pessoa.household_id) ?? 0;
+  const presencasPendentes = custos.pessoas.filter(
+    (p) => p.household_id === pessoa.household_id && (custos.presencas.get(p.id)?.status ?? "pendente") === "pendente",
+  ).length;
   const minhas = pendencias({
     eventoId: id,
     fase: evento.phase,
@@ -41,6 +47,7 @@ export default async function PainelAventuraPage({
     estalagens: dados.estalagens,
     reacoesEstalagens: dados.reacoesEstalagens,
     nucleoTemOrigem: !!meuNucleo?.origin_text,
+    presencasPendentes,
   });
 
   const contagem = contagemRegressiva(evento.start_date);
@@ -182,6 +189,19 @@ export default async function PainelAventuraPage({
               <p className="text-muted-foreground">Sem datas candidatas ainda.</p>
             )}
           </div>
+          {custos.itens.length > 0 && (
+            <div>
+              <p className="text-sm text-muted-foreground">Minha parte (seu núcleo)</p>
+              <p className="font-medium">
+                <Link href={`/aventuras/${id}/custos`} className="text-bottle underline underline-offset-4">
+                  {formatarCentavos(minhaParte)}
+                </Link>{" "}
+                <span className="text-sm text-muted-foreground">
+                  de {formatarCentavos(custos.rateio.totalCentavos)}
+                </span>
+              </p>
+            </div>
+          )}
           <div>
             <p className="text-sm text-muted-foreground">Ponto de encontro</p>
             {evento.meeting_address || evento.meeting_name ? (

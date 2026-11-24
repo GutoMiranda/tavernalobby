@@ -185,6 +185,85 @@ describe("membro aprovado", () => {
   });
 });
 
+describe("custos", () => {
+  let itemId: string;
+
+  beforeAll(async () => {
+    [{ id: itemId }] = await b.como<{ id: string }>(
+      admin,
+      "insert into public.cost_items (event_id, category, description, amount_cents, eligibility) values ($1, 'extra', 'Passeio de barco', 20000, 'opt_in') returning id",
+      [eventId],
+    );
+  });
+
+  it("só o admin lança, altera e remove custos", async () => {
+    await negado(
+      b.como(
+        participante,
+        "insert into public.cost_items (event_id, category, description, amount_cents) values ($1, 'extra', 'x', 1)",
+        [eventId],
+      ),
+    );
+    const alterados = await b.como(
+      participante,
+      "update public.cost_items set amount_cents = 1 where id = $1 returning id",
+      [itemId],
+    );
+    expect(alterados).toHaveLength(0);
+    const removidos = await b.como(participante, "delete from public.cost_items where id = $1 returning id", [itemId]);
+    expect(removidos).toHaveLength(0);
+  });
+
+  it("só o admin ajusta pesos, com registro de quem alterou", async () => {
+    const p = await b.pessoaDe(participante);
+    const a = await b.pessoaDe(admin);
+    await negado(
+      b.como(participante, "insert into public.cost_weights (cost_item_id, person_id, weight) values ($1, $2, 0.5)", [
+        itemId,
+        p.id,
+      ]),
+    );
+    await b.como(
+      admin,
+      "insert into public.cost_weights (cost_item_id, person_id, weight, updated_by) values ($1, $2, 0.5, $3)",
+      [itemId, p.id, a.id],
+    );
+    const [w] = await b.como<{ weight: string; updated_by: string }>(
+      participante,
+      "select weight, updated_by from public.cost_weights where cost_item_id = $1",
+      [itemId],
+    );
+    expect(Number(w.weight)).toBe(0.5);
+    expect(w.updated_by).toBe(a.id);
+  });
+
+  it("adesão a extra só para quem é do próprio núcleo", async () => {
+    const p = await b.pessoaDe(participante);
+    const t = await b.pessoaDe(tesoureiro);
+    await b.como(participante, "insert into public.cost_item_optins (cost_item_id, person_id) values ($1, $2)", [
+      itemId,
+      p.id,
+    ]);
+    await negado(
+      b.como(participante, "insert into public.cost_item_optins (cost_item_id, person_id) values ($1, $2)", [
+        itemId,
+        t.id,
+      ]),
+    );
+    const removidos = await b.como(
+      participante,
+      "delete from public.cost_item_optins where cost_item_id = $1 and person_id = $2 returning person_id",
+      [itemId, t.id],
+    );
+    expect(removidos).toHaveLength(0);
+  });
+
+  it("membro pendente não vê custos", async () => {
+    const itens = await b.como(pendente, "select id from public.cost_items");
+    expect(itens).toHaveLength(0);
+  });
+});
+
 describe("baú: depósitos", () => {
   let depositoId: string;
 

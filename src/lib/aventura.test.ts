@@ -63,6 +63,13 @@ describe("pendências", () => {
     expect(lista).toEqual([{ texto: "Reagir a 1 estalagem (hospedagem)", href: "/aventuras/e1/estalagens" }]);
   });
 
+  it("na fase de presença, pede para confirmar quem do núcleo falta", () => {
+    const lista = pendencias({ ...base, fase: "presenca", nucleoTemOrigem: true, presencasPendentes: 2 });
+    expect(lista).toEqual([
+      { texto: "Confirmar a presença de 2 pessoas do seu núcleo", href: "/aventuras/e1/presenca" },
+    ]);
+  });
+
   it("sem pendências quando está tudo feito", () => {
     expect(pendencias({ ...base, fase: "preparativos", nucleoTemOrigem: true })).toEqual([]);
   });

@@ -28,6 +28,10 @@ export default async function AventuraLayout({
           "accommodations",
           "accommodation_reactions",
           "households",
+          "attendances",
+          "cost_items",
+          "cost_weights",
+          "cost_item_optins",
         ]}
       />
       <section>

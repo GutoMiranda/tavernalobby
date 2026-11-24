@@ -79,6 +79,8 @@ export function pendencias(params: {
   estalagens: { id: string }[];
   reacoesEstalagens: Reacao[];
   nucleoTemOrigem: boolean;
+  /** Pessoas do meu núcleo ainda sem resposta de presença (opcional). */
+  presencasPendentes?: number;
 }): Pendencia[] {
   const p = params;
   const base = `/aventuras/${p.eventoId}`;
@@ -107,6 +109,13 @@ export function pendencias(params: {
     }
     if (p.estalagens.length === 0)
       lista.push({ texto: "Sugerir uma estalagem (hospedagem)", href: `${base}/estalagens` });
+  }
+  if (["presenca", "preparativos"].includes(p.fase) && (p.presencasPendentes ?? 0) > 0) {
+    const n = p.presencasPendentes!;
+    lista.push({
+      texto: `Confirmar a presença de ${n} ${n === 1 ? "pessoa" : "pessoas"} do seu núcleo`,
+      href: `${base}/presenca`,
+    });
   }
   if (["datas", "estalagens", "presenca"].includes(p.fase) && !p.nucleoTemOrigem) {
     lista.push({ texto: "Informar a cidade de saída do seu núcleo", href: "/familia#origem" });
