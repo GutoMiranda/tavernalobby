@@ -1,3 +1,4 @@
+import { DatasCandidatasCampos } from "@/components/aventura/datas-candidatas-campos";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Evento } from "@/lib/aventura-dados";
@@ -8,7 +9,7 @@ function soData(valor: string | null | undefined) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(valor));
 }
 
-/** Campos do formulário de criar/editar aventura. */
+/** Campos do formulário de criar/editar aventura. Na criação, inclui as datas candidatas. */
 export function CamposAventura({ evento }: { evento?: Evento }) {
   return (
     <>
@@ -31,17 +32,7 @@ export function CamposAventura({ evento }: { evento?: Evento }) {
         <Label htmlFor="regiao">Região desejada</Label>
         <Input id="regiao" name="regiao" maxLength={120} defaultValue={evento?.region ?? ""} placeholder="Ex.: Serra da Mantiqueira" />
       </div>
-      <fieldset className="grid gap-3 sm:grid-cols-2">
-        <legend className="mb-1.5 text-sm font-medium">Período candidato (de quando até quando pode ser)</legend>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="inicio_candidato">A partir de</Label>
-          <Input id="inicio_candidato" name="inicio_candidato" type="date" defaultValue={evento?.candidate_start ?? ""} />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="fim_candidato">Até</Label>
-          <Input id="fim_candidato" name="fim_candidato" type="date" defaultValue={evento?.candidate_end ?? ""} />
-        </div>
-      </fieldset>
+      {!evento && <DatasCandidatasCampos />}
       <fieldset className="grid gap-3 sm:grid-cols-2">
         <legend className="mb-1.5 text-sm font-medium">Prazos das votações</legend>
         <div className="flex flex-col gap-1.5">

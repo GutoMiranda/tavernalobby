@@ -54,7 +54,7 @@ export default async function DatasPage({ params }: { params: Promise<{ id: stri
                       </span>
                       {escolhida && <Badge>Data escolhida</Badge>}
                     </div>
-                    {d.note && <p className="text-sm text-muted-foreground">{d.note}</p>}
+                    {d.note && <p className="text-sm text-muted-foreground">Motivo: {d.note}</p>}
                     <ReacaoBotoes tipo="data" alvoId={d.id} eventoId={id} placar={d.placar} rotulo={rotulo} desativado={fechada} />
                     {pessoa.is_admin && !fechada && (
                       <div className="flex flex-wrap gap-2 border-t border-border pt-2">
@@ -93,8 +93,6 @@ export default async function DatasPage({ params }: { params: Promise<{ id: stri
                     name="inicio"
                     type="date"
                     required
-                    min={evento.candidate_start ?? undefined}
-                    max={evento.candidate_end ?? undefined}
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -103,13 +101,11 @@ export default async function DatasPage({ params }: { params: Promise<{ id: stri
                     id="fim"
                     name="fim"
                     type="date"
-                    min={evento.candidate_start ?? undefined}
-                    max={evento.candidate_end ?? undefined}
                   />
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="nota">Observação (opcional)</Label>
+                <Label htmlFor="nota">Motivo (opcional)</Label>
                 <Input id="nota" name="nota" maxLength={200} placeholder="Ex.: feriado prolongado" />
               </div>
             </AcaoForm>

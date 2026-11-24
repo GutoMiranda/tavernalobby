@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { exigirAdmin, exigirMembro } from "@/lib/auth";
 import { FASES, type Fase } from "@/lib/aventura";
+import { lerDatasCandidatas } from "@/lib/datas-candidatas";
 import { reaisParaCentavos } from "@/lib/dinheiro";
 import { type EstadoAcao, mensagemErro } from "@/lib/erros";
 
@@ -32,8 +33,6 @@ function camposAventura(d: FormData) {
     name: txt(d, "nome", 120),
     description: txt(d, "descricao", 2000) || null,
     region: txt(d, "regiao", 120) || null,
-    candidate_start: dataOuNull(d, "inicio_candidato"),
-    candidate_end: dataOuNull(d, "fim_candidato"),
     date_vote_deadline: prazoOuNull(d, "prazo_datas"),
     accommodation_vote_deadline: prazoOuNull(d, "prazo_estalagens"),
   };
@@ -43,12 +42,28 @@ export async function criarAventura(_: EstadoAcao, d: FormData): Promise<EstadoA
   const { supabase, pessoa } = await exigirAdmin();
   const campos = camposAventura(d);
   if (!campos.name) return { erro: "Dê um nome para a aventura." };
+  const lidas = lerDatasCandidatas(d);
+  if ("erro" in lidas) return { erro: lidas.erro };
+  const { datas } = lidas;
+
   const { data, error } = await supabase
     .from("events")
-    .insert({ ...campos, created_by: pessoa.id })
+    .insert({
+      ...campos,
+      // Período candidato = da primeira à última data candidata.
+      candidate_start: datas.length ? datas.map((x) => x.start_date).sort()[0] : null,
+      candidate_end: datas.length ? datas.map((x) => x.end_date).sort().at(-1) : null,
+      created_by: pessoa.id,
+    })
     .select("id")
     .single<{ id: string }>();
   if (error) return { erro: mensagemErro(error) };
+  if (datas.length) {
+    const { error: e2 } = await supabase
+      .from("date_options")
+      .insert(datas.map((x) => ({ ...x, event_id: data.id, created_by: pessoa.id })));
+    if (e2) return { erro: `A aventura foi criada, mas as datas não: ${mensagemErro(e2)}` };
+  }
   revalidatePath("/aventuras");
   redirect(`/aventuras/${data.id}`);
 }
