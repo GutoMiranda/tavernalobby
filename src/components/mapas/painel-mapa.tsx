@@ -2,9 +2,9 @@
 
 import { AdvancedMarker, APIProvider, InfoWindow, Map, Pin, useMap } from "@vis.gl/react-google-maps";
 import { Bike, Bus, Car, ExternalLink, Footprints, Loader2, ThumbsDown, ThumbsUp } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 
-import { rotasDaEstalagem, type RotasDaEstalagem } from "@/app/aventuras/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ModoRota, RotaResumo } from "@/lib/rotas";
@@ -30,6 +30,13 @@ export type EstalagemPainel = {
   lng: number | null;
 };
 
+export type RotasDaEstalagem = {
+  /** Da cidade de saída do meu núcleo até a estalagem (null se o núcleo não tem origem). */
+  daCidade: RotaResumo[] | null;
+  /** Do ponto de encontro até a estalagem (null se não há ponto de encontro). */
+  doEncontro: RotaResumo[] | null;
+};
+
 const COR_CIDADE = "#EAB308"; // amarelo
 const COR_ENCONTRO = "#DC2626"; // vermelho
 
@@ -42,35 +49,28 @@ const MODOS: { id: ModoRota; rotulo: string; icone: typeof Car }[] = [
 
 /** Painel da aventura: mapa grande com todos os locais, resumo das estalagens e rotas coloridas até a escolhida. */
 export function PainelMapa({
-  eventoId,
   origens,
   encontro,
   estalagens,
-  inicial,
+  selecionada,
+  rotas,
 }: {
-  eventoId: string;
   origens: OrigemPainel[];
   encontro: EncontroPainel | null;
   estalagens: EstalagemPainel[];
-  inicial: string | null;
+  selecionada: string | null;
+  /** Rotas até a estalagem selecionada, calculadas no servidor. */
+  rotas: RotasDaEstalagem | null;
 }) {
-  const [selecionada, setSelecionada] = useState<string | null>(inicial);
   const [modo, setModo] = useState<ModoRota>("DRIVE");
-  const [rotas, setRotas] = useState<RotasDaEstalagem | null>(null);
   const [carregando, iniciar] = useTransition();
+  const router = useRouter();
+  const caminho = usePathname();
+  const setSelecionada = (id: string) =>
+    iniciar(() => router.replace(`${caminho}?estalagem=${encodeURIComponent(id)}`, { scroll: false }));
   const minhaOrigem = origens.find((o) => o.minha);
   const est = estalagens.find((e) => e.id === selecionada);
   const destino = est?.lat != null && est?.lng != null ? { lat: est.lat, lng: est.lng } : null;
-
-  useEffect(() => {
-    setRotas(null);
-    if (!selecionada || !destino || !CHAVE_MAPS) return;
-    iniciar(async () => {
-      setRotas(await rotasDaEstalagem(eventoId, selecionada).catch(() => null));
-    });
-    // destino muda junto com a estalagem selecionada
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventoId, selecionada]);
 
   const caminhos = useMemo(() => {
     const linha = (lista: RotaResumo[] | null | undefined, cor: string) => {
@@ -296,7 +296,13 @@ function Trecho({
               return (
                 <li key={id} className={cn("rounded px-1.5 py-1", id === modo && "bg-gold/20 font-medium")}>
                   <span className="block text-xs text-muted-foreground">{rotulo}</span>
-                  {carregando && !rotas ? "…" : r?.segundos != null ? formatarDuracao(r.segundos) : "sem rota"}
+                  {carregando
+                    ? "…"
+                    : r?.segundos != null
+                      ? formatarDuracao(r.segundos)
+                      : r?.erro
+                        ? "erro do Google"
+                        : "sem rota"}
                   {r?.segundos != null && r.metros != null && (
                     <span className="text-xs text-muted-foreground"> · {formatarDistancia(r.metros)}</span>
                   )}

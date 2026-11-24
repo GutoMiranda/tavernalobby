@@ -2,15 +2,30 @@ import { CalendarClock, CheckCircle2, ListTodo, Map as IconeMapa } from "lucide-
 import Link from "next/link";
 
 import { CopiarBotao } from "@/components/copiar-botao";
-import { type EstalagemPainel, type OrigemPainel, PainelMapa } from "@/components/mapas/painel-mapa";
+import {
+  type EstalagemPainel,
+  type OrigemPainel,
+  PainelMapa,
+  type RotasDaEstalagem,
+} from "@/components/mapas/painel-mapa";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { exigirMembro } from "@/lib/auth";
 import { contagemRegressiva, FASE_INFO, pendencias, ranking } from "@/lib/aventura";
 import { carregarAventura } from "@/lib/aventura-dados";
 import { formatarCentavos, formatarData, formatarPeriodo } from "@/lib/format";
+import { type ModoRota, rotasEmCache } from "@/lib/rotas";
 
-export default async function PainelAventuraPage({ params }: { params: Promise<{ id: string }> }) {
+const MODOS: ModoRota[] = ["DRIVE", "TWO_WHEELER", "TRANSIT", "WALK"];
+
+export default async function PainelAventuraPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ estalagem?: string }>;
+}) {
   const { id } = await params;
+  const { estalagem: estalagemPedida } = await searchParams;
   const { supabase, pessoa } = await exigirMembro();
   const dados = await carregarAventura(supabase, id);
   const { evento } = dados;
@@ -72,7 +87,21 @@ export default async function PainelAventuraPage({ params }: { params: Promise<{
     lat: e.lat,
     lng: e.lng,
   }));
-  const inicial = (escolhida ?? estalagensRanking.find((e) => e.lat != null))?.id ?? null;
+  const alvo =
+    dados.estalagens.find((e) => e.id === estalagemPedida) ??
+    escolhida ??
+    estalagensRanking.find((e) => e.lat != null) ??
+    null;
+  const minhaOrigem = origens.find((o) => o.minha);
+  let rotas: RotasDaEstalagem | null = null;
+  if (alvo?.lat != null && alvo.lng != null) {
+    const destino = { lat: alvo.lat, lng: alvo.lng };
+    const [daCidade, doEncontro] = await Promise.all([
+      minhaOrigem ? rotasEmCache(minhaOrigem, destino, MODOS) : null,
+      encontro ? rotasEmCache(encontro, destino, MODOS) : null,
+    ]);
+    rotas = { daCidade, doEncontro };
+  }
 
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const convite = [
@@ -206,11 +235,11 @@ export default async function PainelAventuraPage({ params }: { params: Promise<{
         </CardHeader>
         <CardContent>
           <PainelMapa
-            eventoId={id}
             origens={origens}
             encontro={encontro}
             estalagens={estalagensPainel}
-            inicial={inicial}
+            selecionada={alvo?.id ?? null}
+            rotas={rotas}
           />
         </CardContent>
       </Card>

@@ -8,7 +8,6 @@ import { FASES, type Fase } from "@/lib/aventura";
 import { lerDatasCandidatas } from "@/lib/datas-candidatas";
 import { reaisParaCentavos } from "@/lib/dinheiro";
 import { type EstadoAcao, mensagemErro } from "@/lib/erros";
-import { type RotaResumo, rotasEmCache } from "@/lib/rotas";
 
 function txt(d: FormData, campo: string, max = 200) {
   return String(d.get(campo) ?? "")
@@ -339,39 +338,4 @@ export async function salvarPontoEncontro(_: EstadoAcao, d: FormData): Promise<E
   if (error) return { erro: mensagemErro(error) };
   revalidatePath(`/aventuras/${eventId}`, "layout");
   return { ok: "Ponto de encontro salvo." };
-}
-
-// ---------------------------------------------------------------- rotas do painel
-
-export type RotasDaEstalagem = {
-  /** Da cidade de saída do meu núcleo até a estalagem (null se o núcleo não tem origem). */
-  daCidade: RotaResumo[] | null;
-  /** Do ponto de encontro até a estalagem (null se não há ponto de encontro). */
-  doEncontro: RotaResumo[] | null;
-};
-
-const MODOS_PAINEL = ["DRIVE", "TWO_WHEELER", "TRANSIT", "WALK"] as const;
-
-/** Rotas até uma estalagem, calculadas no servidor quando alguém toca nela no painel. */
-export async function rotasDaEstalagem(eventoId: string, estalagemId: string): Promise<RotasDaEstalagem> {
-  const { supabase, pessoa } = await exigirMembro();
-  const [{ data: est }, { data: ev }, { data: nucleo }] = await Promise.all([
-    supabase.from("accommodations").select("lat, lng").eq("id", estalagemId).eq("event_id", eventoId).maybeSingle(),
-    supabase.from("events").select("meeting_lat, meeting_lng").eq("id", eventoId).maybeSingle(),
-    supabase.from("households").select("origin_lat, origin_lng").eq("id", pessoa.household_id).maybeSingle(),
-  ]);
-  if (est?.lat == null || est?.lng == null) return { daCidade: null, doEncontro: null };
-  const destino = { lat: est.lat as number, lng: est.lng as number };
-  const modos = [...MODOS_PAINEL];
-  const [daCidade, doEncontro] = await Promise.all([
-    nucleo?.origin_lat != null && nucleo?.origin_lng != null
-      ? rotasEmCache({ lat: nucleo.origin_lat as number, lng: nucleo.origin_lng as number }, destino, modos).catch(
-          () => [],
-        )
-      : null,
-    ev?.meeting_lat != null && ev?.meeting_lng != null
-      ? rotasEmCache({ lat: ev.meeting_lat as number, lng: ev.meeting_lng as number }, destino, modos).catch(() => [])
-      : null,
-  ]);
-  return { daCidade, doEncontro };
 }

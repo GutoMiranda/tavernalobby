@@ -115,6 +115,8 @@ export type RotaResumo = {
   metros: number | null;
   /** Traçado da rota (Encoded Polyline), para desenhar no mapa. */
   polyline: string | null;
+  /** true quando o Google respondeu com erro (chave, API desativada, rede); diferente de "não existe rota". */
+  erro?: boolean;
 };
 
 /**
@@ -148,7 +150,15 @@ export async function calcularRotas(origem: Ponto, destino: Ponto, modos: ModoRo
           signal: AbortSignal.timeout(8000),
           cache: "no-store",
         });
-        if (!res.ok) return vazio;
+        if (!res.ok) {
+          const corpo = (await res.json().catch(() => null)) as {
+            error?: { status?: string; message?: string };
+          } | null;
+          console.error(
+            `[rotas] Routes API (${modo}) respondeu ${res.status}: ${corpo?.error?.status ?? ""} ${corpo?.error?.message ?? ""}`,
+          );
+          return { ...vazio, erro: true };
+        }
         const json = (await res.json()) as {
           routes?: {
             duration?: string;
@@ -166,17 +176,45 @@ export async function calcularRotas(origem: Ponto, destino: Ponto, modos: ModoRo
           metros: r.distanceMeters ?? null,
           polyline: r.polyline?.encodedPolyline ?? null,
         };
-      } catch {
-        return vazio;
+      } catch (e) {
+        console.error(`[rotas] Routes API (${modo}) falhou: ${e instanceof Error ? e.message : String(e)}`);
+        return { ...vazio, erro: true };
       }
     }),
   );
 }
 
-/** calcularRotas com cache de 30 minutos por par de coordenadas e modos (economiza a cota do Google). */
-export const rotasEmCache = unstable_cache(
-  (o: { lat: number; lng: number }, d: { lat: number; lng: number }, modos: ModoRota[]) =>
-    calcularRotas({ id: "o", lat: o.lat, lng: o.lng }, { id: "d", lat: d.lat, lng: d.lng }, modos),
-  ["rotas-v2"],
+const emCache = unstable_cache(
+  async (o: { lat: number; lng: number }, d: { lat: number; lng: number }, modos: ModoRota[]) => {
+    const r = await calcularRotas({ id: "o", lat: o.lat, lng: o.lng }, { id: "d", lat: d.lat, lng: d.lng }, modos);
+    // Falha do Google não entra no cache: assim a próxima visita tenta de novo.
+    if (r.some((x) => x.erro)) throw Object.assign(new Error("rotas com erro"), { resultado: r });
+    return r;
+  },
+  ["rotas-v3"],
   { revalidate: 1800 },
 );
+
+/** calcularRotas com cache de 30 minutos por par de coordenadas e modos (economiza a cota do Google). */
+export async function rotasEmCache(
+  o: { lat: number; lng: number },
+  d: { lat: number; lng: number },
+  modos: ModoRota[],
+): Promise<RotaResumo[]> {
+  try {
+    return await emCache({ lat: o.lat, lng: o.lng }, { lat: d.lat, lng: d.lng }, modos);
+  } catch (e) {
+    const resultado = (e as { resultado?: RotaResumo[] }).resultado;
+    return (
+      resultado ??
+      modos.map((modo) => ({
+        modo,
+        segundos: null,
+        segundosSemTransito: null,
+        metros: null,
+        polyline: null,
+        erro: true,
+      }))
+    );
+  }
+}
