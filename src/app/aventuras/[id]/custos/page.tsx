@@ -13,7 +13,7 @@ import { carregarAventura } from "@/lib/aventura-dados";
 import { carregarCustos, type ItemCusto } from "@/lib/custos-dados";
 import { centavosParaCampo } from "@/lib/dinheiro";
 import { type ItemRateio, NOME_CATEGORIA, type ParteRateio, type RateioItem, elegiveis } from "@/lib/finance/rateio";
-import { depositosDoNucleo, planoDeEconomia } from "@/lib/finance/economia";
+import { depositosDoNucleo, dividirEmParcelas, nomeDoMes, planoDeEconomia } from "@/lib/finance/economia";
 import { formatarCentavos, formatarData, formatarDia, hojeEmSaoPaulo } from "@/lib/format";
 
 import {
@@ -45,6 +45,17 @@ export default async function CustosPage({ params }: { params: Promise<{ id: str
   const contagem = contagemRegressiva(evento.start_date, hoje);
   const deposito = depositosDoNucleo(custos.lancamentos, pessoa.household_id);
   const plano = planoDeEconomia(minhaParteNucleo, deposito.confirmadoCentavos, hoje, evento.start_date);
+  const porAdulto = doMeuNucleo
+    .map((p) => ({ id: p.id, nome: p.name, parte: rateio.porPessoa.get(p.id) ?? 0 }))
+    .filter((a) => a.parte > 0)
+    .map((a) => ({
+      ...a,
+      porMes:
+        dividirEmParcelas(
+          a.parte,
+          plano.parcelas.map((x) => x.mes),
+        )[0]?.centavos ?? a.parte,
+    }));
   const meusLancamentos = custos.lancamentos.filter(
     (l) => l.kind === "entrada" && l.household_id === pessoa.household_id,
   );
@@ -91,7 +102,11 @@ export default async function CustosPage({ params }: { params: Promise<{ id: str
             <Indicador
               rotulo="Guardar por mês"
               valor={formatarCentavos(plano.porMesCentavos)}
-              detalhe={plano.meses ? `por ${plano.meses} ${plano.meses === 1 ? "mês" : "meses"}` : "sem data definida"}
+              detalhe={
+                plano.meses
+                  ? `${plano.meses} ${plano.meses === 1 ? "mês" : "meses"}: ${nomeDoMes(plano.parcelas[0].mes)} a ${nomeDoMes(plano.parcelas[plano.parcelas.length - 1].mes)}`
+                  : "sem data definida"
+              }
               destaque
             />
             <Indicador
@@ -138,15 +153,42 @@ export default async function CustosPage({ params }: { params: Promise<{ id: str
               )}
             </div>
             <div className="rounded-md bg-white/50 p-3 text-sm">
-              <p className="font-medium">Próximo depósito</p>
-              <p>
-                {plano.faltaCentavos === 0
-                  ? "Sua parte está coberta. Loot guardado!"
-                  : `Sugestão: ${formatarCentavos(plano.porMesCentavos)} por mês${plano.meses ? ` até ${formatarDia(evento.start_date!)}` : ""}.`}
-              </p>
-              <p className="mt-1 text-muted-foreground">
-                O envio de depósitos com comprovante, a programação dos próximos pagamentos e os lembretes chegam com o
-                Baú (próxima etapa).
+              <p className="font-medium">Plano mês a mês</p>
+              {plano.faltaCentavos === 0 ? (
+                <p>Sua parte está coberta. Loot guardado!</p>
+              ) : plano.parcelas.length === 0 ? (
+                <p>Quando as datas forem fechadas, o valor que falta é dividido pelos meses até a viagem.</p>
+              ) : (
+                <>
+                  <p className="text-muted-foreground">
+                    O que falta ({formatarCentavos(plano.faltaCentavos)}) dividido pelos meses do mês atual até o mês
+                    anterior ao da viagem. Centavos que não dividem certinho vão para os primeiros meses; a soma fecha
+                    exatamente.
+                  </p>
+                  <ol className="mt-2 grid grid-cols-2 gap-x-4 gap-y-0.5 sm:grid-cols-3">
+                    {plano.parcelas.map((p) => (
+                      <li key={p.mes} className="flex justify-between gap-2">
+                        <span>{nomeDoMes(p.mes)}</span>
+                        <span className="font-medium">{formatarCentavos(p.centavos)}</span>
+                      </li>
+                    ))}
+                  </ol>
+                  {porAdulto.length > 1 && (
+                    <div className="mt-2 border-t border-border pt-2">
+                      <p className="font-medium">Por pessoa do núcleo (referência, sem descontar depósitos)</p>
+                      <ul>
+                        {porAdulto.map((a) => (
+                          <li key={a.id}>
+                            {a.nome}: parte de {formatarCentavos(a.parte)} → {formatarCentavos(a.porMes)} por mês
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              )}
+              <p className="mt-2 text-muted-foreground">
+                O envio de depósitos com comprovante e os lembretes chegam com o Baú (próxima etapa).
               </p>
             </div>
           </div>

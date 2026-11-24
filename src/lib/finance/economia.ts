@@ -22,19 +22,50 @@ export function depositosDoNucleo(lancamentos: Lancamento[], nucleoId: string) {
   };
 }
 
-/** Meses (arredondando para cima, mínimo 1) entre hoje e a data, ambos "AAAA-MM-DD". */
-export function mesesAte(hoje: string, data: string): number {
-  const [ah, mh, dh] = hoje.split("-").map(Number);
-  const [ad, md, dd] = data.split("-").map(Number);
-  let meses = (ad - ah) * 12 + (md - mh);
-  if (dd > dh) meses += 1; // mês parcial conta como um depósito a mais
-  return Math.max(1, meses);
+/**
+ * Meses de depósito: do mês atual (inclusive) até o mês anterior ao da viagem (inclusive).
+ * Ex.: hoje em novembro/2026 e viagem em maio/2027 → nov, dez, jan, fev, mar, abr = 6 meses.
+ * Viagem no mês atual (ou data já passada) → 1 mês (o atual).
+ */
+export function mesesDeDeposito(hoje: string, inicio: string): string[] {
+  const [ah, mh] = hoje.split("-").map(Number);
+  const [ad, md] = inicio.split("-").map(Number);
+  const total = Math.max(1, (ad - ah) * 12 + (md - mh));
+  return Array.from({ length: total }, (_, i) => {
+    const m = mh - 1 + i;
+    return `${ah + Math.floor(m / 12)}-${String((m % 12) + 1).padStart(2, "0")}`;
+  });
 }
 
-/** Quanto falta e quanto guardar por mês (arredondado para cima, em centavos). */
+export type Parcela = { mes: string; centavos: number };
+
+/**
+ * Divide um valor em parcelas mensais exatas, em centavos: cada mês recebe o valor ÷ meses (para baixo)
+ * e os centavos que sobram vão, um a um, para os primeiros meses. A soma das parcelas é sempre o valor.
+ */
+export function dividirEmParcelas(centavos: number, meses: string[]): Parcela[] {
+  if (meses.length === 0) return [];
+  const base = Math.floor(centavos / meses.length);
+  const resto = centavos - base * meses.length;
+  return meses.map((mes, i) => ({ mes, centavos: base + (i < resto ? 1 : 0) }));
+}
+
+/** Quanto falta e o plano de depósitos mensais até o mês da viagem. */
 export function planoDeEconomia(parteCentavos: number, jaEnviadoCentavos: number, hoje: string, inicio: string | null) {
   const faltaCentavos = Math.max(0, parteCentavos - jaEnviadoCentavos);
-  if (!inicio || inicio <= hoje) return { faltaCentavos, meses: null, porMesCentavos: faltaCentavos };
-  const meses = mesesAte(hoje, inicio);
-  return { faltaCentavos, meses, porMesCentavos: Math.ceil(faltaCentavos / meses) };
+  if (!inicio) return { faltaCentavos, meses: null, porMesCentavos: faltaCentavos, parcelas: [] as Parcela[] };
+  const parcelas = dividirEmParcelas(faltaCentavos, mesesDeDeposito(hoje, inicio));
+  return {
+    faltaCentavos,
+    meses: parcelas.length,
+    porMesCentavos: parcelas[0]?.centavos ?? 0,
+    parcelas,
+  };
+}
+
+/** "2027-01" → "jan/2027". */
+export function nomeDoMes(mes: string): string {
+  const nomes = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  const [a, m] = mes.split("-").map(Number);
+  return `${nomes[m - 1]}/${a}`;
 }
