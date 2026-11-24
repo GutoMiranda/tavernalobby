@@ -26,6 +26,20 @@ export function formatarData(valor: Date | string): string {
   return data.format(d);
 }
 
+const dataHora = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: FUSO,
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/** "dd/mm/aaaa, hh:mm" no fuso de São Paulo. */
+export function formatarDataHora(valor: Date | string): string {
+  return dataHora.format(typeof valor === "string" ? new Date(valor) : valor);
+}
+
 /** Formata uma data sem horário ("2027-01-08", tipo `date` do banco) como "08/01/2027", sem mudar de dia por fuso. */
 export function formatarDia(iso: string): string {
   const [ano, mes, dia] = iso.slice(0, 10).split("-");

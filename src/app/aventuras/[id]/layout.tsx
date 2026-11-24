@@ -35,6 +35,7 @@ export default async function AventuraLayout({
           "funds",
           "fund_transactions",
           "deposit_plans",
+          "pix_checkouts",
         ]}
       />
       <section>

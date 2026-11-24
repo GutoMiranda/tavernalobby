@@ -89,9 +89,5 @@
 /* Textura de madeira discreta para o cabeçalho. */
 .bg-madeira {
   background-color: var(--wood);
-  background-image: repeating-linear-gradient(
-    90deg,
-    rgb(255 255 255 / 0.025) 0 2px,
-    transparent 2px 9px
-  );
+  background-image: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.025) 0 2px, transparent 2px 9px);
 }

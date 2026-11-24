@@ -7,7 +7,7 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 - [x] **Etapa 3 — Login, convite e família**: Google + link mágico (setup §3); convite; "Aguardando aprovação"; aprovação e tags; "Minha família".
 - [x] **Etapa 4 — Aventuras, datas e estalagens**: painel; votação de datas; estalagens; origens com Places; mapa (setup §4); tempo real.
 - [x] **Etapa 5 — Presença e custos**: presença por pessoa; regras de rateio em `src/lib/finance/` com testes; "Minha parte".
-- [~] **Etapa 6 — Baú (caixinha)**: configuração e QR Pix; depósitos e confirmação; saídas e estornos; painel; troca de Pix com aviso, notificação e e-mail (setup §5).
+- [~] **Etapa 6 — Baú (caixinha)**: configuração e QR Pix; depósitos e confirmação; saídas e estornos; painel; troca de Pix com aviso, notificação e e-mail (setup §5); Pix automático pela InfinitePay (setup §7).
 - [ ] **Etapa 7 — Armazém e notificações**: despensa integrada aos custos; sino em tempo real.
 - [ ] **Etapa 8 — Qualidade e deploy**: Playwright dos fluxos; acessibilidade e 375 px; revisão de segurança; Vercel (setup §6); páginas públicas `/privacidade` e `/termos` e publicação do app OAuth no Google (Branding + "Publicar app"); `docs/manual-do-grupo.md`.
 
@@ -38,3 +38,4 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 - 24/11/2026: custos e presença usam a data mais votada (prévia) até o admin fechar a data, com desempate testado. 113 testes Vitest e 4 Playwright passando.
 - 24/11/2026: dono aprovou a Etapa 5 e os ajustes. Etapa 5 concluída.
 - 24/11/2026: Etapa 6 implementada (abrir baú, banco/titular/Pix com histórico, aviso de 7 dias, notificação e e-mail; QR Pix com e sem valor; depósitos com comprovante; confirmação/recusa e saídas pelo Tesoureiro; estornos; pilha de tesouro, meta e por núcleo; plano de depósitos com lembrete). Migração 9. 126 testes Vitest e 4 Playwright passando. Aguardando o dono: migração 9, tag Tesoureiro e (opcional) Gmail do setup §5.
+- 24/11/2026: Pix automático pela InfinitePay (pedido do dono): link de pagamento, confirmação conferida na API (webhook e retorno), crédito já confirmado e idempotente, fluxo manual mantido como alternativa. Migração 10. 138 testes Vitest e 6 Playwright passando. Aguardando o dono: conta InfinitePay com checkout integrado, `INFINITEPAY_HANDLE` no `.env.local`, migrações 9 e 10 e teste real de R$ 1,00.

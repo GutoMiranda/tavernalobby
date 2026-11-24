@@ -1,4 +1,15 @@
-import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, Coins, History, QrCode, Undo2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  CheckCircle2,
+  Coins,
+  ExternalLink,
+  History,
+  QrCode,
+  Undo2,
+  Zap,
+} from "lucide-react";
 import type { Metadata } from "next";
 import QRCode from "qrcode";
 
@@ -16,12 +27,14 @@ import { centavosParaCampo } from "@/lib/dinheiro";
 import { avisoPixAtivo, lembreteDoPlano, saldoDoBau } from "@/lib/finance/bau";
 import { depositosDoNucleo, planoDeEconomia } from "@/lib/finance/economia";
 import { pixCopiaECola } from "@/lib/finance/pix";
-import { formatarCentavos, formatarData, formatarDia, hojeEmSaoPaulo } from "@/lib/format";
+import { formatarCentavos, formatarData, formatarDataHora, formatarDia, hojeEmSaoPaulo } from "@/lib/format";
+import { handleInfinitePay } from "@/lib/infinitepay";
 
 import {
   abrirBau,
   confirmarDeposito,
   estornarLancamento,
+  pagarComInfinitePay,
   recusarDeposito,
   registrarDeposito,
   registrarSaida,
@@ -65,11 +78,21 @@ type Lanc = {
   created_by: string | null;
   reviewed_by: string | null;
   review_note: string | null;
+  external_receipt_url: string | null;
   created_at: string;
 };
+type Cobranca = { id: string; amount_cents: number; checkout_url: string; created_at: string };
 
-export default async function BauPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function BauPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ pix?: string }>;
+}) {
   const { id } = await params;
+  const { pix: retornoPix } = await searchParams;
+  const pixAutomatico = handleInfinitePay() != null;
   const { supabase, pessoa, user, tags } = await exigirMembro();
   const dados = await carregarAventura(supabase, id);
   const custos = await carregarCustos(supabase, dados);
@@ -107,11 +130,11 @@ export default async function BauPage({ params }: { params: Promise<{ id: string
     );
   }
 
-  const [lancR, histR, planosR] = await Promise.all([
+  const [lancR, histR, planosR, cobrancasR] = await Promise.all([
     supabase
       .from("fund_transactions")
       .select(
-        "id, kind, household_id, amount_cents, occurred_on, description, receipt_path, status, reverses_id, created_by, reviewed_by, review_note, created_at",
+        "id, kind, household_id, amount_cents, occurred_on, description, receipt_path, status, reverses_id, created_by, reviewed_by, review_note, external_receipt_url, created_at",
       )
       .eq("fund_id", fundo.id)
       .order("occurred_on", { ascending: false })
@@ -128,7 +151,18 @@ export default async function BauPage({ params }: { params: Promise<{ id: string
       .select("household_id, amount_cents, day_of_month")
       .eq("fund_id", fundo.id)
       .returns<{ household_id: string; amount_cents: number; day_of_month: number }[]>(),
+    supabase
+      .from("pix_checkouts")
+      .select("id, amount_cents, checkout_url, created_at")
+      .eq("fund_id", fundo.id)
+      .eq("created_by", pessoa.id)
+      .eq("status", "aberto")
+      .gte("created_at", new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString())
+      .order("created_at", { ascending: false })
+      .limit(5)
+      .returns<Cobranca[]>(),
   ]);
+  const cobrancasAbertas = cobrancasR.data ?? [];
   const lancamentos = lancR.data ?? [];
   const historico = histR.data ?? [];
   const meuPlano = (planosR.data ?? []).find((p) => p.household_id === pessoa.household_id);
@@ -200,6 +234,25 @@ export default async function BauPage({ params }: { params: Promise<{ id: string
         </div>
       )}
 
+      {retornoPix === "ok" && (
+        <div
+          role="status"
+          className="flex gap-3 rounded-lg border-2 border-bottle bg-bottle/10 p-4 text-bottle lg:col-span-3"
+        >
+          <CheckCircle2 className="size-6 shrink-0" aria-hidden />
+          <p className="font-semibold">Pix confirmado pela InfinitePay. Loot guardado no baú!</p>
+        </div>
+      )}
+      {retornoPix === "pendente" && (
+        <div role="status" className="flex gap-3 rounded-lg border-2 border-gold bg-gold/10 p-4 lg:col-span-3">
+          <AlertTriangle className="size-6 shrink-0 text-gold" aria-hidden />
+          <p>
+            Ainda não recebemos a confirmação do pagamento. Se você já pagou, ele entra sozinho em alguns minutos. Se
+            não pagou, use “Continuar pagamento” abaixo.
+          </p>
+        </div>
+      )}
+
       <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -251,12 +304,70 @@ export default async function BauPage({ params }: { params: Promise<{ id: string
         </CardContent>
       </Card>
 
+      {pixAutomatico && (
+        <Card className="border-bottle/60">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="size-5 text-bottle" aria-hidden /> Pix automático · InfinitePay
+            </CardTitle>
+            <CardDescription>
+              Você paga o Pix na página segura da InfinitePay e o depósito entra no baú já confirmado, sem esperar o
+              Tesoureiro.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4 text-sm">
+            <AcaoForm action={pagarComInfinitePay} textoBotao="Pagar com Pix (confirmação automática)">
+              <input type="hidden" name="evento" value={id} />
+              <input type="hidden" name="fundo" value={fundo.id} />
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="auto-valor">Valor (R$, mínimo 1,00)</Label>
+                <Input
+                  id="auto-valor"
+                  name="valor"
+                  inputMode="decimal"
+                  required
+                  defaultValue={valorSugerido ? centavosParaCampo(valorSugerido) : ""}
+                />
+              </div>
+            </AcaoForm>
+            {cobrancasAbertas.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <p className="font-medium">Pagamentos começados e ainda não confirmados</p>
+                <ul className="flex flex-col gap-2">
+                  {cobrancasAbertas.map((c) => (
+                    <li
+                      key={c.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-white/40 p-2"
+                    >
+                      <span>
+                        {formatarCentavos(c.amount_cents)} · {formatarDataHora(c.created_at)}
+                      </span>
+                      <a
+                        href={c.checkout_url}
+                        className="inline-flex items-center gap-1 text-bottle underline underline-offset-4"
+                      >
+                        Continuar pagamento <ExternalLink className="size-3.5" aria-hidden />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-muted-foreground">Se já pagou, a confirmação chega sozinha. Não pague duas vezes.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <QrCode className="size-5 text-bottle" aria-hidden /> Pagar com Pix
+            <QrCode className="size-5 text-bottle" aria-hidden />{" "}
+            {pixAutomatico ? "Pix direto na chave (alternativa)" : "Pagar com Pix"}
           </CardTitle>
-          <CardDescription>Use o app do seu banco. Confira o titular antes de confirmar.</CardDescription>
+          <CardDescription>
+            Use o app do seu banco. Confira o titular antes de confirmar.
+            {pixAutomatico && " Depois, envie o comprovante em “Paguei por fora”."}
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 text-sm">
           {!fundo.pix_key ? (
@@ -298,7 +409,8 @@ export default async function BauPage({ params }: { params: Promise<{ id: string
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ArrowDownCircle className="size-5 text-bottle" aria-hidden /> Registrar depósito
+            <ArrowDownCircle className="size-5 text-bottle" aria-hidden />{" "}
+            {pixAutomatico ? "Paguei por fora (enviar comprovante)" : "Registrar depósito"}
           </CardTitle>
           <CardDescription>
             Depois de fazer o Pix, registre aqui. Fica “aguardando” até o Tesoureiro confirmar.
@@ -589,6 +701,16 @@ export default async function BauPage({ params }: { params: Promise<{ id: string
                         className="text-bottle underline underline-offset-4"
                       >
                         Ver comprovante
+                      </a>
+                    )}
+                    {l.external_receipt_url && (
+                      <a
+                        href={l.external_receipt_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-bottle underline underline-offset-4"
+                      >
+                        Ver recibo da InfinitePay
                       </a>
                     )}
                     {podeEstornar && (

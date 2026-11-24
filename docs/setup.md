@@ -64,6 +64,16 @@ O Google Maps exige uma **conta de faturamento com cartão**, mas cada serviço 
 2. Em **Settings → Environment Variables**, cadastre as mesmas variáveis do `.env.local`.
 3. Depois do primeiro deploy, volte aos passos 3.2, 3.4 e 4.5 e adicione o endereço final da Vercel.
 
+## 7. Pix automático (InfinitePay)
+
+Pix com confirmação automática no Baú. Taxa zero no Pix pelo link. O dinheiro cai na conta InfinitePay de quem é dono da InfiniteTag configurada (não na chave Pix cadastrada no Baú).
+
+1. Instale o app **InfinitePay** e abra a conta (o dono decide se CNPJ/MEI ou CPF; se a conta CPF não liberar o link integrado, use um MEI ou o plano B, Mercado Pago).
+2. No app: **Configurações → Checkout → Habilitar checkout integrado** (sem isso a API responde `external_checkout_not_enabled`).
+3. Copie sua **InfiniteTag** (aparece como `$seunome`) e grave no `.env.local` **sem o `$`**: `INFINITEPAY_HANDLE=seunome`. Não é senha, mas fica fora do código para só o dono mudar para onde vai o dinheiro.
+4. O aviso automático (webhook) só chega quando o site estiver publicado em https (Vercel, seção 6). Rodando no seu PC, o crédito acontece quando a pessoa volta da página de pagamento.
+5. Não existe ambiente de teste: teste com um Pix real de R$ 1,00.
+
 ## Resumo das variáveis (`.env.local`)
 
 ```
@@ -76,4 +86,5 @@ SMTP_USER=
 SMTP_APP_PASSWORD=
 ADMIN_EMAIL=guto.miranda90@gmail.com
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+INFINITEPAY_HANDLE=
 ```

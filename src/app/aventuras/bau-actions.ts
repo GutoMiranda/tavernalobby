@@ -1,12 +1,17 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
+
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { exigirAdmin, exigirMembro } from "@/lib/auth";
 import { reaisParaCentavos } from "@/lib/dinheiro";
 import { enviarEmail } from "@/lib/email";
 import { type EstadoAcao, mensagemErro } from "@/lib/erros";
+import { urlDoAviso } from "@/lib/finance/infinitepay";
 import { hojeEmSaoPaulo } from "@/lib/format";
+import { criarLink, handleInfinitePay } from "@/lib/infinitepay";
 
 const UUID = /^[0-9a-f-]{36}$/i;
 
@@ -143,6 +148,50 @@ export async function registrarDeposito(_: EstadoAcao, d: FormData): Promise<Est
   if (error) return { erro: mensagemErro(error) };
   atualizar(eventId);
   return { ok: "Depósito registrado. Aguarde o Guardião do Baú (Tesoureiro) confirmar." };
+}
+
+/**
+ * Pix com confirmação automática: cria a cobrança na InfinitePay e leva a pessoa ao pagamento.
+ * O crédito no baú acontece quando a InfinitePay avisa ou quando a pessoa volta do pagamento,
+ * sempre depois de conferir na API (src/lib/infinitepay.ts).
+ */
+export async function pagarComInfinitePay(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
+  const { supabase, pessoa } = await exigirMembro();
+  const handle = handleInfinitePay();
+  if (!handle) return { erro: "O Pix automático ainda não foi configurado pelo Mestre da Taverna." };
+  const eventId = txt(d, "evento", 40);
+  const fundId = txt(d, "fundo", 40);
+  const valor = reaisParaCentavos(txt(d, "valor", 20));
+  if (!UUID.test(eventId) || !UUID.test(fundId)) return { erro: "Baú inválido." };
+  if (!valor || valor < 100) return { erro: "Informe o valor em reais, a partir de R$ 1,00." };
+  if (valor > 5_000_000) return { erro: "Valor muito alto para um depósito só." };
+
+  const { data: evento } = await supabase.from("events").select("name").eq("id", eventId).maybeSingle();
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const pedido = randomUUID();
+  let url: string;
+  try {
+    url = await criarLink({
+      handle,
+      pedido,
+      valorCentavos: valor,
+      descricao: `Baú: ${evento?.name ?? "aventura"}`.slice(0, 100),
+      retorno: new URL("/api/infinitepay/retorno", site).toString(),
+      aviso: urlDoAviso(site),
+    });
+  } catch {
+    return { erro: 'Não foi possível falar com a InfinitePay agora. Tente de novo ou use "Paguei por fora".' };
+  }
+  const { error } = await supabase.from("pix_checkouts").insert({
+    id: pedido,
+    fund_id: fundId,
+    household_id: pessoa.household_id,
+    amount_cents: valor,
+    checkout_url: url,
+    created_by: pessoa.id,
+  });
+  if (error) return { erro: mensagemErro(error) };
+  redirect(url);
 }
 
 export async function confirmarDeposito(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {

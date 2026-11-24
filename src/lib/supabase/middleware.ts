@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { supabaseEnv } from "./env";
 
 /** Rotas abertas sem login. */
-const PUBLICAS = ["/entrar", "/convite", "/auth", "/offline"];
+const PUBLICAS = ["/entrar", "/convite", "/auth", "/offline", "/api/infinitepay"];
 
 export function rotaPublica(pathname: string) {
   return PUBLICAS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

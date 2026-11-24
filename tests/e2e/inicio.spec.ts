@@ -31,3 +31,13 @@ test("manifest do PWA está disponível com ícones", async ({ request }) => {
     expect((await request.get(icone.src)).ok()).toBeTruthy();
   }
 });
+
+test("aviso falso da InfinitePay é recusado sem creditar nada", async ({ request }) => {
+  const res = await request.post("/api/infinitepay/webhook", { data: { order_nsu: "x", amount: 100 } });
+  expect(res.status()).toBe(400);
+});
+
+test("retorno da InfinitePay sem dados não confirma pagamento", async ({ page }) => {
+  await page.goto("/api/infinitepay/retorno");
+  await expect(page).toHaveURL(/\/entrar/);
+});
