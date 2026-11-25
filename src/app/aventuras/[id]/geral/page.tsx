@@ -1,19 +1,15 @@
 import { ArrowRight, Flag, Home, MapPin } from "lucide-react";
 import type { Metadata } from "next";
 
-import { AcaoForm } from "@/components/acao-form";
-import { CampoLugar } from "@/components/mapas/campo-lugar";
 import { RotaViewer } from "@/components/mapas/rota-viewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { exigirMembro } from "@/lib/auth";
+import { LinkSalao } from "@/components/mestre/link-salao";
+import { exigirMembro, getPermissoes } from "@/lib/auth";
 import { carregarAventura } from "@/lib/aventura-dados";
 import { type ModoRota, type RotaResumo, rotasEmCache } from "@/lib/rotas";
 import { formatarDistancia, formatarDuracao } from "@/lib/viagem";
-
-import { salvarPontoEncontro } from "../../actions";
 
 export const metadata: Metadata = { title: "Geral" };
 
@@ -34,21 +30,6 @@ function horarioSP(iso: string) {
   }).format(new Date(iso));
 }
 
-function paraCampoDataHora(iso: string | null) {
-  if (!iso) return "";
-  const p = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(new Date(iso));
-  const v = (t: string) => p.find((x) => x.type === t)?.value;
-  return `${v("year")}-${v("month")}-${v("day")}T${v("hour")}:${v("minute")}`;
-}
-
 export default async function GeralPage({
   params,
   searchParams,
@@ -59,6 +40,7 @@ export default async function GeralPage({
   const { id } = await params;
   const filtros = await searchParams;
   const { supabase, pessoa } = await exigirMembro();
+  const permissoes = await getPermissoes();
   const dados = await carregarAventura(supabase, id);
   const { evento } = dados;
 
@@ -134,9 +116,7 @@ export default async function GeralPage({
               {evento.meeting_notes && <p className="text-sm whitespace-pre-line">{evento.meeting_notes}</p>}
             </div>
           ) : (
-            <p className="text-muted-foreground">
-              Ainda não definido.{pessoa.is_admin ? "" : " O Mestre da Taverna (admin) vai marcar."}
-            </p>
+            <p className="text-muted-foreground">Ainda não definido. Quem organiza vai marcar.</p>
           )}
 
           {roteiro && (
@@ -155,54 +135,8 @@ export default async function GeralPage({
             </div>
           )}
 
-          {pessoa.is_admin && (
-            <details className="rounded-md border border-border p-3" open={!evento.meeting_address}>
-              <summary className="cursor-pointer font-medium">
-                {evento.meeting_address ? "Alterar ponto de encontro" : "Definir ponto de encontro"}
-              </summary>
-              <div className="mt-3">
-                <AcaoForm action={salvarPontoEncontro} textoBotao="Salvar ponto de encontro">
-                  <input type="hidden" name="evento" value={id} />
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="enc-nome">Nome do lugar</Label>
-                    <Input
-                      id="enc-nome"
-                      name="nome"
-                      maxLength={120}
-                      defaultValue={evento.meeting_name ?? ""}
-                      placeholder="Ex.: Posto Graal da Bandeirantes"
-                    />
-                  </div>
-                  <CampoLugar
-                    id="enc-lugar"
-                    rotulo="Endereço"
-                    tipo="endereco"
-                    valorInicial={evento.meeting_address}
-                    latInicial={evento.meeting_lat ?? undefined}
-                    lngInicial={evento.meeting_lng ?? undefined}
-                  />
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="enc-quando">Data e hora</Label>
-                    <Input
-                      id="enc-quando"
-                      name="quando"
-                      type="datetime-local"
-                      defaultValue={paraCampoDataHora(evento.meeting_at)}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="enc-notas">Observações</Label>
-                    <Input
-                      id="enc-notas"
-                      name="notas"
-                      maxLength={1000}
-                      defaultValue={evento.meeting_notes ?? ""}
-                      placeholder="Ex.: encontrar no estacionamento"
-                    />
-                  </div>
-                </AcaoForm>
-              </div>
-            </details>
+          {permissoes.aventura.ver && (
+            <LinkSalao href={`/mestre/aventuras/${id}/aventura`} texto="Definir no Salão do Mestre" />
           )}
         </CardContent>
       </Card>

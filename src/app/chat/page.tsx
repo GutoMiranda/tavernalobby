@@ -4,14 +4,14 @@ import { ChatConversa } from "@/components/chat/chat-conversa";
 import { ListaOnlinePagina } from "@/components/chat/lista-online-pagina";
 import { IconeCaneca } from "@/components/icones";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { exigirMembro } from "@/lib/auth";
+import { exigirMembro, getPermissoes } from "@/lib/auth";
 import { carregarMembros } from "@/lib/membros-dados";
 
 export const metadata: Metadata = { title: "Chat" };
 
 export default async function ChatPage() {
   const { supabase, pessoa } = await exigirMembro();
-  const membros = await carregarMembros(supabase);
+  const [membros, permissoes] = await Promise.all([carregarMembros(supabase), getPermissoes()]);
   const eu = membros.find((m) => m.id === pessoa.id) ?? {
     id: pessoa.id,
     name: pessoa.name,
@@ -35,7 +35,12 @@ export default async function ChatPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex min-h-[60vh] flex-col px-0">
-          <ChatConversa eu={eu} souAdmin={pessoa.is_admin} membros={membros} destacarHash />
+          <ChatConversa
+            eu={eu}
+            moderacao={{ resolver: permissoes.chat.editar, apagar: permissoes.chat.excluir }}
+            membros={membros}
+            destacarHash
+          />
         </CardContent>
       </Card>
       <Card>

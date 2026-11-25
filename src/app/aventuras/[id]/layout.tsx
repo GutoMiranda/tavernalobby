@@ -17,7 +17,7 @@ export default async function AventuraLayout({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { supabase, pessoa } = await exigirMembro();
+  const { supabase } = await exigirMembro();
   const { evento } = await carregarAventura(supabase, id);
 
   return (
@@ -61,7 +61,7 @@ export default async function AventuraLayout({
           </div>
         </div>
       </Card>
-      <AbasAventura id={id} souAdmin={pessoa.is_admin} />
+      <AbasAventura id={id} />
       {children}
     </div>
   );

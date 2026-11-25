@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { exigirAdmin, exigirMembro } from "@/lib/auth";
+import { exigirMembro, exigirPermissao } from "@/lib/auth";
+import { revalidarAventura } from "@/lib/revalidar";
 import { FASES, type Fase } from "@/lib/aventura";
 import { lerDatasCandidatas } from "@/lib/datas-candidatas";
 import { reaisParaCentavos } from "@/lib/dinheiro";
@@ -41,7 +42,7 @@ function camposAventura(d: FormData) {
 }
 
 export async function criarAventura(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
-  const { supabase, pessoa } = await exigirAdmin();
+  const { supabase, pessoa } = await exigirPermissao("aventura", "editar");
   const campos = camposAventura(d);
   if (!campos.name) return { erro: "Dê um nome para a aventura." };
   const lidas = lerDatasCandidatas(d);
@@ -72,11 +73,12 @@ export async function criarAventura(_: EstadoAcao, d: FormData): Promise<EstadoA
     if (e2) return { erro: `A aventura foi criada, mas as datas não: ${mensagemErro(e2)}` };
   }
   revalidatePath("/aventuras");
-  redirect(`/aventuras/${data.id}`);
+  revalidatePath("/mestre", "layout");
+  redirect(`/mestre/aventuras/${data.id}/datas`);
 }
 
 export async function editarAventura(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
-  const { supabase } = await exigirAdmin();
+  const { supabase } = await exigirPermissao("aventura", "editar");
   const id = txt(d, "id", 40);
   const campos = camposAventura(d);
   if (!campos.name) return { erro: "Dê um nome para a aventura." };
@@ -86,14 +88,14 @@ export async function editarAventura(_: EstadoAcao, d: FormData): Promise<Estado
     .update({ ...campos, ...(FASES.includes(fase) ? { phase: fase } : {}) })
     .eq("id", id);
   if (error) return { erro: mensagemErro(error) };
-  revalidatePath(`/aventuras/${id}`, "layout");
+  revalidarAventura(id);
   return { ok: "Aventura salva." };
 }
 
 // ---------------------------------------------------------------- datas
 
 export async function adicionarData(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
-  const { supabase, pessoa } = await exigirAdmin();
+  const { supabase, pessoa } = await exigirPermissao("datas", "editar");
   const eventId = txt(d, "evento", 40);
   const inicio = dataOuNull(d, "inicio");
   const fim = dataOuNull(d, "fim") ?? inicio;
@@ -107,23 +109,23 @@ export async function adicionarData(_: EstadoAcao, d: FormData): Promise<EstadoA
     created_by: pessoa.id,
   });
   if (error) return { erro: mensagemErro(error) };
-  revalidatePath(`/aventuras/${eventId}`, "layout");
+  revalidarAventura(eventId);
   return { ok: "Data candidata adicionada." };
 }
 
 export async function removerData(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
-  const { supabase } = await exigirAdmin();
+  const { supabase } = await exigirPermissao("datas", "excluir");
   const { error } = await supabase
     .from("date_options")
     .delete()
     .eq("id", txt(d, "id", 40));
   if (error) return { erro: mensagemErro(error) };
-  revalidatePath(`/aventuras/${txt(d, "evento", 40)}`, "layout");
+  revalidarAventura(txt(d, "evento", 40));
   return { ok: "Removida." };
 }
 
 export async function fecharDatas(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
-  const { supabase } = await exigirAdmin();
+  const { supabase } = await exigirPermissao("datas", "editar");
   const eventId = txt(d, "evento", 40);
   const { data: opcao, error: e1 } = await supabase
     .from("date_options")
@@ -142,7 +144,7 @@ export async function fecharDatas(_: EstadoAcao, d: FormData): Promise<EstadoAca
     })
     .eq("id", eventId);
   if (error) return { erro: mensagemErro(error) };
-  revalidatePath(`/aventuras/${eventId}`, "layout");
+  revalidarAventura(eventId);
   return { ok: "Data definida! A aventura seguiu para a escolha da estalagem." };
 }
 
@@ -175,7 +177,7 @@ export async function reagir(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
     }
   }
   if (error) return { erro: mensagemErro(error) };
-  revalidatePath(`/aventuras/${txt(d, "evento", 40)}`, "layout");
+  revalidarAventura(txt(d, "evento", 40));
   return {};
 }
 
@@ -225,7 +227,7 @@ export async function adicionarEstalagem(_: EstadoAcao, d: FormData): Promise<Es
     .from("accommodations")
     .insert({ ...r.campos, event_id: eventId, created_by: pessoa.id });
   if (error) return { erro: mensagemErro(error) };
-  revalidatePath(`/aventuras/${eventId}`, "layout");
+  revalidarAventura(eventId);
   return { ok: "Estalagem adicionada. Agora a party pode reagir!" };
 }
 
@@ -241,7 +243,7 @@ export async function editarEstalagem(_: EstadoAcao, d: FormData): Promise<Estad
     .eq("event_id", eventId);
   if (error) return { erro: mensagemErro(error) };
   if (!count) return { erro: "Só quem cadastrou ou o admin pode editar." };
-  revalidatePath(`/aventuras/${eventId}`, "layout");
+  revalidarAventura(eventId);
   return { ok: "Estalagem atualizada." };
 }
 
@@ -253,19 +255,19 @@ export async function removerEstalagem(_: EstadoAcao, d: FormData): Promise<Esta
     .eq("id", txt(d, "id", 40));
   if (error) return { erro: mensagemErro(error) };
   if (!count) return { erro: "Só quem cadastrou ou o admin pode remover." };
-  revalidatePath(`/aventuras/${txt(d, "evento", 40)}`, "layout");
+  revalidarAventura(txt(d, "evento", 40));
   return { ok: "Removida." };
 }
 
 export async function escolherEstalagem(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
-  const { supabase } = await exigirAdmin();
+  const { supabase } = await exigirPermissao("estalagens", "editar");
   const eventId = txt(d, "evento", 40);
   const { error } = await supabase
     .from("events")
     .update({ chosen_accommodation_id: txt(d, "id", 40), phase: "presenca" })
     .eq("id", eventId);
   if (error) return { erro: mensagemErro(error) };
-  revalidatePath(`/aventuras/${eventId}`, "layout");
+  revalidarAventura(eventId);
   return { ok: "Estalagem escolhida! Agora é confirmar a presença." };
 }
 
@@ -329,7 +331,7 @@ export async function lerAnuncio(link: string, nomeDigitado: string): Promise<Da
 // ---------------------------------------------------------------- ponto de encontro
 
 export async function salvarPontoEncontro(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
-  const { supabase } = await exigirAdmin();
+  const { supabase } = await exigirPermissao("aventura", "editar");
   const eventId = txt(d, "evento", 40);
   const quando = txt(d, "quando", 16); // datetime-local: AAAA-MM-DDTHH:MM (horário de São Paulo)
   const { error } = await supabase
@@ -345,6 +347,6 @@ export async function salvarPontoEncontro(_: EstadoAcao, d: FormData): Promise<E
     })
     .eq("id", eventId);
   if (error) return { erro: mensagemErro(error) };
-  revalidatePath(`/aventuras/${eventId}`, "layout");
+  revalidarAventura(eventId);
   return { ok: "Ponto de encontro salvo." };
 }

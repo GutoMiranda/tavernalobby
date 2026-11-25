@@ -1,8 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
-import { exigirAdmin, exigirMembro } from "@/lib/auth";
+import { exigirMembro, exigirPermissao } from "@/lib/auth";
+import { revalidarAventura } from "@/lib/revalidar";
 import { periodoEfetivo } from "@/lib/aventura";
 import { reaisParaCentavos } from "@/lib/dinheiro";
 import { type EstadoAcao, mensagemErro } from "@/lib/erros";
@@ -18,7 +17,7 @@ function txt(d: FormData, campo: string, max = 200) {
 }
 
 function atualizar(eventId: string) {
-  revalidatePath(`/aventuras/${eventId}`, "layout");
+  revalidarAventura(eventId);
 }
 
 // ---------------------------------------------------------------- presença
@@ -112,7 +111,7 @@ function camposItem(d: FormData) {
 }
 
 export async function criarItemCusto(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
-  const { supabase, pessoa } = await exigirAdmin();
+  const { supabase, pessoa } = await exigirPermissao("custos", "editar");
   const eventId = txt(d, "evento", 40);
   const { erro, valores } = camposItem(d);
   if (erro) return { erro };
@@ -125,7 +124,7 @@ export async function criarItemCusto(_: EstadoAcao, d: FormData): Promise<Estado
 }
 
 export async function editarItemCusto(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
-  const { supabase, pessoa } = await exigirAdmin();
+  const { supabase, pessoa } = await exigirPermissao("custos", "editar");
   const eventId = txt(d, "evento", 40);
   const { erro, valores } = camposItem(d);
   if (erro) return { erro };
@@ -139,7 +138,7 @@ export async function editarItemCusto(_: EstadoAcao, d: FormData): Promise<Estad
 }
 
 export async function removerItemCusto(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
-  const { supabase } = await exigirAdmin();
+  const { supabase } = await exigirPermissao("custos", "excluir");
   const eventId = txt(d, "evento", 40);
   const { error } = await supabase
     .from("cost_items")
@@ -152,7 +151,7 @@ export async function removerItemCusto(_: EstadoAcao, d: FormData): Promise<Esta
 
 /** Cria o item de acomodação com o preço da estalagem escolhida (proporcional aos dias). */
 export async function custoDaEstalagem(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
-  const { supabase, pessoa } = await exigirAdmin();
+  const { supabase, pessoa } = await exigirPermissao("custos", "editar");
   const eventId = txt(d, "evento", 40);
   const { data: ev } = await supabase.from("events").select("chosen_accommodation_id").eq("id", eventId).maybeSingle();
   if (!ev?.chosen_accommodation_id) return { erro: "Escolha a estalagem primeiro." };
@@ -179,7 +178,7 @@ export async function custoDaEstalagem(_: EstadoAcao, d: FormData): Promise<Esta
 
 /** Ajusta o peso de uma pessoa num item (1 = normal; volta ao padrão apagando o ajuste). */
 export async function ajustarPeso(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
-  const { supabase, pessoa } = await exigirAdmin();
+  const { supabase, pessoa } = await exigirPermissao("custos", "editar");
   const eventId = txt(d, "evento", 40);
   const item = txt(d, "item", 40);
   const alvo = txt(d, "pessoa", 40);

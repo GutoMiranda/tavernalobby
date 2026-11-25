@@ -40,7 +40,8 @@ const COLUNAS = "id, author_person_id, body, is_question, reply_to, resolved_at,
 
 type Props = {
   eu: MembroChat;
-  souAdmin: boolean;
+  /** Moderação do chat (Mestre ou tag): marcar dúvidas dos outros e apagar mensagens dos outros. */
+  moderacao: { resolver: boolean; apagar: boolean };
   membros: MembroChat[];
   /** Mais compacto no painel lateral. */
   compacto?: boolean;
@@ -52,7 +53,7 @@ type Props = {
  * Conversa do chat geral: mensagens ao vivo, menções com @, dúvidas (marcar, responder, resolver),
  * filtros e apagar a própria mensagem. Escrita só pelas funções do banco (RLS e permissões lá).
  */
-export function ChatConversa({ eu, souAdmin, membros, compacto, destacarHash }: Props) {
+export function ChatConversa({ eu, moderacao, membros, compacto, destacarHash }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const [mensagens, setMensagens] = useState<MensagemChat[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -404,7 +405,7 @@ export function ChatConversa({ eu, souAdmin, membros, compacto, destacarHash }: 
                         >
                           <CornerUpLeft className="size-3.5" aria-hidden /> Responder
                         </button>
-                        {m.is_question && (minha || souAdmin) && (
+                        {m.is_question && (minha || moderacao.resolver) && (
                           <button
                             type="button"
                             className="inline-flex items-center gap-1 hover:text-bottle"
@@ -414,7 +415,7 @@ export function ChatConversa({ eu, souAdmin, membros, compacto, destacarHash }: 
                             {m.resolved_at ? "Reabrir dúvida" : "Marcar resolvida"}
                           </button>
                         )}
-                        {(minha || souAdmin) && (
+                        {(minha || moderacao.apagar) && (
                           <button
                             type="button"
                             className="inline-flex items-center gap-1 hover:text-alert"

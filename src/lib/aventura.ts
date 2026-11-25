@@ -73,7 +73,8 @@ export function pendencias(params: {
   eventoId: string;
   fase: Fase;
   minhaPessoaId: string;
-  souAdmin: boolean;
+  /** Pode cadastrar datas (Mestre ou tag com "editar" em Datas): o link vai para o Salão do Mestre. */
+  podeCadastrarDatas: boolean;
   datas: { id: string }[];
   reacoesDatas: Reacao[];
   estalagens: { id: string }[];
@@ -98,8 +99,8 @@ export function pendencias(params: {
         href: `${base}/datas`,
       });
     }
-    if (p.souAdmin && p.datas.length === 0)
-      lista.push({ texto: "Cadastrar as datas candidatas", href: `${base}/datas` });
+    if (p.podeCadastrarDatas && p.datas.length === 0)
+      lista.push({ texto: "Cadastrar as datas candidatas", href: `/mestre/aventuras/${p.eventoId}/datas` });
   }
   if (p.fase === "estalagens") {
     const faltam = p.estalagens.filter((e) => !reagiu(p.reacoesEstalagens, e.id)).length;

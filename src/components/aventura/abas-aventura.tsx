@@ -12,13 +12,12 @@ import {
   IconeEstandarte,
   IconeMantimentos,
   IconeMapa,
-  IconePena,
   IconePergaminho,
 } from "@/components/icones";
 import { cn } from "@/lib/utils";
 
 /** Abas da aventura como placas de madeira penduradas, com ícone, termo e palavra comum. */
-export function AbasAventura({ id, souAdmin }: { id: string; souAdmin: boolean }) {
+export function AbasAventura({ id }: { id: string }) {
   const caminho = usePathname();
   const ativaRef = useRef<HTMLAnchorElement>(null);
   const base = `/aventuras/${id}`;
@@ -31,7 +30,6 @@ export function AbasAventura({ id, souAdmin }: { id: string; souAdmin: boolean }
     { href: `${base}/armazem`, rotulo: "Armazém", comum: "compras", Icone: IconeMantimentos },
     { href: `${base}/custos`, rotulo: "Custos", comum: "divisão", Icone: IconeBalanca },
     { href: `${base}/bau`, rotulo: "Baú", comum: "caixinha", Icone: IconeBau },
-    ...(souAdmin ? [{ href: `${base}/editar`, rotulo: "Editar", comum: "admin", Icone: IconePena }] : []),
   ];
 
   useEffect(() => {
@@ -40,7 +38,7 @@ export function AbasAventura({ id, souAdmin }: { id: string; souAdmin: boolean }
 
   return (
     <nav aria-label="Seções da aventura" className="-mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
-      <ul className="flex min-w-max gap-2 pt-3 lg:grid lg:min-w-0 lg:grid-cols-9">
+      <ul className="flex min-w-max gap-2 pt-3 lg:grid lg:min-w-0 lg:grid-cols-8">
         {abas.map(({ href, rotulo, comum, Icone }) => {
           const ativa = href === base ? caminho === base : caminho.startsWith(href);
           return (

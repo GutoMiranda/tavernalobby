@@ -6,7 +6,7 @@ import { IconeMantimentos } from "@/components/icones";
 import { CamposItem } from "@/components/armazem/campos-item";
 import { type LinhaArmazem, TabelaArmazem } from "@/components/armazem/tabela-armazem";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { exigirMembro } from "@/lib/auth";
+import { exigirMembro, getPermissoes } from "@/lib/auth";
 import { carregarAventura } from "@/lib/aventura-dados";
 import { carregarCustos } from "@/lib/custos-dados";
 import { consumoDeReferencia, custosDoArmazem, pessoasDia, quantidadeSugerida } from "@/lib/finance/armazem";
@@ -18,14 +18,14 @@ export const metadata: Metadata = { title: "Armazém" };
 
 export default async function ArmazemPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { supabase, pessoa, tags } = await exigirMembro();
+  const { supabase, pessoa } = await exigirMembro();
   const dados = await carregarAventura(supabase, id);
   const { despensa, pessoasRateio, totalDias } = await carregarCustos(supabase, dados);
 
   const comida = pessoasDia(pessoasRateio, false, totalDias ?? 1);
   const bebida = pessoasDia(pessoasRateio, true, totalDias ?? 1);
   const { alimentacaoCentavos, alcoolCentavos } = custosDoArmazem(despensa);
-  const podeExcluirTudo = pessoa.is_admin || tags.includes("Despensa");
+  const podeExcluirTudo = (await getPermissoes()).armazem.excluir;
 
   const linhas: LinhaArmazem[] = despensa.map((i) => {
     const consumo = i.quantity_per_person ?? consumoDeReferencia(i.name, i.unit);

@@ -318,8 +318,8 @@ export function TabelaArmazem({ linhas, eventoId }: { linhas: LinhaArmazem[]; ev
         </table>
       </div>
       <p className="text-xs text-muted-foreground">
-        Exclua um item pela lixeira da linha ou vários marcando as caixas. Podem excluir: quem criou o item, o admin ou
-        o Guardião do Armazém (tag Despensa).
+        Exclua um item pela lixeira da linha ou vários marcando as caixas. Podem excluir: quem criou o item e quem tem
+        permissão de excluir no Armazém (ex.: Guardião do Armazém).
       </p>
     </div>
   );

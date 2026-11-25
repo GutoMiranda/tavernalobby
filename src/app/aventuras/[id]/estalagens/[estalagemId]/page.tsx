@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { FormEstalagem } from "@/components/aventura/form-estalagem";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { exigirMembro } from "@/lib/auth";
+import { exigirMembro, getPermissoes } from "@/lib/auth";
 import { carregarAventura } from "@/lib/aventura-dados";
 import { centavosParaCampo } from "@/lib/dinheiro";
 
@@ -19,7 +19,7 @@ export default async function EditarEstalagemPage({
   const { estalagens } = await carregarAventura(supabase, id);
   const e = estalagens.find((x) => x.id === estalagemId);
   if (!e) notFound();
-  const posso = pessoa.is_admin || e.created_by === pessoa.id;
+  const posso = e.created_by === pessoa.id || (await getPermissoes()).estalagens.editar;
 
   return (
     <Card className="max-w-3xl">

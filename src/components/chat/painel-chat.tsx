@@ -51,7 +51,15 @@ function marcarVisto() {
  * Chat geral na lateral: botão no cabeçalho (com mensagens novas e quantos estão online) e gaveta
  * à direita (tela cheia no celular). Mantém a presença (Supabase Presence) de quem está no site.
  */
-export function PainelChat({ eu, souAdmin, membros }: { eu: MembroChat; souAdmin: boolean; membros: MembroChat[] }) {
+export function PainelChat({
+  eu,
+  moderacao,
+  membros,
+}: {
+  eu: MembroChat;
+  moderacao: { resolver: boolean; apagar: boolean };
+  membros: MembroChat[];
+}) {
   const { aberto, online, rascunho } = useChatStore();
   const [aba, setAba] = useState<"conversa" | "taverna">("conversa");
   const [novas, setNovas] = useState(0);
@@ -225,7 +233,7 @@ export function PainelChat({ eu, souAdmin, membros }: { eu: MembroChat; souAdmin
                 </button>
               </header>
               <div className={cn("min-h-0 flex-1", aba === "conversa" ? "flex flex-col" : "hidden")}>
-                {aberto && !naPaginaDoChat && <ChatConversa eu={eu} souAdmin={souAdmin} membros={membros} compacto />}
+                {aberto && !naPaginaDoChat && <ChatConversa eu={eu} moderacao={moderacao} membros={membros} compacto />}
                 {naPaginaDoChat && <p className="p-4 text-muted-foreground">A conversa já está aberta nesta página.</p>}
               </div>
               {aba === "taverna" && <ListaNaTaverna membros={ordenados} online={online} euId={eu.id} />}

@@ -4,9 +4,10 @@ import { PainelChat } from "@/components/chat/painel-chat";
 import { Logo } from "@/components/logo";
 import { BotaoPersonagem } from "@/components/personagem/botao-personagem";
 import { SinoNotificacoes } from "@/components/sino-notificacoes";
-import { getSessao } from "@/lib/auth";
+import { getPermissoes, getSessao } from "@/lib/auth";
 import { carregarMembros, type Membro } from "@/lib/membros-dados";
 import { contarNaoLidas, garantirLembretesDeDeposito } from "@/lib/notificacoes-dados";
+import { entraNoSalao, lerPermissoes } from "@/lib/permissoes";
 import { papelDe } from "@/lib/personagem";
 
 export async function SiteHeader() {
@@ -15,8 +16,10 @@ export async function SiteHeader() {
   const aprovado = pessoa?.status === "approved";
   let naoLidas = 0;
   let membros: Membro[] | null = null;
+  let permissoes = lerPermissoes(null);
   if (sessao && pessoa && aprovado) {
     membros = await carregarMembros(sessao.supabase).catch(() => null);
+    permissoes = await getPermissoes().catch(() => lerPermissoes(null));
     await garantirLembretesDeDeposito(pessoa).catch((e) => console.error("[notificacoes] lembretes", e));
     naoLidas = await contarNaoLidas(sessao.supabase).catch(() => 0);
   }
@@ -54,7 +57,13 @@ export async function SiteHeader() {
           </span>
         </Link>
         <div className="ml-auto flex items-center gap-0.5 sm:gap-1.5">
-          {aprovado && pessoa && membros && <PainelChat eu={eu!} souAdmin={pessoa.is_admin} membros={membros} />}
+          {aprovado && pessoa && membros && (
+            <PainelChat
+              eu={eu!}
+              moderacao={{ resolver: permissoes.chat.editar, apagar: permissoes.chat.excluir }}
+              membros={membros}
+            />
+          )}
           {aprovado && pessoa && <SinoNotificacoes pessoaId={pessoa.id} naoLidas={naoLidas} />}
           {aprovado && eu && pessoa && sessao && (
             <BotaoPersonagem
@@ -87,7 +96,7 @@ export async function SiteHeader() {
             <ItemMenu href="/">Taverna</ItemMenu>
             <ItemMenu href="/aventuras">Aventuras</ItemMenu>
             <ItemMenu href="/familia">Minha família</ItemMenu>
-            {pessoa?.is_admin && <ItemMenu href="/admin/membros">Membros</ItemMenu>}
+            {pessoa && entraNoSalao(permissoes, pessoa.is_admin) && <ItemMenu href="/mestre">Salão do Mestre</ItemMenu>}
           </ul>
         </nav>
       )}

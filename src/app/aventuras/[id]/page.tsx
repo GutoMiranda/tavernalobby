@@ -9,7 +9,7 @@ import {
   type RotasDaEstalagem,
 } from "@/components/mapas/painel-mapa";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { exigirMembro } from "@/lib/auth";
+import { exigirMembro, getPermissoes } from "@/lib/auth";
 import { contagemRegressiva, FASE_INFO, pendencias, ranking } from "@/lib/aventura";
 import { carregarAventura } from "@/lib/aventura-dados";
 import { carregarCustos } from "@/lib/custos-dados";
@@ -42,7 +42,7 @@ export default async function PainelAventuraPage({
     eventoId: id,
     fase: evento.phase,
     minhaPessoaId: pessoa.id,
-    souAdmin: pessoa.is_admin,
+    podeCadastrarDatas: (await getPermissoes()).datas.editar,
     datas: dados.datas,
     reacoesDatas: dados.reacoesDatas,
     estalagens: dados.estalagens,

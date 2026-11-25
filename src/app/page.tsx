@@ -1,14 +1,13 @@
-import { Plus } from "lucide-react";
 import Link from "next/link";
 
 import { ListaAventuras } from "@/components/aventura/lista-aventuras";
 import { IconeCoroa, IconeD20, IconeEscudo } from "@/components/icones";
 import { Logo } from "@/components/logo";
-import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { exigirMembro } from "@/lib/auth";
+import { exigirMembro, getPermissoes } from "@/lib/auth";
 import { COLUNAS_EVENTO, type Evento } from "@/lib/aventura-dados";
 import { sortearFrase } from "@/lib/frases";
+import { entraNoSalao } from "@/lib/permissoes";
 
 // Nova frase a cada visita.
 export const dynamic = "force-dynamic";
@@ -21,6 +20,7 @@ export default async function TavernaPage() {
     .not("phase", "in", "(concluida,cancelada)")
     .order("created_at", { ascending: false })
     .returns<Evento[]>();
+  const permissoes = await getPermissoes();
   const primeiroNome = pessoa.name.split(" ")[0];
   const frase = sortearFrase();
 
@@ -54,13 +54,6 @@ export default async function TavernaPage() {
           <h2 id="aventuras" className="flex items-center gap-2 text-2xl font-semibold text-wood">
             <IconeD20 className="size-7 text-gold" /> Aventuras em andamento
           </h2>
-          {pessoa.is_admin && (
-            <Button asChild className="brilho-vela">
-              <Link href="/aventuras/nova">
-                <Plus aria-hidden /> Nova aventura
-              </Link>
-            </Button>
-          )}
         </div>
         <ListaAventuras eventos={eventos ?? []} />
       </section>
@@ -73,13 +66,17 @@ export default async function TavernaPage() {
           comum="núcleo"
           texto="Cadastre quem vai com você nas aventuras."
         />
-        {pessoa.is_admin && (
+        {entraNoSalao(permissoes, pessoa.is_admin) && (
           <Atalho
-            href="/admin/membros"
+            href="/mestre"
             icone={IconeCoroa}
-            titulo="Membros e tags"
-            comum="admin"
-            texto="Aprove quem entrou e distribua as funções."
+            titulo="Salão do Mestre"
+            comum="administração"
+            texto={
+              pessoa.is_admin
+                ? "Crie aventuras, aprove membros, dê tags e permissões, feche datas, custos e baú."
+                : "As áreas que as suas tags deixam você cuidar."
+            }
           />
         )}
       </div>

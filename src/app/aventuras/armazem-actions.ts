@@ -1,7 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
+import { revalidarAventura } from "@/lib/revalidar";
 import { exigirMembro } from "@/lib/auth";
 import { reaisParaCentavos } from "@/lib/dinheiro";
 import { type EstadoAcao, mensagemErro } from "@/lib/erros";
@@ -16,7 +15,7 @@ function txt(d: FormData, campo: string, max = 200) {
 }
 
 function atualizar(eventId: string) {
-  revalidatePath(`/aventuras/${eventId}`, "layout");
+  revalidarAventura(eventId);
 }
 
 /** Número decimal positivo em formato brasileiro ("0,3", "1.5"). Vazio = null; inválido = false. */
@@ -105,7 +104,7 @@ export async function usarSugestao(_: EstadoAcao, d: FormData): Promise<EstadoAc
   return { ok: "Quantidade atualizada." };
 }
 
-/** Exclui um ou vários itens (campo "id" repetido). O RLS deixa só autor, admin ou tag Despensa. */
+/** Exclui um ou vários itens (campo "id" repetido). O RLS deixa só o autor ou quem pode excluir no Armazém. */
 export async function removerItensArmazem(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
   const { supabase } = await exigirMembro();
   const eventId = txt(d, "evento", 40);
@@ -120,7 +119,8 @@ export async function removerItensArmazem(_: EstadoAcao, d: FormData): Promise<E
   atualizar(eventId);
   const feitos = data?.length ?? 0;
   const negados = ids.length - feitos;
-  if (feitos === 0) return { erro: "Só quem criou o item, o admin ou o Guardião do Armazém (tag Despensa) excluem." };
+  if (feitos === 0)
+    return { erro: "Só quem criou o item ou quem tem permissão de excluir no Armazém remove itens dos outros." };
   return {
     ok:
       `${feitos} ${feitos === 1 ? "item excluído" : "itens excluídos"}.` +

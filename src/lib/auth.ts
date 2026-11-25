@@ -3,6 +3,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 
+import { type Acao, type Area, lerPermissoes, type Permissoes } from "@/lib/permissoes";
 import { createClient } from "@/lib/supabase/server";
 
 export type Pessoa = {
@@ -64,6 +65,30 @@ export async function exigirAdmin() {
   const sessao = await exigirMembro();
   if (!sessao.pessoa.is_admin) redirect("/");
   return sessao;
+}
+
+/** O que a pessoa logada pode em cada aba (Mestre pode tudo). Cacheado por requisição. */
+export const getPermissoes = cache(async (): Promise<Permissoes> => {
+  const sessao = await getSessao();
+  if (!sessao?.pessoa || sessao.pessoa.status !== "approved") return lerPermissoes(null);
+  const { data } = await sessao.supabase.rpc("minhas_permissoes");
+  return lerPermissoes(data as { area: string; ver: boolean; editar: boolean; excluir: boolean }[] | null);
+});
+
+/** Exige a permissão na área (o banco confere de novo); sem ela, volta para a página inicial. */
+export async function exigirPermissao(area: Area, acao: Acao) {
+  const sessao = await exigirMembro();
+  const permissoes = await getPermissoes();
+  if (!permissoes[area][acao]) redirect("/");
+  return { ...sessao, permissoes };
+}
+
+/** Exige acesso ao Salão do Mestre (Mestre ou alguma área visível). */
+export async function exigirSalao() {
+  const sessao = await exigirMembro();
+  const permissoes = await getPermissoes();
+  if (!sessao.pessoa.is_admin && !Object.values(permissoes).some((p) => p.ver)) redirect("/");
+  return { ...sessao, permissoes };
 }
 
 /** Aceita só caminhos internos (evita redirecionar para outro site). */

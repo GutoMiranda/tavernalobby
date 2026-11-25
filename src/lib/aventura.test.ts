@@ -50,7 +50,7 @@ describe("pendências", () => {
   const base = {
     eventoId: "e1",
     minhaPessoaId: "p1",
-    souAdmin: false,
+    podeCadastrarDatas: false,
     datas: [{ id: "d1" }, { id: "d2" }],
     reacoesDatas: [r("d1", "p1", 1)],
     estalagens: [{ id: "s1" }],
@@ -64,6 +64,11 @@ describe("pendências", () => {
       "Votar em 1 data candidata",
       "Informar a cidade de saída do seu núcleo",
     ]);
+  });
+
+  it("quem pode cadastrar datas recebe o atalho para o Salão do Mestre", () => {
+    const lista = pendencias({ ...base, fase: "datas", datas: [], nucleoTemOrigem: true, podeCadastrarDatas: true });
+    expect(lista).toEqual([{ texto: "Cadastrar as datas candidatas", href: "/mestre/aventuras/e1/datas" }]);
   });
 
   it("na fase de estalagens, lista as estalagens sem reação", () => {

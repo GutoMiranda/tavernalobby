@@ -2,9 +2,9 @@
 
 import { randomUUID } from "node:crypto";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { revalidarAventura } from "@/lib/revalidar";
 import { exigirAdmin, exigirMembro } from "@/lib/auth";
 import { reaisParaCentavos } from "@/lib/dinheiro";
 import { enviarEmail } from "@/lib/email";
@@ -28,7 +28,7 @@ function dataValida(d: FormData, campo: string): string | null {
 }
 
 function atualizar(eventId: string) {
-  revalidatePath(`/aventuras/${eventId}`, "layout");
+  revalidarAventura(eventId);
 }
 
 /** Comprovante: só aceita arquivo enviado pela própria pessoa (pasta = id do usuário). */
