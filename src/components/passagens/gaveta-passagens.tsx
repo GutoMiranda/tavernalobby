@@ -1,65 +1,132 @@
 "use client";
 
 import { Bus, ExternalLink, Plane, Ticket } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
-import { AcaoForm } from "@/components/acao-form";
 import { Gaveta } from "@/components/gaveta";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { registrarPrecoPassagem, removerPrecoPassagem } from "@/app/aventuras/passagens-actions";
-import { formatarCentavos, formatarDia } from "@/lib/format";
-import { linksDeBusca, menorPorModo, type ModoPassagem, NOME_MODO_PASSAGEM, ordenarPrecos } from "@/lib/passagens";
-import { cn } from "@/lib/utils";
+import { AEROPORTOS, aeroportoPorIata, aeroportosProximos, distanciaKm } from "@/lib/aeroportos";
+import { type LinkBusca, linkDeOnibus, linksDeVoo } from "@/lib/passagens";
 
-export type PrecoNaGaveta = {
+export type LugarDaViagem = { nome: string; cidade: string | null; lat: number | null; lng: number | null };
+export type DestinoDaViagem = LugarDaViagem & { fonte: "definida" | "mais_votada" | "regiao" };
+
+const SELECT =
+  "h-11 w-full rounded-md border border-input bg-surface px-3 text-base text-parchment focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none";
+
+/** Abaixo disso (km em linha reta), avião raramente compensa. */
+const PERTO_KM = 350;
+
+const temCoord = (l: LugarDaViagem | null): l is LugarDaViagem & { lat: number; lng: number } =>
+  !!l && l.lat != null && l.lng != null;
+
+function km(n: number) {
+  return `${Math.round(n).toLocaleString("pt-BR")} km`;
+}
+
+function LinkExterno({ l, destaque }: { l: LinkBusca; destaque?: boolean }) {
+  return (
+    <a
+      href={l.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={
+        "flex items-center justify-between gap-3 rounded-lg border px-3 py-2 hover:border-gold/60 focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none " +
+        (destaque ? "border-gold/60 bg-gold/10" : "border-border bg-surface")
+      }
+    >
+      <span>
+        <span className="font-medium text-parchment">{l.rotulo}</span>
+        <span className="block text-xs text-muted-foreground">{l.detalhe}</span>
+      </span>
+      <ExternalLink className="size-4 shrink-0 text-gold" aria-hidden />
+      <span className="sr-only">(abre em nova aba)</span>
+    </a>
+  );
+}
+
+function SeletorAeroporto({
+  id,
+  rotulo,
+  valor,
+  onChange,
+  perto,
+}: {
   id: string;
-  mode: ModoPassagem;
-  origin: string;
-  destination: string;
-  travel_date: string | null;
-  return_date: string | null;
-  price_cents: number;
-  link: string | null;
-  notes: string | null;
-  household_id: string;
-  created_at: string;
-  nucleo: string;
-  quem: string;
-  podeRemover: boolean;
-};
+  rotulo: string;
+  valor: string;
+  onChange: (v: string) => void;
+  perto: { iata: string; cidade: string; nome: string; km: number }[];
+}) {
+  const outros = AEROPORTOS.filter((a) => !perto.some((p) => p.iata === a.iata)).sort((a, b) =>
+    a.cidade.localeCompare(b.cidade, "pt-BR"),
+  );
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={id}>{rotulo}</Label>
+      <select id={id} value={valor} onChange={(e) => onChange(e.target.value)} className={SELECT}>
+        <option value="">Escolha o aeroporto</option>
+        {perto.length > 0 && (
+          <optgroup label="Mais perto">
+            {perto.map((a) => (
+              <option key={a.iata} value={a.iata}>
+                {a.cidade} · {a.nome} ({a.iata}) · {km(a.km)}
+              </option>
+            ))}
+          </optgroup>
+        )}
+        <optgroup label={perto.length > 0 ? "Outros" : "Aeroportos"}>
+          {outros.map((a) => (
+            <option key={a.iata} value={a.iata}>
+              {a.cidade}/{a.uf} · {a.nome} ({a.iata})
+            </option>
+          ))}
+        </optgroup>
+      </select>
+    </div>
+  );
+}
 
-const ICONE: Record<ModoPassagem, typeof Bus> = { onibus: Bus, aviao: Plane };
-
-/** Botão "Passagens" e a gaveta lateral: busca de ônibus e avião já preenchida e os preços que o grupo achou. */
+/**
+ * Botão "Passagens" e a gaveta: monta a viagem de cada um até a estalagem. Acha os aeroportos mais perto da
+ * cidade do núcleo e da estalagem e abre a busca de voo e de ônibus já preenchida (o site não vende passagens).
+ */
 export function GavetaPassagens({
-  eventoId,
-  deInicial,
-  paraInicial,
+  destino,
+  meuNucleo,
+  nucleos,
   idaInicial,
   voltaInicial,
-  precos,
+  periodoPrevia,
 }: {
-  eventoId: string;
-  deInicial: string;
-  paraInicial: string;
+  destino: DestinoDaViagem | null;
+  meuNucleo: LugarDaViagem | null;
+  nucleos: LugarDaViagem[];
   idaInicial: string | null;
   voltaInicial: string | null;
-  precos: PrecoNaGaveta[];
+  periodoPrevia: boolean;
 }) {
+  const pertoDeMim = temCoord(meuNucleo) ? aeroportosProximos(meuNucleo, 3) : [];
+  const pertoDoDestino = temCoord(destino) ? aeroportosProximos(destino, 3) : [];
+
   const [aberta, setAberta] = useState(false);
-  const [modo, setModo] = useState<ModoPassagem>("onibus");
-  const [de, setDe] = useState(deInicial);
-  const [para, setPara] = useState(paraInicial);
+  const [de, setDe] = useState(pertoDeMim[0]?.iata ?? "");
+  const [para, setPara] = useState(pertoDoDestino[0]?.iata ?? "");
   const [ida, setIda] = useState(idaInicial ?? "");
   const [volta, setVolta] = useState(voltaInicial ?? "");
 
-  const links = linksDeBusca(modo, { de, para, ida: ida || null, volta: volta || null });
-  const menor = menorPorModo(precos);
-  const lista = ordenarPrecos(precos.filter((p) => p.mode === modo));
-  const prontoParaBuscar = de.trim() && para.trim();
+  const aDe = de ? aeroportoPorIata(de) : undefined;
+  const aPara = para ? aeroportoPorIata(para) : undefined;
+  const mesmo = !!aDe && !!aPara && aDe.iata === aPara.iata;
+  const voos = aDe && aPara && !mesmo ? linksDeVoo(aDe, aPara, ida || null, volta || null) : [];
+  const cidadeDestino = destino?.cidade ?? destino?.nome ?? "";
+  const onibus = linkDeOnibus(meuNucleo?.cidade ?? "", cidadeDestino, ida || null);
+  const distanciaTotal = temCoord(meuNucleo) && temCoord(destino) ? distanciaKm(meuNucleo, destino) : null;
+  const pertoDemais = distanciaTotal != null && distanciaTotal < PERTO_KM;
+  const aeroAteEstalagem = aPara && temCoord(destino) ? distanciaKm(aPara, destino) : null;
 
   return (
     <>
@@ -71,64 +138,72 @@ export function GavetaPassagens({
         aria-expanded={aberta}
         className="self-end"
       >
-        <Ticket aria-hidden /> Passagens
-        {(menor.onibus ?? menor.aviao) != null && (
-          <span className="text-xs text-muted-foreground">
-            · a partir de{" "}
-            {formatarCentavos(Math.min(...[menor.onibus, menor.aviao].filter((v): v is number => v != null)))}
-          </span>
-        )}
+        <Ticket aria-hidden /> Passagens · como chegar
       </Button>
 
       <Gaveta
         id="gaveta-passagens"
         titulo={
           <span className="flex items-center gap-2">
-            <Ticket className="size-5 text-gold" aria-hidden /> Passagens
+            <Ticket className="size-5 text-gold" aria-hidden /> Passagens · como chegar
           </span>
         }
         aberta={aberta}
         onFechar={() => setAberta(false)}
       >
         <div className="flex flex-col gap-5 p-4">
-          <div role="radiogroup" aria-label="Tipo de passagem" className="grid grid-cols-2 gap-2">
-            {(["onibus", "aviao"] as const).map((m) => {
-              const Icone = ICONE[m];
-              return (
-                <button
-                  key={m}
-                  type="button"
-                  role="radio"
-                  aria-checked={modo === m}
-                  onClick={() => setModo(m)}
-                  className={cn(
-                    "flex flex-col items-center gap-0.5 rounded-lg border-2 px-3 py-2 transition-colors",
-                    modo === m ? "border-gold bg-gold/15 text-wood" : "border-border text-muted-foreground",
-                  )}
-                >
-                  <Icone className="size-6" aria-hidden />
-                  <span className="font-display text-lg font-semibold">{NOME_MODO_PASSAGEM[m]}</span>
-                  <span className="text-xs">
-                    {menor[m] != null ? `menor: ${formatarCentavos(menor[m]!)}` : "nenhum preço ainda"}
-                  </span>
-                </button>
-              );
-            })}
+          <div className="rounded-lg border border-border bg-surface p-3 text-sm">
+            <p className="text-muted-foreground">Destino</p>
+            {destino ? (
+              <p className="font-medium text-parchment">
+                {destino.nome}
+                {destino.cidade && destino.cidade !== destino.nome && ` · ${destino.cidade}`}
+              </p>
+            ) : (
+              <p className="text-parchment">Nenhuma estalagem com endereço ainda. Escolha o aeroporto de destino.</p>
+            )}
+            {destino?.fonte === "mais_votada" && (
+              <p className="text-xs text-muted-foreground">Prévia: a estalagem mais votada até agora.</p>
+            )}
+            {periodoPrevia && (
+              <p className="text-xs text-muted-foreground">As datas são da opção mais votada (prévia).</p>
+            )}
           </div>
 
-          <section aria-labelledby="busca-passagem" className="flex flex-col gap-3">
-            <h3 id="busca-passagem" className="font-display text-lg font-semibold text-wood">
-              Buscar
+          <section aria-labelledby="sua-viagem" className="flex flex-col gap-3">
+            <h3 id="sua-viagem" className="font-display text-lg font-semibold text-wood">
+              Sua viagem
             </h3>
+            {!temCoord(meuNucleo) && (
+              <p className="rounded-lg border border-gold/40 p-3 text-sm">
+                Cadastre a cidade de saída do seu núcleo em{" "}
+                <Link href="/familia" className="text-bottle underline underline-offset-4">
+                  Minha família
+                </Link>{" "}
+                para o aeroporto mais perto aparecer sozinho.
+              </p>
+            )}
+            {pertoDemais && (
+              <p className="rounded-lg border border-bottle/50 bg-bottle/10 p-3 text-sm">
+                São só uns {km(distanciaTotal!)} em linha reta: ônibus ou carro costuma compensar mais que avião.
+              </p>
+            )}
+            <div className="grid gap-3">
+              <SeletorAeroporto id="pas-de" rotulo="Sair do aeroporto" valor={de} onChange={setDe} perto={pertoDeMim} />
+              <SeletorAeroporto
+                id="pas-para"
+                rotulo="Chegar no aeroporto"
+                valor={para}
+                onChange={setPara}
+                perto={pertoDoDestino}
+              />
+            </div>
+            {aeroAteEstalagem != null && (
+              <p className="-mt-1 text-xs text-muted-foreground">
+                Do aeroporto até a estalagem: uns {km(aeroAteEstalagem)} em linha reta.
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="pas-de">De</Label>
-                <Input id="pas-de" value={de} onChange={(e) => setDe(e.target.value)} placeholder="Sua cidade" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="pas-para">Para</Label>
-                <Input id="pas-para" value={para} onChange={(e) => setPara(e.target.value)} placeholder="Destino" />
-              </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="pas-ida">Ida</Label>
                 <Input id="pas-ida" type="date" value={ida} onChange={(e) => setIda(e.target.value)} />
@@ -138,128 +213,85 @@ export function GavetaPassagens({
                 <Input id="pas-volta" type="date" value={volta} onChange={(e) => setVolta(e.target.value)} />
               </div>
             </div>
-            {prontoParaBuscar ? (
-              <ul className="flex flex-col gap-2">
-                {links.map((l) => (
-                  <li key={l.rotulo}>
-                    <a
-                      href={l.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2 hover:border-gold/60 focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none"
-                    >
-                      <span>
-                        <span className="font-medium text-parchment">{l.rotulo}</span>
-                        <span className="block text-xs text-muted-foreground">{l.detalhe}</span>
-                      </span>
-                      <ExternalLink className="size-4 shrink-0 text-gold" aria-hidden />
-                      <span className="sr-only">(abre em nova aba)</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">Preencha de onde e para onde para ver os links.</p>
-            )}
+
+            <div className="flex flex-col gap-2">
+              <p className="flex items-center gap-1.5 text-sm font-medium text-wood">
+                <Plane className="size-4" aria-hidden /> Voo
+              </p>
+              {voos.length > 0 ? (
+                voos.map((l, i) => <LinkExterno key={l.rotulo} l={l} destaque={i === 0} />)
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {mesmo ? "Saída e chegada no mesmo aeroporto: vá de ônibus ou carro." : "Escolha os dois aeroportos."}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <p className="flex items-center gap-1.5 text-sm font-medium text-wood">
+                <Bus className="size-4" aria-hidden /> Ônibus
+              </p>
+              {onibus ? (
+                <LinkExterno l={onibus} />
+              ) : (
+                <p className="text-sm text-muted-foreground">Precisa da cidade do seu núcleo e de um destino.</p>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">
-              O site não vende passagens: os links abrem a busca nos sites. Achou um preço bom? Registre abaixo para o
-              grupo comparar.
+              O site não vende passagens: cada link abre a busca já com aeroportos e datas. Confira os dados lá antes de
+              comprar.
             </p>
           </section>
 
-          <section aria-labelledby="precos-grupo" className="flex flex-col gap-2">
-            <h3 id="precos-grupo" className="font-display text-lg font-semibold text-wood">
-              Preços que o grupo achou · {NOME_MODO_PASSAGEM[modo].toLowerCase()}
+          <section aria-labelledby="como-cada-um" className="flex flex-col gap-2">
+            <h3 id="como-cada-um" className="font-display text-lg font-semibold text-wood">
+              Como cada núcleo chega
             </h3>
-            {lista.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Ninguém registrou ainda. Seja o primeiro batedor!</p>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {lista.map((p, i) => (
-                  <li key={p.id} className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-3 text-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-lg font-semibold text-wood">{formatarCentavos(p.price_cents)}</span>
-                      {i === 0 && <Badge>Mais barato</Badge>}
-                    </div>
-                    <p>
-                      {p.origin} → {p.destination}
-                      {p.travel_date && ` · ida ${formatarDia(p.travel_date)}`}
-                      {p.return_date && ` · volta ${formatarDia(p.return_date)}`}
-                    </p>
-                    {p.notes && <p className="text-muted-foreground">{p.notes}</p>}
-                    <p className="text-xs text-muted-foreground">
-                      por pessoa · achado por {p.quem} ({p.nucleo})
-                    </p>
-                    <div className="flex flex-wrap items-center gap-3">
-                      {p.link && (
-                        <a
-                          href={p.link}
-                          target="_blank"
-                          rel="noopener noreferrer nofollow"
-                          className="inline-flex items-center gap-1 text-bottle underline underline-offset-4"
-                        >
-                          Ver oferta <ExternalLink className="size-3.5" aria-hidden />
-                        </a>
-                      )}
-                      {p.podeRemover && (
-                        <AcaoForm
-                          action={removerPrecoPassagem}
-                          textoBotao="Remover"
-                          variante="ghost"
-                          tamanho="sm"
-                          textoEnviando="…"
-                        >
-                          <input type="hidden" name="id" value={p.id} />
-                          <input type="hidden" name="evento" value={eventoId} />
-                        </AcaoForm>
-                      )}
-                    </div>
+            <ul className="flex flex-col gap-2">
+              {nucleos.map((n, i) => {
+                const aero = temCoord(n) ? aeroportosProximos(n, 1)[0] : undefined;
+                const dist = temCoord(n) && temCoord(destino) ? distanciaKm(n, destino) : null;
+                const voo =
+                  aero && aPara && aero.iata !== aPara.iata
+                    ? linksDeVoo(aero, aPara, ida || null, volta || null)[0]
+                    : null;
+                return (
+                  <li
+                    key={`${n.nome}-${i}`}
+                    className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-3 text-sm"
+                  >
+                    <p className="font-medium text-parchment">{n.nome}</p>
+                    {!temCoord(n) ? (
+                      <p className="text-muted-foreground">Sem cidade de saída cadastrada.</p>
+                    ) : (
+                      <>
+                        <p className="text-muted-foreground">
+                          {n.cidade ?? "Cidade cadastrada"}
+                          {dist != null && ` · ${km(dist)} até a estalagem`}
+                        </p>
+                        <p>
+                          Aeroporto mais perto: {aero!.cidade} ({aero!.iata}), a {km(aero!.km)}
+                        </p>
+                        {dist != null && dist < PERTO_KM ? (
+                          <p className="text-bottle">Perto: ônibus ou carro deve compensar.</p>
+                        ) : (
+                          voo && (
+                            <a
+                              href={voo.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-bottle underline underline-offset-4"
+                            >
+                              Ver voos {aero!.iata} → {aPara!.iata} <ExternalLink className="size-3.5" aria-hidden />
+                            </a>
+                          )
+                        )}
+                      </>
+                    )}
                   </li>
-                ))}
-              </ul>
-            )}
+                );
+              })}
+            </ul>
           </section>
-
-          <details className="rounded-lg border border-gold/40 p-3">
-            <summary className="cursor-pointer font-medium text-wood">
-              Registrar um preço de {NOME_MODO_PASSAGEM[modo].toLowerCase()}
-            </summary>
-            <AcaoForm action={registrarPrecoPassagem} textoBotao="Registrar preço" limparAoConcluir className="mt-3">
-              <input type="hidden" name="evento" value={eventoId} />
-              <input type="hidden" name="modo" value={modo} />
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="reg-de">De</Label>
-                  <Input id="reg-de" name="de" required maxLength={120} defaultValue={de} key={`de-${de}`} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="reg-para">Para</Label>
-                  <Input id="reg-para" name="para" required maxLength={120} defaultValue={para} key={`para-${para}`} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="reg-ida">Ida</Label>
-                  <Input id="reg-ida" name="ida" type="date" defaultValue={ida} key={`ida-${ida}`} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="reg-volta">Volta</Label>
-                  <Input id="reg-volta" name="volta" type="date" defaultValue={volta} key={`volta-${volta}`} />
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="reg-preco">Preço por pessoa (R$)</Label>
-                <Input id="reg-preco" name="preco" inputMode="decimal" required placeholder="0,00" />
-                <p className="text-xs text-muted-foreground">Ida e volta, se você buscou as duas.</p>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="reg-link">Link da oferta (opcional)</Label>
-                <Input id="reg-link" name="link" type="url" maxLength={500} placeholder="https://" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="reg-obs">Observação (opcional)</Label>
-                <Input id="reg-obs" name="obs" maxLength={300} placeholder="Ex.: saída 7h, direto" />
-              </div>
-            </AcaoForm>
-          </details>
         </div>
       </Gaveta>
     </>

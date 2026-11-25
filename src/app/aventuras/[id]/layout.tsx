@@ -3,12 +3,13 @@ import { AbasAventura } from "@/components/aventura/abas-aventura";
 import { CENA_DA_FASE, CenaQuest, MOLDURA_DA_FASE } from "@/components/cena-quest";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { GavetaPassagens, type PrecoNaGaveta } from "@/components/passagens/gaveta-passagens";
-import { exigirMembro, getPermissoes } from "@/lib/auth";
-import { FASE_INFO, periodoEfetivo } from "@/lib/aventura";
+import { type DestinoDaViagem, GavetaPassagens, type LugarDaViagem } from "@/components/passagens/gaveta-passagens";
+import { exigirMembro } from "@/lib/auth";
+import { FASE_INFO, periodoEfetivo, ranking } from "@/lib/aventura";
 import { fotoDaFase } from "@/lib/cenas";
 import { carregarAventura } from "@/lib/aventura-dados";
 import { formatarPeriodo } from "@/lib/format";
+import { cidadeDoEndereco } from "@/lib/passagens";
 
 export default async function AventuraLayout({
   children,
@@ -21,25 +22,31 @@ export default async function AventuraLayout({
   const { supabase, pessoa } = await exigirMembro();
   const dados = await carregarAventura(supabase, id);
   const { evento } = dados;
-  const [{ data: precosR }, permissoes] = await Promise.all([
-    supabase
-      .from("ticket_prices")
-      .select(
-        "id, mode, origin, destination, travel_date, return_date, price_cents, link, notes, household_id, created_by, created_at",
-      )
-      .eq("event_id", id)
-      .returns<(Omit<PrecoNaGaveta, "nucleo" | "quem" | "podeRemover"> & { created_by: string | null })[]>(),
-    getPermissoes(),
-  ]);
-  const nomeNucleo = new Map(dados.nucleos.map((n) => [n.id, n.name]));
-  const precos: PrecoNaGaveta[] = (precosR ?? []).map(({ created_by, ...p }) => ({
-    ...p,
-    nucleo: nomeNucleo.get(p.household_id) ?? "Núcleo",
-    quem: dados.nomeDaPessoa(created_by),
-    podeRemover: created_by === pessoa.id || permissoes.aventura.excluir,
-  }));
   const meuNucleo = dados.nucleos.find((n) => n.id === pessoa.household_id);
   const periodo = periodoEfetivo(evento, dados.datas, dados.reacoesDatas);
+
+  // Destino das passagens: a estalagem definida; sem ela, a mais votada com endereço (prévia); senão, a região.
+  const comEndereco = dados.estalagens.filter((e) => e.lat != null && e.lng != null);
+  const definida = comEndereco.find((e) => e.id === evento.chosen_accommodation_id);
+  const alvo =
+    definida ?? (evento.chosen_accommodation_id ? undefined : ranking(comEndereco, dados.reacoesEstalagens)[0]);
+  const destino: DestinoDaViagem | null = alvo
+    ? {
+        nome: alvo.name,
+        cidade: cidadeDoEndereco(alvo.address) ?? evento.region,
+        lat: alvo.lat,
+        lng: alvo.lng,
+        fonte: definida ? "definida" : "mais_votada",
+      }
+    : evento.region
+      ? { nome: evento.region, cidade: evento.region, lat: null, lng: null, fonte: "regiao" }
+      : null;
+  const lugar = (n: (typeof dados.nucleos)[number]): LugarDaViagem => ({
+    nome: n.name,
+    cidade: n.origin_text ? (cidadeDoEndereco(n.origin_text) ?? n.origin_text) : null,
+    lat: n.origin_lat,
+    lng: n.origin_lng,
+  });
 
   return (
     <div className="flex flex-col gap-5">
@@ -61,7 +68,6 @@ export default async function AventuraLayout({
           "deposit_plans",
           "pix_checkouts",
           "pantry_items",
-          "ticket_prices",
         ]}
       />
       <Card moldura={MOLDURA_DA_FASE[evento.phase]} className="overflow-hidden py-0">
@@ -84,12 +90,12 @@ export default async function AventuraLayout({
         </div>
       </Card>
       <GavetaPassagens
-        eventoId={id}
-        deInicial={meuNucleo?.origin_text ?? ""}
-        paraInicial={evento.region ?? ""}
+        destino={destino}
+        meuNucleo={meuNucleo ? lugar(meuNucleo) : null}
+        nucleos={dados.nucleos.map(lugar)}
         idaInicial={periodo?.inicio ?? null}
         voltaInicial={periodo?.fim ?? null}
-        precos={precos}
+        periodoPrevia={periodo?.fonte === "mais_votada"}
       />
       <AbasAventura id={id} />
       {children}

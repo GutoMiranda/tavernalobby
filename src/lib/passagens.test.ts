@@ -1,36 +1,54 @@
 import { describe, expect, it } from "vitest";
 
-import { linkSeguro, linksDeBusca, menorPorModo, ordenarPrecos } from "./passagens";
+import { aeroportoPorIata, aeroportosProximos, distanciaKm } from "./aeroportos";
+import { cidadeDoEndereco, linkDeOnibus, linksDeVoo } from "./passagens";
 
-describe("busca de passagens", () => {
-  it("monta a busca de voos já com origem, destino e datas", () => {
-    const [google] = linksDeBusca("aviao", { de: "Campinas", para: "Recife", ida: "2027-04-01", volta: "2027-04-04" });
-    expect(google.rotulo).toBe("Google Voos");
-    expect(decodeURIComponent(google.url)).toContain("Voos de Campinas para Recife em 2027-04-01 volta em 2027-04-04");
-    expect(google.url).toContain("curr=BRL");
+const VCP = aeroportoPorIata("VCP")!;
+const GIG = aeroportoPorIata("GIG")!;
+
+describe("aeroportos", () => {
+  it("acha os mais próximos de Campinas (Viracopos primeiro)", () => {
+    const lista = aeroportosProximos({ lat: -22.9056, lng: -47.0608 });
+    expect(lista[0].iata).toBe("VCP");
+    expect(lista[0].km).toBeLessThan(25);
+    expect(lista.map((a) => a.iata)).toContain("CGH");
   });
 
-  it("monta a busca de ônibus com data em dd/mm/aaaa e sem volta quando não há", () => {
-    const [google] = linksDeBusca("onibus", { de: "Campinas", para: "Paraty", ida: "2027-04-01", volta: null });
-    expect(decodeURIComponent(google.url)).toContain("passagem de ônibus de Campinas para Paraty 01/04/2027");
-    expect(decodeURIComponent(google.url)).not.toContain("volta");
+  it("acha o Galeão ou o Santos Dumont para Paraty e mede a distância em linha reta", () => {
+    const [primeiro] = aeroportosProximos({ lat: -23.2178, lng: -44.7131 }, 1);
+    expect(["GIG", "SDU", "CGH", "GRU"]).toContain(primeiro.iata);
+    expect(Math.round(distanciaKm(VCP, GIG))).toBeGreaterThan(350);
+  });
+});
+
+describe("links de voo", () => {
+  it("montam ida e volta com os códigos dos aeroportos e as datas", () => {
+    const [google, kayak, sky] = linksDeVoo(VCP, GIG, "2027-04-01", "2027-04-04");
+    expect(decodeURIComponent(google.url)).toContain("Flights from VCP to GIG on 2027-04-01 through 2027-04-04");
+    expect(kayak.url).toBe("https://www.kayak.com.br/flights/VCP-GIG/2027-04-01/2027-04-04?sort=price_a");
+    expect(sky.url).toBe("https://www.skyscanner.com.br/transporte/passagens-aereas/vcp/gig/270401/270404/");
   });
 
-  it("ordena do mais barato e acha o menor por modo", () => {
-    const precos = [
-      { id: "a", mode: "onibus" as const, price_cents: 30000, household_id: "n", created_at: "2026-11-01" },
-      { id: "b", mode: "aviao" as const, price_cents: 90000, household_id: "n", created_at: "2026-11-01" },
-      { id: "c", mode: "onibus" as const, price_cents: 25000, household_id: "n", created_at: "2026-11-02" },
-    ];
-    expect(ordenarPrecos(precos).map((p) => p.id)).toEqual(["c", "a", "b"]);
-    expect(menorPorModo(precos)).toEqual({ onibus: 25000, aviao: 90000 });
-    expect(menorPorModo([])).toEqual({ onibus: null, aviao: null });
+  it("sem volta vira só ida; sem data abre sem data; volta antes da ida é ignorada", () => {
+    expect(decodeURIComponent(linksDeVoo(VCP, GIG, "2027-04-01", null)[0].url)).toContain("one way");
+    expect(linksDeVoo(VCP, GIG, null, null)[1].url).toBe("https://www.kayak.com.br/flights/VCP-GIG?sort=price_a");
+    expect(linksDeVoo(VCP, GIG, "2027-04-04", "2027-04-01")[1].url).toBe(
+      "https://www.kayak.com.br/flights/VCP-GIG/2027-04-04?sort=price_a",
+    );
+  });
+});
+
+describe("ônibus e cidade do endereço", () => {
+  it("busca de ônibus com data em dd/mm/aaaa", () => {
+    const l = linkDeOnibus("Campinas, SP", "Paraty, RJ", "2027-04-01");
+    expect(decodeURIComponent(l!.url)).toContain("passagem de ônibus Campinas, SP para Paraty, RJ 01/04/2027");
+    expect(linkDeOnibus("", "Paraty", null)).toBeNull();
   });
 
-  it("só aceita link https", () => {
-    expect(linkSeguro("https://www.buser.com.br/x")).toBe("https://www.buser.com.br/x");
-    expect(linkSeguro("http://site.com")).toBeNull();
-    expect(linkSeguro("javascript:alert(1)")).toBeNull();
-    expect(linkSeguro("  ")).toBeNull();
+  it("tira a cidade de um endereço do Google", () => {
+    expect(cidadeDoEndereco("Rua do Comércio, 10 - Centro, Paraty - RJ, 23970-000, Brasil")).toBe("Paraty, RJ");
+    expect(cidadeDoEndereco("Estrada X, km 5, Monte Verde - MG")).toBe("Monte Verde, MG");
+    expect(cidadeDoEndereco("Endereço sem padrão")).toBeNull();
+    expect(cidadeDoEndereco(null)).toBeNull();
   });
 });
