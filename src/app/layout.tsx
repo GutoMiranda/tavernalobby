@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Link from "next/link";
 import { Cinzel, Inter } from "next/font/google";
 
 import { RegistrarServiceWorker } from "@/components/registrar-sw";
@@ -58,12 +59,17 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           Pular para o conteúdo
         </a>
         <SiteHeader />
-        <main
-          id="conteudo"
-          className="mx-auto w-full max-w-screen-2xl px-4 pt-5 sm:px-6 lg:px-8 pb-[max(2rem,env(safe-area-inset-bottom))]"
-        >
+        <main id="conteudo" className="mx-auto w-full max-w-screen-2xl px-4 pt-5 pb-8 sm:px-6 lg:px-8">
           {children}
         </main>
+        <footer className="mx-auto flex w-full max-w-screen-2xl flex-wrap gap-4 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-xs text-muted-foreground sm:px-6 lg:px-8">
+          <Link href="/privacidade" className="underline-offset-4 hover:underline">
+            Privacidade
+          </Link>
+          <Link href="/termos" className="underline-offset-4 hover:underline">
+            Termos de uso
+          </Link>
+        </footer>
         <RegistrarServiceWorker />
       </body>
     </html>

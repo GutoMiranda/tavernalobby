@@ -46,3 +46,27 @@ test("notificações exigem login", async ({ page }) => {
   await page.goto("/notificacoes");
   await expect(page).toHaveURL(/\/entrar\?depois=%2Fnotificacoes$/);
 });
+
+test("privacidade e termos são públicos e ligados no rodapé", async ({ page }) => {
+  await page.goto("/entrar");
+  await page.getByRole("link", { name: "Privacidade" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Política de privacidade" })).toBeVisible();
+  await page.goto("/termos");
+  await expect(page.getByRole("heading", { level: 1, name: "Termos de uso" })).toBeVisible();
+});
+
+test("cabeçalhos de segurança", async ({ request }) => {
+  const res = await request.get("/entrar");
+  expect(res.headers()["x-frame-options"]).toBe("DENY");
+  expect(res.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(res.headers()["x-powered-by"]).toBeUndefined();
+});
+
+test("tela de entrar cabe em 375 px sem rolagem lateral", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 740 });
+  for (const rota of ["/entrar", "/privacidade", "/termos"]) {
+    await page.goto(rota);
+    const largura = await page.evaluate(() => document.documentElement.scrollWidth);
+    expect(largura, rota).toBeLessThanOrEqual(375);
+  }
+});
