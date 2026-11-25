@@ -1,7 +1,7 @@
 "use client";
 
 import { AdvancedMarker, APIProvider, InfoWindow, Map, Pin, useMap } from "@vis.gl/react-google-maps";
-import { Bike, Bus, Car, ExternalLink, Footprints, Loader2, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Bike, Bus, Car, ExternalLink, Flag, Footprints, Home, Loader2, ThumbsDown, ThumbsUp, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 
@@ -9,7 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ModoRota, RotaResumo } from "@/lib/rotas";
 import { cn } from "@/lib/utils";
-import { decodificarPolyline, formatarDistancia, formatarDuracao, linkGoogleMaps, modoParaMapa } from "@/lib/viagem";
+import {
+  decodificarPolyline,
+  formatarDistancia,
+  formatarDuracao,
+  linkGoogleMaps,
+  modoParaMapa,
+  type OrigemDaRota,
+} from "@/lib/viagem";
 
 import { CHAVE_MAPS } from "./chave";
 
@@ -30,13 +37,6 @@ export type EstalagemPainel = {
   lng: number | null;
 };
 
-export type RotasDaEstalagem = {
-  /** Da cidade de saída do meu núcleo até a estalagem (null se o núcleo não tem origem). */
-  daCidade: RotaResumo[] | null;
-  /** Do ponto de encontro até a estalagem (null se não há ponto de encontro). */
-  doEncontro: RotaResumo[] | null;
-};
-
 const COR_CIDADE = "#EAB308"; // amarelo
 const COR_ENCONTRO = "#DC2626"; // vermelho
 
@@ -47,40 +47,48 @@ const MODOS: { id: ModoRota; rotulo: string; icone: typeof Car }[] = [
   { id: "WALK", rotulo: "A pé", icone: Footprints },
 ];
 
-/** Painel da aventura: mapa grande com todos os locais, resumo das estalagens e rotas coloridas até a escolhida. */
+/**
+ * Painel da aventura: mapa grande com todos os locais e a lista de estalagens. A rota só aparece quando a
+ * pessoa toca numa estalagem, saindo de um ponto só: a cidade do núcleo ou o ponto de encontro.
+ */
 export function PainelMapa({
   origens,
   encontro,
   estalagens,
   selecionada,
+  saida,
   rotas,
 }: {
   origens: OrigemPainel[];
   encontro: EncontroPainel | null;
   estalagens: EstalagemPainel[];
   selecionada: string | null;
-  /** Rotas até a estalagem selecionada, calculadas no servidor. */
-  rotas: RotasDaEstalagem | null;
+  /** De onde sai a rota (escolha da pessoa, ou a cidade quando houver). */
+  saida: OrigemDaRota | null;
+  /** Rota até a estalagem selecionada, calculada no servidor. */
+  rotas: RotaResumo[] | null;
 }) {
   const [modo, setModo] = useState<ModoRota>("DRIVE");
   const [carregando, iniciar] = useTransition();
   const router = useRouter();
   const caminho = usePathname();
-  const setSelecionada = (id: string) =>
-    iniciar(() => router.replace(`${caminho}?estalagem=${encodeURIComponent(id)}`, { scroll: false }));
+  const ir = (estalagem: string | null, de: OrigemDaRota | null) =>
+    iniciar(() =>
+      router.replace(
+        estalagem ? `${caminho}?estalagem=${encodeURIComponent(estalagem)}${de ? `&de=${de}` : ""}` : caminho,
+        { scroll: false },
+      ),
+    );
+  const setSelecionada = (id: string) => ir(id, saida);
   const minhaOrigem = origens.find((o) => o.minha);
   const est = estalagens.find((e) => e.id === selecionada);
   const destino = est?.lat != null && est?.lng != null ? { lat: est.lat, lng: est.lng } : null;
 
+  const corDaRota = saida === "encontro" ? COR_ENCONTRO : COR_CIDADE;
   const caminhos = useMemo(() => {
-    const linha = (lista: RotaResumo[] | null | undefined, cor: string) => {
-      const r = lista?.find((x) => x.modo === modo);
-      return r?.polyline ? { cor, pontos: decodificarPolyline(r.polyline) } : null;
-    };
-    return [linha(rotas?.daCidade, COR_CIDADE), linha(rotas?.doEncontro, COR_ENCONTRO)].filter(
-      (c): c is { cor: string; pontos: LatLng[] } => c !== null,
-    );
-  }, [rotas, modo]);
+    const r = selecionada ? rotas?.find((x) => x.modo === modo) : undefined;
+    return r?.polyline ? [{ cor: corDaRota, pontos: decodificarPolyline(r.polyline) }] : [];
+  }, [rotas, modo, corDaRota, selecionada]);
 
   const comLocal = estalagens.filter((e) => e.lat != null && e.lng != null);
   // Enquadra a sua saída, o ponto de encontro e as estalagens (as saídas dos outros núcleos ficam no mapa, fora do zoom).
@@ -135,22 +143,65 @@ export function PainelMapa({
             <span className="size-3 rounded-full bg-gold" aria-hidden /> Estalagem (hospedagem)
           </li>
           <li className="flex items-center gap-1.5">
-            <span className="h-1 w-5 rounded" style={{ background: COR_CIDADE }} aria-hidden /> Rota da sua cidade
+            <span className="h-1 w-5 rounded" style={{ background: COR_CIDADE }} aria-hidden /> Rota saindo da sua
+            cidade
           </li>
           <li className="flex items-center gap-1.5">
-            <span className="h-1 w-5 rounded" style={{ background: COR_ENCONTRO }} aria-hidden /> Rota do ponto de
-            encontro
+            <span className="h-1 w-5 rounded" style={{ background: COR_ENCONTRO }} aria-hidden /> Rota saindo do ponto
+            de encontro
           </li>
         </ul>
 
-        {est && (
+        {!est ? (
+          <p className="rounded-lg border border-dashed border-gold/40 bg-surface p-3 text-sm text-muted-foreground">
+            Toque numa estalagem (no mapa ou na lista) para ver a rota até ela.
+          </p>
+        ) : (
           <section aria-live="polite" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-display text-lg font-semibold text-wood">Rotas até {est.nome}</h3>
-              {carregando && (
-                <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" aria-hidden /> Calculando…
-                </span>
+              <h3 className="font-display text-lg font-semibold text-wood">Rota até {est.nome}</h3>
+              <div className="flex items-center gap-2">
+                {carregando && (
+                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Loader2 className="size-4 animate-spin" aria-hidden /> Calculando…
+                  </span>
+                )}
+                <Button type="button" size="sm" variant="ghost" onClick={() => ir(null, null)}>
+                  <X aria-hidden /> Limpar rota
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <p className="text-sm font-medium">Sair de</p>
+              <div role="radiogroup" aria-label="De onde sai a rota" className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  role="radio"
+                  aria-checked={saida === "cidade"}
+                  size="sm"
+                  variant={saida === "cidade" ? "default" : "outline"}
+                  disabled={!minhaOrigem}
+                  onClick={() => ir(est.id, "cidade")}
+                >
+                  <Home aria-hidden /> Minha cidade
+                </Button>
+                <Button
+                  type="button"
+                  role="radio"
+                  aria-checked={saida === "encontro"}
+                  size="sm"
+                  variant={saida === "encontro" ? "default" : "outline"}
+                  disabled={!encontro}
+                  onClick={() => ir(est.id, "encontro")}
+                >
+                  <Flag aria-hidden /> Ponto de encontro
+                </Button>
+              </div>
+              {(!minhaOrigem || !encontro) && (
+                <p className="text-xs text-muted-foreground">
+                  {!minhaOrigem && "Informe a cidade de saída do seu núcleo em Minha família. "}
+                  {!encontro && "O ponto de encontro ainda não foi definido."}
+                </p>
               )}
             </div>
             <div role="radiogroup" aria-label="Como ir" className="flex flex-wrap gap-2">
@@ -173,28 +224,16 @@ export function PainelMapa({
                 Esta estalagem ainda não tem endereço. Edite para incluir.
               </p>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Trecho
-                  titulo="Da sua cidade"
-                  cor={COR_CIDADE}
-                  origem={minhaOrigem ?? null}
-                  destino={destino}
-                  rotas={rotas?.daCidade}
-                  modo={modo}
-                  carregando={carregando}
-                  semOrigem="Informe a cidade de saída do seu núcleo em Minha família."
-                />
-                <Trecho
-                  titulo="Do ponto de encontro"
-                  cor={COR_ENCONTRO}
-                  origem={encontro}
-                  destino={destino}
-                  rotas={rotas?.doEncontro}
-                  modo={modo}
-                  carregando={carregando}
-                  semOrigem="O ponto de encontro ainda não foi definido (aba Geral · rotas)."
-                />
-              </div>
+              <Trecho
+                titulo={saida === "encontro" ? "Do ponto de encontro" : "Da sua cidade"}
+                cor={corDaRota}
+                origem={saida === "encontro" ? encontro : (minhaOrigem ?? null)}
+                destino={destino}
+                rotas={rotas}
+                modo={modo}
+                carregando={carregando}
+                semOrigem="Escolha de onde sai a rota."
+              />
             )}
             {modo === "TWO_WHEELER" && (
               <p className="text-xs text-muted-foreground">

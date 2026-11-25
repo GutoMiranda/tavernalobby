@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   decodificarPolyline,
+  origemDaRota,
   duracaoDaApi,
   modoParaMapa,
   formatarDistancia,
@@ -93,5 +94,15 @@ describe("modoParaMapa", () => {
     expect(modoParaMapa("TWO_WHEELER")).toBe("moto");
     expect(modoParaMapa("TRANSIT")).toBe("transporte");
     expect(modoParaMapa("WALK")).toBe("a_pe");
+  });
+});
+
+describe("origem da rota no mapa", () => {
+  it("respeita a escolha quando existe e cai para a cidade, depois para o encontro", () => {
+    expect(origemDaRota("encontro", true, true)).toBe("encontro");
+    expect(origemDaRota("encontro", true, false)).toBe("cidade");
+    expect(origemDaRota(undefined, true, true)).toBe("cidade");
+    expect(origemDaRota("cidade", false, true)).toBe("encontro");
+    expect(origemDaRota(undefined, false, false)).toBeNull();
   });
 });

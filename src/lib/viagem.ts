@@ -117,3 +117,21 @@ export function decodificarPolyline(codificada: string): { lat: number; lng: num
 export function modoParaMapa(modo: "DRIVE" | "TWO_WHEELER" | "TRANSIT" | "WALK"): ModoMapa {
   return modo === "TWO_WHEELER" ? "moto" : modo === "TRANSIT" ? "transporte" : modo === "WALK" ? "a_pe" : "carro";
 }
+
+export type OrigemDaRota = "cidade" | "encontro";
+
+/**
+ * De onde sai a rota desenhada no mapa: o que a pessoa escolheu, se existir; senão a cidade do núcleo;
+ * senão o ponto de encontro. Sem nenhum dos dois, não há rota.
+ */
+export function origemDaRota(
+  pedida: string | undefined,
+  temCidade: boolean,
+  temEncontro: boolean,
+): OrigemDaRota | null {
+  if (pedida === "encontro" && temEncontro) return "encontro";
+  if (pedida === "cidade" && temCidade) return "cidade";
+  if (temCidade) return "cidade";
+  if (temEncontro) return "encontro";
+  return null;
+}

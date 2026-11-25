@@ -2,12 +2,7 @@ import { CalendarClock, CheckCircle2, ListTodo, Map as IconeMapa } from "lucide-
 import Link from "next/link";
 
 import { CopiarBotao } from "@/components/copiar-botao";
-import {
-  type EstalagemPainel,
-  type OrigemPainel,
-  PainelMapa,
-  type RotasDaEstalagem,
-} from "@/components/mapas/painel-mapa";
+import { type EstalagemPainel, type OrigemPainel, PainelMapa } from "@/components/mapas/painel-mapa";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { exigirMembro, getPermissoes } from "@/lib/auth";
 import { contagemRegressiva, FASE_INFO, pendencias, ranking } from "@/lib/aventura";
@@ -15,7 +10,8 @@ import { carregarAventura } from "@/lib/aventura-dados";
 import { carregarCustos } from "@/lib/custos-dados";
 import { lembreteDoPlano } from "@/lib/finance/bau";
 import { formatarCentavos, formatarData, formatarPeriodo, hojeEmSaoPaulo } from "@/lib/format";
-import { type ModoRota, rotasEmCache } from "@/lib/rotas";
+import { type ModoRota, type RotaResumo, rotasEmCache } from "@/lib/rotas";
+import { origemDaRota } from "@/lib/viagem";
 
 const MODOS: ModoRota[] = ["DRIVE", "TWO_WHEELER", "TRANSIT", "WALK"];
 
@@ -24,10 +20,10 @@ export default async function PainelAventuraPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ estalagem?: string }>;
+  searchParams: Promise<{ estalagem?: string; de?: string }>;
 }) {
   const { id } = await params;
-  const { estalagem: estalagemPedida } = await searchParams;
+  const { estalagem: estalagemPedida, de: dePedido } = await searchParams;
   const { supabase, pessoa } = await exigirMembro();
   const dados = await carregarAventura(supabase, id);
   const { evento } = dados;
@@ -105,20 +101,14 @@ export default async function PainelAventuraPage({
     lat: e.lat,
     lng: e.lng,
   }));
-  const alvo =
-    dados.estalagens.find((e) => e.id === estalagemPedida) ??
-    escolhida ??
-    estalagensRanking.find((e) => e.lat != null) ??
-    null;
+  // A rota só aparece depois que a pessoa toca numa estalagem, e sai de um ponto só (cidade ou encontro).
+  const alvo = dados.estalagens.find((e) => e.id === estalagemPedida) ?? null;
   const minhaOrigem = origens.find((o) => o.minha);
-  let rotas: RotasDaEstalagem | null = null;
-  if (alvo?.lat != null && alvo.lng != null) {
+  const saida = origemDaRota(dePedido, !!minhaOrigem, !!encontro);
+  let rotas: RotaResumo[] | null = null;
+  if (alvo?.lat != null && alvo.lng != null && saida) {
     const destino = { lat: alvo.lat, lng: alvo.lng };
-    const [daCidade, doEncontro] = await Promise.all([
-      minhaOrigem ? rotasEmCache(minhaOrigem, destino, MODOS) : null,
-      encontro ? rotasEmCache(encontro, destino, MODOS) : null,
-    ]);
-    rotas = { daCidade, doEncontro };
+    rotas = await rotasEmCache(saida === "cidade" ? minhaOrigem! : encontro!, destino, MODOS).catch(() => []);
   }
 
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -260,8 +250,8 @@ export default async function PainelAventuraPage({
             <IconeMapa className="size-5 text-bottle" aria-hidden /> Mapa e rotas
           </CardTitle>
           <CardDescription>
-            Toque numa estalagem (na lista ou no mapa) para ver a rota da sua cidade (amarelo) e do ponto de encontro
-            (vermelho), com o tempo de cada jeito de ir.
+            Toque numa estalagem (na lista ou no mapa) para ver a rota. Escolha se a rota sai da sua cidade ou do ponto
+            de encontro e veja o tempo de cada jeito de ir.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -270,6 +260,7 @@ export default async function PainelAventuraPage({
             encontro={encontro}
             estalagens={estalagensPainel}
             selecionada={alvo?.id ?? null}
+            saida={saida}
             rotas={rotas}
           />
         </CardContent>

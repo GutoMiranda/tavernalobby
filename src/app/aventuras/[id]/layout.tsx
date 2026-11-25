@@ -3,8 +3,9 @@ import { AbasAventura } from "@/components/aventura/abas-aventura";
 import { CENA_DA_FASE, CenaQuest, MOLDURA_DA_FASE } from "@/components/cena-quest";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { exigirMembro } from "@/lib/auth";
-import { FASE_INFO } from "@/lib/aventura";
+import { GavetaPassagens, type PrecoNaGaveta } from "@/components/passagens/gaveta-passagens";
+import { exigirMembro, getPermissoes } from "@/lib/auth";
+import { FASE_INFO, periodoEfetivo } from "@/lib/aventura";
 import { fotoDaFase } from "@/lib/cenas";
 import { carregarAventura } from "@/lib/aventura-dados";
 import { formatarPeriodo } from "@/lib/format";
@@ -17,8 +18,28 @@ export default async function AventuraLayout({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { supabase } = await exigirMembro();
-  const { evento } = await carregarAventura(supabase, id);
+  const { supabase, pessoa } = await exigirMembro();
+  const dados = await carregarAventura(supabase, id);
+  const { evento } = dados;
+  const [{ data: precosR }, permissoes] = await Promise.all([
+    supabase
+      .from("ticket_prices")
+      .select(
+        "id, mode, origin, destination, travel_date, return_date, price_cents, link, notes, household_id, created_by, created_at",
+      )
+      .eq("event_id", id)
+      .returns<(Omit<PrecoNaGaveta, "nucleo" | "quem" | "podeRemover"> & { created_by: string | null })[]>(),
+    getPermissoes(),
+  ]);
+  const nomeNucleo = new Map(dados.nucleos.map((n) => [n.id, n.name]));
+  const precos: PrecoNaGaveta[] = (precosR ?? []).map(({ created_by, ...p }) => ({
+    ...p,
+    nucleo: nomeNucleo.get(p.household_id) ?? "Núcleo",
+    quem: dados.nomeDaPessoa(created_by),
+    podeRemover: created_by === pessoa.id || permissoes.aventura.excluir,
+  }));
+  const meuNucleo = dados.nucleos.find((n) => n.id === pessoa.household_id);
+  const periodo = periodoEfetivo(evento, dados.datas, dados.reacoesDatas);
 
   return (
     <div className="flex flex-col gap-5">
@@ -40,6 +61,7 @@ export default async function AventuraLayout({
           "deposit_plans",
           "pix_checkouts",
           "pantry_items",
+          "ticket_prices",
         ]}
       />
       <Card moldura={MOLDURA_DA_FASE[evento.phase]} className="overflow-hidden py-0">
@@ -61,6 +83,14 @@ export default async function AventuraLayout({
           </div>
         </div>
       </Card>
+      <GavetaPassagens
+        eventoId={id}
+        deInicial={meuNucleo?.origin_text ?? ""}
+        paraInicial={evento.region ?? ""}
+        idaInicial={periodo?.inicio ?? null}
+        voltaInicial={periodo?.fim ?? null}
+        precos={precos}
+      />
       <AbasAventura id={id} />
       {children}
     </div>
