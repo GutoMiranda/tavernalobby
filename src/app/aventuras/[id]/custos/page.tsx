@@ -332,9 +332,19 @@ export default async function CustosPage({ params }: { params: Promise<{ id: str
 
                       {item.automatico && (
                         <p className="text-xs text-muted-foreground">
-                          {item.automatico === "mais_votada"
-                            ? "Prévia com a estalagem mais votada. Quando o admin escolher a estalagem, a conta passa a usar a escolhida."
-                            : "Calculado com o preço da estalagem escolhida."}
+                          {item.automatico === "armazem" ? (
+                            <>
+                              Soma do custo dos itens do{" "}
+                              <a href={`/aventuras/${id}/armazem`} className="text-bottle underline">
+                                Armazém · despensa
+                              </a>
+                              . Muda sozinho quando os itens mudam.
+                            </>
+                          ) : item.automatico === "mais_votada" ? (
+                            "Prévia com a estalagem mais votada. Quando o admin escolher a estalagem, a conta passa a usar a escolhida."
+                          ) : (
+                            "Calculado com o preço da estalagem escolhida."
+                          )}
                         </p>
                       )}
                       {pessoa.is_admin && item.automatico === "escolhida" && (

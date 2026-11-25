@@ -8,7 +8,7 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 - [x] **Etapa 4 — Aventuras, datas e estalagens**: painel; votação de datas; estalagens; origens com Places; mapa (setup §4); tempo real.
 - [x] **Etapa 5 — Presença e custos**: presença por pessoa; regras de rateio em `src/lib/finance/` com testes; "Minha parte".
 - [x] **Etapa 6 — Baú (caixinha)**: configuração e QR Pix; depósitos e confirmação; saídas e estornos; painel; troca de Pix com aviso, notificação e e-mail (setup §5); Pix automático pela InfinitePay (setup §7).
-- [ ] **Etapa 7 — Armazém e notificações**: despensa integrada aos custos; sino em tempo real.
+- [~] **Etapa 7 — Armazém e notificações**: despensa integrada aos custos; sino em tempo real.
 - [ ] **Etapa 8 — Qualidade e deploy**: Playwright dos fluxos; acessibilidade e 375 px; revisão de segurança; Vercel (setup §6); páginas públicas `/privacidade` e `/termos` e publicação do app OAuth no Google (Branding + "Publicar app"); `docs/manual-do-grupo.md`.
 
 ## Depois do MVP
@@ -43,3 +43,4 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 - 25/11/2026: R$ 1,00 confirmado pelo card do Tesoureiro/admin (dono). Retorno levou à lista de aventuras em vez do Baú: o retorno agora registra no terminal os nomes dos parâmetros recebidos e o motivo da falha, e volta ao Baú certo pelo número do pedido. Falta um novo teste de R$ 1,00 para ver a confirmação automática.
 - 25/11/2026: segundo teste: retorno chegou com todos os dados, mas "pedido não encontrado" no servidor. Migração 12 (acesso explícito do service_role), aviso de chave errada e erro detalhado no terminal. 140 testes Vitest passando.
 - 25/11/2026: terceiro teste: Pix de R$ 1,00 pela InfinitePay confirmado sozinho no retorno (faixa verde, saldo atualizado). Causa da falha anterior: falta de acesso do service_role (migração 12). Etapa 6 aprovada pelo dono.
+- 25/11/2026: Etapa 7 implementada: Armazém (quantidade sugerida por pessoas-dia, quem leva, comprado, alcoólico, custo integrado ao rateio, tempo real) e sino de notificações (tempo real, página de avisos, marcar como lidas, aviso de responsável no armazém, lembrete do plano de depósitos). Migração 13. 155 testes Vitest e 7 Playwright passando. Aguardando o dono: migração 13 e teste.

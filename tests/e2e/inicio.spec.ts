@@ -41,3 +41,8 @@ test("retorno da InfinitePay sem dados não confirma pagamento", async ({ page }
   await page.goto("/api/infinitepay/retorno");
   await expect(page).toHaveURL(/\/entrar/);
 });
+
+test("notificações exigem login", async ({ page }) => {
+  await page.goto("/notificacoes");
+  await expect(page).toHaveURL(/\/entrar\?depois=%2Fnotificacoes$/);
+});

@@ -5,6 +5,7 @@ import { cache } from "react";
 
 import { periodoEfetivo, ranking } from "./aventura";
 import type { carregarAventura } from "./aventura-dados";
+import { custosDoArmazem } from "./finance/armazem";
 import { type Categoria, type Elegibilidade, type ItemRateio, type PessoaRateio, ratearTudo } from "./finance/rateio";
 import type { Lancamento } from "./finance/economia";
 import { diasDoPeriodo } from "./format";
@@ -34,7 +35,22 @@ export type ItemCusto = {
   proportional_to_days: boolean;
   updated_by: string | null;
   /** Item calculado automaticamente a partir da estalagem (não fica gravado). */
-  automatico?: "escolhida" | "mais_votada";
+  automatico?: "escolhida" | "mais_votada" | "armazem";
+};
+export type ItemDespensa = {
+  id: string;
+  name: string;
+  category: string | null;
+  quantity_per_person: number | null;
+  quantity: number | null;
+  unit: string | null;
+  is_alcoholic: boolean;
+  responsible_person_id: string | null;
+  purchased: boolean;
+  cost_cents: number | null;
+  created_by: string | null;
+  updated_by: string | null;
+  updated_at: string;
 };
 export type Peso = {
   cost_item_id: string;
@@ -47,11 +63,13 @@ export type Adesao = { cost_item_id: string; person_id: string };
 
 /** Pessoas, presenças, itens de custo e o rateio de uma aventura. Cacheado por requisição. */
 export const ID_ESTALAGEM_AUTO = "estalagem-automatica";
+export const ID_ARMAZEM_ALIMENTACAO = "armazem-alimentacao";
+export const ID_ARMAZEM_ALCOOL = "armazem-alcool";
 
 export const carregarCustos = cache(
   async (supabase: SupabaseClient, dados: Awaited<ReturnType<typeof carregarAventura>>) => {
     const { evento } = dados;
-    const [pessoasR, presencasR, itensR] = await Promise.all([
+    const [pessoasR, presencasR, itensR, despensaR] = await Promise.all([
       supabase
         .from("people")
         .select("id, name, household_id, is_child, is_admin, relationship")
@@ -69,7 +87,20 @@ export const carregarCustos = cache(
         .eq("event_id", evento.id)
         .order("created_at")
         .returns<ItemCusto[]>(),
+      supabase
+        .from("pantry_items")
+        .select(
+          "id, name, category, quantity_per_person, quantity, unit, is_alcoholic, responsible_person_id, purchased, cost_cents, created_by, updated_by, updated_at",
+        )
+        .eq("event_id", evento.id)
+        .order("created_at")
+        .returns<ItemDespensa[]>(),
     ]);
+    const despensa = (despensaR.data ?? []).map((i) => ({
+      ...i,
+      quantity_per_person: i.quantity_per_person == null ? null : Number(i.quantity_per_person),
+      quantity: i.quantity == null ? null : Number(i.quantity),
+    }));
     const itens: ItemCusto[] = itensR.data ?? [];
     const ids = itens.map((i) => i.id);
 
@@ -89,6 +120,32 @@ export const carregarCustos = cache(
           automatico: escolhida ? "escolhida" : "mais_votada",
         });
       }
+    }
+    // Custos do Armazém entram no rateio: alcoólicos em "Bebidas alcoólicas", o resto em "Alimentação".
+    const doArmazem = custosDoArmazem(despensa);
+    if (doArmazem.alimentacaoCentavos > 0) {
+      itens.push({
+        id: ID_ARMAZEM_ALIMENTACAO,
+        category: "alimentacao",
+        description: "Armazém · comida e bebidas sem álcool",
+        amount_cents: doArmazem.alimentacaoCentavos,
+        eligibility: "presentes",
+        proportional_to_days: false,
+        updated_by: null,
+        automatico: "armazem",
+      });
+    }
+    if (doArmazem.alcoolCentavos > 0) {
+      itens.push({
+        id: ID_ARMAZEM_ALCOOL,
+        category: "alcool",
+        description: "Armazém · bebidas alcoólicas",
+        amount_cents: doArmazem.alcoolCentavos,
+        eligibility: "presentes",
+        proportional_to_days: false,
+        updated_by: null,
+        automatico: "armazem",
+      });
     }
     const [pesosR, adesoesR] = ids.length
       ? await Promise.all([
@@ -174,6 +231,7 @@ export const carregarCustos = cache(
       totalDias,
       periodo,
       rateio,
+      despensa,
     };
   },
 );

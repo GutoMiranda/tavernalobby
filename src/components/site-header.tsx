@@ -1,12 +1,19 @@
 import Link from "next/link";
 
 import { Logo } from "@/components/logo";
+import { SinoNotificacoes } from "@/components/sino-notificacoes";
 import { getSessao } from "@/lib/auth";
+import { contarNaoLidas, garantirLembretesDeDeposito } from "@/lib/notificacoes-dados";
 
 export async function SiteHeader() {
   const sessao = await getSessao().catch(() => null);
   const pessoa = sessao?.pessoa;
   const aprovado = pessoa?.status === "approved";
+  let naoLidas = 0;
+  if (sessao && pessoa && aprovado) {
+    await garantirLembretesDeDeposito(pessoa).catch((e) => console.error("[notificacoes] lembretes", e));
+    naoLidas = await contarNaoLidas(sessao.supabase).catch(() => 0);
+  }
 
   return (
     <header className="bg-madeira sticky top-0 z-40 border-b-2 border-gold/70 pt-[env(safe-area-inset-top)] text-parchment shadow-md">
@@ -20,8 +27,9 @@ export async function SiteHeader() {
             Taverna O Lobby
           </span>
         </Link>
+        {aprovado && pessoa && <SinoNotificacoes pessoaId={pessoa.id} naoLidas={naoLidas} />}
         {sessao && (
-          <form action="/auth/sair" method="post" className="ml-auto">
+          <form action="/auth/sair" method="post" className={aprovado ? undefined : "ml-auto"}>
             <button
               type="submit"
               className="rounded-md px-2 py-1 text-sm text-parchment underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none"

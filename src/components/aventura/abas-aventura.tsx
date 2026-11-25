@@ -14,6 +14,7 @@ export function AbasAventura({ id, souAdmin }: { id: string; souAdmin: boolean }
     { href: `${base}/datas`, rotulo: "Datas" },
     { href: `${base}/estalagens`, rotulo: "Estalagens" },
     { href: `${base}/presenca`, rotulo: "Presença" },
+    { href: `${base}/armazem`, rotulo: "Armazém" },
     { href: `${base}/custos`, rotulo: "Custos" },
     { href: `${base}/bau`, rotulo: "Baú" },
     ...(souAdmin ? [{ href: `${base}/editar`, rotulo: "Editar" }] : []),
