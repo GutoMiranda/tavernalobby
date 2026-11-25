@@ -47,6 +47,7 @@ export type ItemDespensa = {
   is_alcoholic: boolean;
   responsible_person_id: string | null;
   purchased: boolean;
+  unit_price_cents: number | null;
   cost_cents: number | null;
   created_by: string | null;
   updated_by: string | null;
@@ -90,7 +91,7 @@ export const carregarCustos = cache(
       supabase
         .from("pantry_items")
         .select(
-          "id, name, category, quantity_per_person, quantity, unit, is_alcoholic, responsible_person_id, purchased, cost_cents, created_by, updated_by, updated_at",
+          "id, name, category, quantity_per_person, quantity, unit, is_alcoholic, responsible_person_id, purchased, unit_price_cents, cost_cents, created_by, updated_by, updated_at",
         )
         .eq("event_id", evento.id)
         .order("created_at")

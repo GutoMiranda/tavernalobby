@@ -13,8 +13,106 @@ export type ItemArmazem = {
   quantity: number | null;
   is_alcoholic: boolean;
   cost_cents: number | null;
-  purchased: boolean;
 };
+
+/** Unidades de compra (o preço é sempre "por" uma delas). */
+export const UNIDADES_ARMAZEM = [
+  { id: "un", nome: "unidade" },
+  { id: "kg", nome: "quilo (kg)" },
+  { id: "g", nome: "grama (g)" },
+  { id: "L", nome: "litro (L)" },
+  { id: "mL", nome: "mililitro (mL)" },
+  { id: "pacote", nome: "pacote" },
+  { id: "caixa", nome: "caixa" },
+  { id: "fardo", nome: "fardo" },
+  { id: "engradado", nome: "engradado" },
+  { id: "garrafa", nome: "garrafa" },
+  { id: "lata", nome: "lata" },
+  { id: "long neck", nome: "long neck" },
+  { id: "galão", nome: "galão" },
+  { id: "dúzia", nome: "dúzia" },
+  { id: "bandeja", nome: "bandeja" },
+  { id: "peça", nome: "peça" },
+  { id: "pote", nome: "pote" },
+  { id: "saco", nome: "saco" },
+  { id: "rolo", nome: "rolo" },
+  { id: "maço", nome: "maço" },
+  { id: "cartela", nome: "cartela" },
+  { id: "barra", nome: "barra" },
+  { id: "vidro", nome: "vidro" },
+  { id: "sachê", nome: "sachê" },
+  { id: "porção", nome: "porção" },
+] as const;
+export const IDS_UNIDADES: readonly string[] = UNIDADES_ARMAZEM.map((u) => u.id);
+
+/** Custo do item = preço por unidade × quantidade, arredondado ao centavo (mesma conta do banco). */
+export function custoDoItem(precoCentavos: number | null, quantidade: number | null): number {
+  if (!precoCentavos || !quantidade) return 0;
+  return Math.round((precoCentavos * Math.round(quantidade * 100)) / 100);
+}
+
+/**
+ * Consumo de referência por pessoa por dia, para sugerir a quantidade quando ninguém informou.
+ * Valores médios de churrasco/fim de semana em grupo; é só uma sugestão, editável por item.
+ */
+const REFERENCIAS: { palavras: string[]; unidade: string; porPessoaDia: number }[] = [
+  {
+    palavras: [
+      "picanha",
+      "carne",
+      "costela",
+      "alcatra",
+      "maminha",
+      "fraldinha",
+      "contra",
+      "cupim",
+      "linguiça",
+      "linguica",
+      "frango",
+      "coxa",
+      "asa",
+      "lombo",
+      "pernil",
+      "bisteca",
+    ],
+    unidade: "kg",
+    porPessoaDia: 0.4,
+  },
+  { palavras: ["pão de alho", "pao de alho"], unidade: "un", porPessoaDia: 1 },
+  { palavras: ["pão", "pao"], unidade: "un", porPessoaDia: 3 },
+  { palavras: ["cerveja", "chopp", "chope"], unidade: "L", porPessoaDia: 1.5 },
+  { palavras: ["cerveja"], unidade: "lata", porPessoaDia: 4 },
+  { palavras: ["cerveja"], unidade: "long neck", porPessoaDia: 4 },
+  { palavras: ["vinho"], unidade: "garrafa", porPessoaDia: 0.25 },
+  { palavras: ["refrigerante", "refri"], unidade: "L", porPessoaDia: 0.6 },
+  { palavras: ["refrigerante", "refri"], unidade: "lata", porPessoaDia: 2 },
+  { palavras: ["água", "agua"], unidade: "L", porPessoaDia: 1.5 },
+  { palavras: ["suco"], unidade: "L", porPessoaDia: 0.3 },
+  { palavras: ["leite"], unidade: "L", porPessoaDia: 0.2 },
+  { palavras: ["café", "cafe"], unidade: "g", porPessoaDia: 15 },
+  { palavras: ["arroz"], unidade: "kg", porPessoaDia: 0.1 },
+  { palavras: ["feijão", "feijao"], unidade: "kg", porPessoaDia: 0.08 },
+  { palavras: ["farofa", "farinha"], unidade: "kg", porPessoaDia: 0.05 },
+  { palavras: ["queijo", "muçarela", "mussarela"], unidade: "kg", porPessoaDia: 0.05 },
+  { palavras: ["presunto", "peito de peru"], unidade: "kg", porPessoaDia: 0.04 },
+  { palavras: ["ovo"], unidade: "un", porPessoaDia: 1 },
+  { palavras: ["ovo"], unidade: "dúzia", porPessoaDia: 0.1 },
+  { palavras: ["gelo"], unidade: "kg", porPessoaDia: 1 },
+  { palavras: ["carvão", "carvao"], unidade: "kg", porPessoaDia: 0.3 },
+  { palavras: ["papel higiênico", "papel higienico"], unidade: "rolo", porPessoaDia: 0.5 },
+  { palavras: ["copo"], unidade: "un", porPessoaDia: 4 },
+  { palavras: ["prato"], unidade: "un", porPessoaDia: 2 },
+  { palavras: ["guardanapo"], unidade: "un", porPessoaDia: 5 },
+];
+
+/** Consumo de referência por pessoa por dia pelo nome e unidade do item (null se não souber). */
+export function consumoDeReferencia(nome: string, unidade: string | null): number | null {
+  const n = nome.toLocaleLowerCase("pt-BR");
+  for (const r of REFERENCIAS) {
+    if (r.unidade === unidade && r.palavras.some((p) => n.includes(p))) return r.porPessoaDia;
+  }
+  return null;
+}
 
 export const CATEGORIAS_ARMAZEM = [
   "Carnes",
@@ -54,10 +152,6 @@ export function custosDoArmazem(itens: ItemArmazem[]): { alimentacaoCentavos: nu
 }
 
 /** Resumo para o topo da página. */
-export function resumoDoArmazem(itens: ItemArmazem[]): { total: number; comprados: number; semCusto: number } {
-  return {
-    total: itens.length,
-    comprados: itens.filter((i) => i.purchased).length,
-    semCusto: itens.filter((i) => i.cost_cents == null).length,
-  };
+export function resumoDoArmazem(itens: ItemArmazem[]): { total: number; semCusto: number } {
+  return { total: itens.length, semCusto: itens.filter((i) => !i.cost_cents).length };
 }

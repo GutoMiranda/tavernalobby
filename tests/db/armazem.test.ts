@@ -26,7 +26,7 @@ describe("Armazém", () => {
     const p = await b.pessoaDe(bia);
     [{ id: item }] = await b.como<{ id: string }>(
       bia,
-      "insert into public.pantry_items (event_id, name, quantity_per_person, unit, cost_cents, created_by) values ($1, 'Carne', 0.3, 'kg', 25000, $2) returning id",
+      "insert into public.pantry_items (event_id, name, quantity_per_person, unit, unit_price_cents, quantity, created_by) values ($1, 'Carne', 0.3, 'kg', 5990, 8.5, $2) returning id",
       [ev, p.id],
     );
     const [l] = await b.como<{ updated_by: string }>(caio, "select updated_by from public.pantry_items where id = $1", [

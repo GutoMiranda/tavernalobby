@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { custosDoArmazem, pessoasDia, quantidadeSugerida, resumoDoArmazem } from "./armazem";
+import {
+  consumoDeReferencia,
+  custoDoItem,
+  custosDoArmazem,
+  pessoasDia,
+  quantidadeSugerida,
+  resumoDoArmazem,
+} from "./armazem";
 import type { PessoaRateio } from "./rateio";
 
 const p = (id: string, extra: Partial<PessoaRateio> = {}): PessoaRateio => ({
@@ -45,7 +52,7 @@ describe("quantidadeSugerida", () => {
 
 describe("custosDoArmazem", () => {
   it("separa alcoólicos de alimentação, em centavos", () => {
-    const base = { quantity_per_person: null, quantity: null, purchased: false };
+    const base = { quantity_per_person: null, quantity: null };
     expect(
       custosDoArmazem([
         { ...base, is_alcoholic: false, cost_cents: 25000 },
@@ -58,13 +65,34 @@ describe("custosDoArmazem", () => {
 });
 
 describe("resumoDoArmazem", () => {
-  it("conta comprados e itens sem custo", () => {
+  it("conta itens e os sem custo", () => {
     const base = { quantity_per_person: null, quantity: null, is_alcoholic: false };
     expect(
       resumoDoArmazem([
-        { ...base, purchased: true, cost_cents: 100 },
-        { ...base, purchased: false, cost_cents: null },
+        { ...base, cost_cents: 100 },
+        { ...base, cost_cents: 0 },
       ]),
-    ).toEqual({ total: 2, comprados: 1, semCusto: 1 });
+    ).toEqual({ total: 2, semCusto: 1 });
+  });
+});
+
+describe("custoDoItem", () => {
+  it("preço por unidade × quantidade, ao centavo", () => {
+    expect(custoDoItem(5990, 8.5)).toBe(50915);
+    expect(custoDoItem(333, 3)).toBe(999);
+    expect(custoDoItem(1999, 0.35)).toBe(700); // 699,65 → 700
+    expect(custoDoItem(null, 2)).toBe(0);
+    expect(custoDoItem(100, null)).toBe(0);
+  });
+});
+
+describe("consumoDeReferencia", () => {
+  it("sugere pelo nome e pela unidade", () => {
+    expect(consumoDeReferencia("Picanha", "kg")).toBe(0.4);
+    expect(consumoDeReferencia("Cerveja Heineken", "lata")).toBe(4);
+    expect(consumoDeReferencia("Pão de alho", "un")).toBe(1);
+    expect(consumoDeReferencia("Pão francês", "un")).toBe(3);
+    expect(consumoDeReferencia("Picanha", "un")).toBeNull();
+    expect(consumoDeReferencia("Guarda-sol", "un")).toBeNull();
   });
 });
