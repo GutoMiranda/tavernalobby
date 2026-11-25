@@ -7,6 +7,7 @@ import {
   mesesDeDeposito,
   nomeDoMes,
   planoDeEconomia,
+  valoresDoDeposito,
 } from "./economia";
 
 const l = (extra: Partial<Lancamento>): Lancamento => ({
@@ -109,5 +110,35 @@ describe("depósitos do núcleo", () => {
       "n1",
     );
     expect(r).toEqual({ confirmadoCentavos: 2000, pendenteCentavos: 300 });
+  });
+});
+
+describe("valores prontos para o depósito (mês, semana, dia)", () => {
+  it("divide o que falta pelos dias e semanas até a aventura, arredondando para cima", () => {
+    // 01/12/2026 a 01/03/2027 = 90 dias = 13 semanas (12,86 para cima).
+    const v = valoresDoDeposito(300_000, 100_000, "2026-12-01", "2027-03-01");
+    expect(v.porMesCentavos).toBe(100_000);
+    expect(v.porDiaCentavos).toBe(3_334); // 300000 / 90 = 3333,33 → 3334
+    expect(v.porSemanaCentavos).toBe(23_077); // 300000 / 13 = 23076,92 → 23077
+    expect(v.porDiaCentavos! * 90).toBeGreaterThanOrEqual(300_000);
+    expect(v.porSemanaCentavos! * 13).toBeGreaterThanOrEqual(300_000);
+  });
+
+  it("aventura amanhã ou já passada: tudo em um dia e uma semana", () => {
+    expect(valoresDoDeposito(5_000, 5_000, "2026-12-01", "2026-12-02")).toEqual({
+      porMesCentavos: 5_000,
+      porSemanaCentavos: 5_000,
+      porDiaCentavos: 5_000,
+    });
+    expect(valoresDoDeposito(5_000, 5_000, "2026-12-10", "2026-12-02").porDiaCentavos).toBe(5_000);
+  });
+
+  it("sem data definida ou nada a pagar: só o valor do mês", () => {
+    expect(valoresDoDeposito(5_000, 5_000, "2026-12-01", null)).toEqual({
+      porMesCentavos: 5_000,
+      porSemanaCentavos: null,
+      porDiaCentavos: null,
+    });
+    expect(valoresDoDeposito(0, 0, "2026-12-01", "2027-01-01").porDiaCentavos).toBeNull();
   });
 });

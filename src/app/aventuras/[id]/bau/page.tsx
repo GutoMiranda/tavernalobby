@@ -5,17 +5,17 @@ import {
   CheckCircle2,
   ExternalLink,
   History,
-  QrCode,
   Undo2,
-  Zap,
 } from "lucide-react";
 import type { Metadata } from "next";
-import QRCode from "qrcode";
 
 import { AcaoForm } from "@/components/acao-form";
-import { IconeBau, IconeMoedas } from "@/components/icones";
+import { BarraDaMeta } from "@/components/bau/barra-da-meta";
+import { PilhaDeOuro } from "@/components/bau/pilha-de-ouro";
+import { TesouroVivo } from "@/components/bau/tesouro-vivo";
+import { IconeBau, IconeCoroa, IconeMoedas } from "@/components/icones";
 import { CampoComprovante } from "@/components/bau/campo-comprovante";
-import { CopiarBotao } from "@/components/copiar-botao";
+import { DepositoPix } from "@/components/bau/deposito-pix";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,8 +25,7 @@ import { carregarAventura } from "@/lib/aventura-dados";
 import { carregarCustos } from "@/lib/custos-dados";
 import { centavosParaCampo } from "@/lib/dinheiro";
 import { avisoPixAtivo, lembreteDoPlano, saldoDoBau } from "@/lib/finance/bau";
-import { depositosDoNucleo, planoDeEconomia } from "@/lib/finance/economia";
-import { pixCopiaECola } from "@/lib/finance/pix";
+import { depositosDoNucleo, planoDeEconomia, valoresDoDeposito } from "@/lib/finance/economia";
 import { formatarCentavos, formatarData, formatarDataHora, formatarDia, hojeEmSaoPaulo } from "@/lib/format";
 import { handleInfinitePay } from "@/lib/infinitepay";
 
@@ -200,17 +199,7 @@ export default async function BauPage({
     : null;
   const valorSugerido = meuPlano?.amount_cents ?? plano.porMesCentavos;
 
-  const pix = fundo.pix_key
-    ? pixCopiaECola({
-        chave: fundo.pix_key,
-        nome: fundo.holder ?? "Taverna",
-        valorCentavos: valorSugerido || undefined,
-      })
-    : null;
-  const pixSemValor = fundo.pix_key ? pixCopiaECola({ chave: fundo.pix_key, nome: fundo.holder ?? "Taverna" }) : null;
-  const qr = pix
-    ? await QRCode.toString(pix, { type: "svg", margin: 1, color: { dark: "#3B2A1E", light: "#FFFFFF" } })
-    : null;
+  const valores = valoresDoDeposito(plano.faltaCentavos, valorSugerido, hoje, custos.periodo?.inicio ?? null);
 
   const links = new Map(
     await Promise.all(
@@ -266,7 +255,15 @@ export default async function BauPage({
         </div>
       )}
 
-      <Card className="lg:col-span-2">
+      <TesouroVivo
+        fundoId={fundo.id}
+        confirmados={lancamentos.filter((l) => l.kind === "entrada" && l.status === "confirmado").map((l) => l.id)}
+        progresso={progresso}
+        nomesNucleo={Object.fromEntries(nomeNucleo)}
+        celebrarAoAbrir={retornoPix === "ok"}
+      />
+
+      <Card className="lg:col-span-2" moldura={progresso >= 100 ? "verde" : undefined}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconeMoedas className="text-gold" /> Pilha de tesouro
@@ -275,26 +272,30 @@ export default async function BauPage({
             Saldo confirmado = entradas confirmadas − saídas (estornos já considerados).
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <p className="text-4xl font-bold text-wood">{formatarCentavos(saldoCentavos)}</p>
-          <div>
-            <div className="mb-1 flex justify-between text-sm">
+        <CardContent className="flex flex-col gap-5">
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-end sm:gap-8">
+            <PilhaDeOuro progresso={meta > 0 ? (entradasCentavos * 100) / meta : 0} className="sm:w-64 sm:shrink-0" />
+            <div className="flex flex-col items-center gap-2 sm:items-start">
+              {progresso >= 100 && (
+                <p className="selo-meta inline-flex items-center gap-2 rounded-full border-2 border-gold bg-gold/15 px-4 py-1 font-display text-lg text-wood">
+                  <IconeCoroa className="size-6 text-gold" /> Meta alcançada!
+                </p>
+              )}
+              <p className="text-sm text-muted-foreground">Saldo no baú</p>
+              <p className="font-display text-5xl font-bold text-wood drop-shadow-[0_0_18px_rgb(242_165_65/0.35)]">
+                {formatarCentavos(saldoCentavos)}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex justify-between gap-2 text-sm">
               <span>
                 Arrecadado {formatarCentavos(entradasCentavos)} de {formatarCentavos(meta)}
                 {fundo.goal_cents == null && " (soma dos custos)"}
               </span>
-              <span className="font-medium">{progresso}%</span>
+              <span className="font-display text-lg text-gold">{progresso}%</span>
             </div>
-            <div
-              className="h-3 overflow-hidden rounded-full bg-muted"
-              role="progressbar"
-              aria-valuenow={progresso}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label="Progresso da meta"
-            >
-              <div className="h-full rounded-full bg-gold transition-all" style={{ width: `${progresso}%` }} />
-            </div>
+            <BarraDaMeta progresso={progresso} />
           </div>
           <ul className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
             <li className="rounded-md bg-surface p-2">
@@ -317,104 +318,55 @@ export default async function BauPage({
         </CardContent>
       </Card>
 
-      {pixAutomatico && (
-        <Card className="border-bottle/60">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="size-5 text-bottle" aria-hidden /> Pix automático · InfinitePay
-            </CardTitle>
-            <CardDescription>
-              Você paga o Pix na página segura da InfinitePay e o depósito entra no baú já confirmado, sem esperar o
-              Tesoureiro.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-sm">
-            <AcaoForm action={pagarComInfinitePay} textoBotao="Pagar com Pix (confirmação automática)">
-              <input type="hidden" name="evento" value={id} />
-              <input type="hidden" name="fundo" value={fundo.id} />
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="auto-valor">Valor (R$, mínimo 1,00)</Label>
-                <Input
-                  id="auto-valor"
-                  name="valor"
-                  inputMode="decimal"
-                  required
-                  defaultValue={valorSugerido ? centavosParaCampo(valorSugerido) : ""}
-                />
-              </div>
-            </AcaoForm>
-            {cobrancasAbertas.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <p className="font-medium">Pagamentos começados e ainda não confirmados</p>
-                <ul className="flex flex-col gap-2">
-                  {cobrancasAbertas.map((c) => (
-                    <li
-                      key={c.id}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-surface p-2"
-                    >
-                      <span>
-                        {formatarCentavos(c.amount_cents)} · {formatarDataHora(c.created_at)}
-                      </span>
-                      <a
-                        href={c.checkout_url}
-                        className="inline-flex items-center gap-1 text-bottle underline underline-offset-4"
-                      >
-                        Continuar pagamento <ExternalLink className="size-3.5" aria-hidden />
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-muted-foreground">Se já pagou, a confirmação chega sozinha. Não pague duas vezes.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
+      <Card className="border-bottle/60 lg:row-span-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <QrCode className="size-5 text-bottle" aria-hidden />{" "}
-            {pixAutomatico ? "Pix direto na chave (alternativa)" : "Pagar com Pix"}
+            <IconeMoedas className="text-gold" /> Depositar no baú
           </CardTitle>
           <CardDescription>
-            Use o app do seu banco. Confira o titular antes de confirmar.
-            {pixAutomatico && " Depois, envie o comprovante em “Paguei por fora”."}
+            Escolha quanto vai guardar e pague por Pix. Confira o titular antes de confirmar no app do banco.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 text-sm">
-          {!fundo.pix_key ? (
+        <CardContent className="flex flex-col gap-4">
+          {!fundo.pix_key && !pixAutomatico ? (
             <p className="text-muted-foreground">O admin ainda não cadastrou a chave Pix.</p>
           ) : (
-            <>
-              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-                <dt className="text-muted-foreground">Banco</dt>
-                <dd>{fundo.bank ?? "—"}</dd>
-                <dt className="text-muted-foreground">Titular</dt>
-                <dd>{fundo.holder ?? "—"}</dd>
-                <dt className="text-muted-foreground">Chave</dt>
-                <dd className="break-all font-medium">{fundo.pix_key}</dd>
-              </dl>
-              {qr && (
-                <div
-                  className="mx-auto w-48 rounded-md border border-border bg-white p-2"
-                  role="img"
-                  aria-label={`QR code Pix${valorSugerido ? ` de ${formatarCentavos(valorSugerido)}` : ""}`}
-                  // SVG gerado no servidor pela biblioteca qrcode a partir do código Pix.
-                  dangerouslySetInnerHTML={{ __html: qr }}
-                />
-              )}
-              {valorSugerido > 0 && (
-                <p className="text-center">
-                  QR com o valor do seu mês: <strong>{formatarCentavos(valorSugerido)}</strong>
-                </p>
-              )}
-              <div className="flex flex-wrap gap-2">
-                {pix && <CopiarBotao texto={pix} rotulo="Copiar Pix com valor" />}
-                {pixSemValor && <CopiarBotao texto={pixSemValor} rotulo="Copiar Pix sem valor" />}
-                <CopiarBotao texto={fundo.pix_key} rotulo="Copiar chave" />
-              </div>
-            </>
+            <DepositoPix
+              evento={id}
+              fundo={fundo.id}
+              chave={fundo.pix_key}
+              titular={fundo.holder}
+              banco={fundo.bank}
+              automatico={pixAutomatico}
+              porMesCentavos={valores.porMesCentavos}
+              porSemanaCentavos={valores.porSemanaCentavos}
+              porDiaCentavos={valores.porDiaCentavos}
+              acao={pagarComInfinitePay}
+            />
+          )}
+          {cobrancasAbertas.length > 0 && (
+            <div className="flex flex-col gap-2 text-sm">
+              <p className="font-medium">Pagamentos começados e ainda não confirmados</p>
+              <ul className="flex flex-col gap-2">
+                {cobrancasAbertas.map((c) => (
+                  <li
+                    key={c.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-surface p-2"
+                  >
+                    <span>
+                      {formatarCentavos(c.amount_cents)} · {formatarDataHora(c.created_at)}
+                    </span>
+                    <a
+                      href={c.checkout_url}
+                      className="inline-flex items-center gap-1 text-bottle underline underline-offset-4"
+                    >
+                      Continuar pagamento <ExternalLink className="size-3.5" aria-hidden />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-muted-foreground">Se já pagou, a confirmação chega sozinha. Não pague duas vezes.</p>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -436,13 +388,7 @@ export default async function BauPage({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="dep-valor">Valor (R$)</Label>
-                <Input
-                  id="dep-valor"
-                  name="valor"
-                  inputMode="decimal"
-                  required
-                  defaultValue={valorSugerido ? centavosParaCampo(valorSugerido) : ""}
-                />
+                <Input id="dep-valor" name="valor" inputMode="decimal" required placeholder="0,00" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="dep-data">Data</Label>

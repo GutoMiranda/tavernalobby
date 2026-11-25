@@ -26,7 +26,7 @@ export default async function TavernaPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="relative overflow-hidden rounded-3xl border border-[#5a4128] bg-[radial-gradient(ellipse_at_20%_0%,rgb(242_165_65/0.18),transparent_60%),linear-gradient(180deg,#2a1f17,#1d1611)] p-6 shadow-[var(--brilho-vela)] sm:p-8">
+      <section data-slot="card" className="overflow-hidden p-6 sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
           <Logo size={96} className="drop-shadow-[0_0_24px_rgb(242_165_65/0.45)]" />
           <div className="flex min-w-0 flex-col gap-1">
@@ -105,17 +105,21 @@ function Atalho({
       href={href}
       className="group rounded-2xl focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none"
     >
-      <Card className="h-full transition-transform duration-200 group-hover:-translate-y-1">
-        <CardHeader className="flex flex-row items-center gap-4">
-          <span className="rounded-xl border border-gold/30 bg-surface p-3 text-gold" aria-hidden>
-            <Icone className="size-9" />
+      <Card className="h-full text-center transition-transform duration-200 group-hover:-translate-y-1">
+        <CardHeader className="flex flex-col items-center gap-3">
+          <span
+            className="grid size-20 place-items-center rounded-full border-2 border-gold/60 bg-[radial-gradient(circle,rgb(242_165_65/0.25),transparent_70%)] text-gold shadow-[0_0_24px_-6px_var(--gold)]"
+            aria-hidden
+          >
+            <Icone className="size-11" />
           </span>
-          <div>
-            <CardTitle>
-              {titulo} <span className="font-sans text-sm font-normal text-muted-foreground">· {comum}</span>
-            </CardTitle>
-            <CardDescription>{texto}</CardDescription>
-          </div>
+          <CardTitle className="text-2xl">
+            {titulo} <span className="font-sans text-sm font-normal text-muted-foreground">· {comum}</span>
+          </CardTitle>
+          <p className="divisor-quest w-full text-xs" aria-hidden>
+            ◆
+          </p>
+          <CardDescription className="text-base">{texto}</CardDescription>
         </CardHeader>
       </Card>
     </Link>

@@ -69,3 +69,38 @@ export function nomeDoMes(mes: string): string {
   const [a, m] = mes.split("-").map(Number);
   return `${nomes[m - 1]}/${a}`;
 }
+
+export type ValoresDoDeposito = {
+  /** Valor do mês: o plano combinado do núcleo ou a sugestão do plano de economia. */
+  porMesCentavos: number;
+  /** Quanto guardar por semana até a aventura (arredondado para cima, cobre a parte). Null sem data. */
+  porSemanaCentavos: number | null;
+  /** Quanto guardar por dia até a aventura (arredondado para cima). Null sem data. */
+  porDiaCentavos: number | null;
+};
+
+/**
+ * Valores prontos para o campo de depósito do baú (por mês, por semana, por dia).
+ * Semana e dia dividem o que falta pelos dias corridos de hoje até a véspera da aventura,
+ * arredondando o centavo para cima para que a soma cubra a parte.
+ */
+export function valoresDoDeposito(
+  faltaCentavos: number,
+  porMesCentavos: number,
+  hoje: string,
+  inicio: string | null,
+): ValoresDoDeposito {
+  if (!inicio || faltaCentavos <= 0) {
+    return { porMesCentavos, porSemanaCentavos: null, porDiaCentavos: null };
+  }
+  const dias = Math.max(
+    1,
+    Math.round((Date.parse(`${inicio}T00:00:00Z`) - Date.parse(`${hoje}T00:00:00Z`)) / 86_400_000),
+  );
+  const semanas = Math.max(1, Math.ceil(dias / 7));
+  return {
+    porMesCentavos,
+    porSemanaCentavos: Math.ceil(faltaCentavos / semanas),
+    porDiaCentavos: Math.ceil(faltaCentavos / dias),
+  };
+}

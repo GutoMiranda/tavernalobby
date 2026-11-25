@@ -17,14 +17,21 @@ export async function SiteHeader() {
 
   return (
     <header className="bg-madeira sticky top-0 z-40 border-b border-gold/40 pt-[env(safe-area-inset-top)] text-parchment shadow-[0_8px_24px_-12px_rgb(0_0_0/0.9)]">
-      <div className="mx-auto flex h-16 w-full max-w-screen-2xl items-center gap-3 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-[4.5rem] w-full max-w-screen-2xl items-center gap-3 sm:h-20 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="flex min-w-0 items-center gap-2 rounded-md focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none"
+          className="group flex min-w-0 items-center gap-2.5 rounded-md focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none"
         >
-          <Logo size={44} className="drop-shadow-[0_0_10px_rgb(242_165_65/0.5)]" />
-          <span className="truncate font-display text-2xl leading-none font-bold tracking-wide text-gold">
-            Taverna O Lobby
+          <span className="relative grid shrink-0 place-items-center">
+            <span
+              aria-hidden
+              className="absolute size-14 rounded-full bg-[radial-gradient(circle,rgb(242_165_65/0.45),transparent_70%)] blur-sm sm:size-16"
+            />
+            <Logo size={52} className="relative drop-shadow-[0_0_12px_rgb(242_165_65/0.7)] sm:hidden" />
+            <Logo size={62} className="relative hidden drop-shadow-[0_0_12px_rgb(242_165_65/0.7)] sm:block" />
+          </span>
+          <span className="titulo-marca truncate font-display text-[1.7rem] leading-none font-bold tracking-wide sm:text-4xl">
+            Taverna <span className="text-[0.8em] italic">O</span> Lobby
           </span>
         </Link>
         {aprovado && pessoa && <SinoNotificacoes pessoaId={pessoa.id} naoLidas={naoLidas} />}

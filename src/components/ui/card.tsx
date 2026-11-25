@@ -2,14 +2,20 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+/**
+ * Card no estilo "quest": moldura de metal ornamentada e miolo de pedra (ver globals.css).
+ * moldura: "ouro" (padrão), "verde" (destaque/sucesso) ou "prata" (encerrado/secundário).
+ */
+function Card({
+  className,
+  moldura,
+  ...props
+}: React.ComponentProps<"div"> & { moldura?: "ouro" | "verde" | "prata" }) {
   return (
     <div
       data-slot="card"
-      className={cn(
-        "bg-card text-card-foreground flex min-w-0 flex-col gap-5 rounded-2xl border border-[#5a4128] py-6",
-        className,
-      )}
+      data-moldura={moldura && moldura !== "ouro" ? moldura : undefined}
+      className={cn("text-card-foreground flex min-w-0 flex-col gap-5 py-6", className)}
       {...props}
     />
   );
