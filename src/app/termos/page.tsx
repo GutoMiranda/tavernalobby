@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { CREDITOS_DAS_CENAS } from "@/lib/cenas";
+
 import { contatoDoAdmin, DocumentoLegal } from "@/components/legal/documento-legal";
 
 export const metadata: Metadata = { title: "Termos de uso" };
@@ -49,6 +51,18 @@ export default function TermosPage() {
         O site usa planos gratuitos de serviços de terceiros e pode ficar fora do ar ou mudar sem aviso. Não há garantia
         de funcionamento contínuo.
       </p>
+
+      <h2>Créditos das imagens</h2>
+      <p>Fotos das aventuras do Unsplash (Unsplash License):</p>
+      <ul>
+        {Object.entries(CREDITOS_DAS_CENAS).map(([fase, c]) => (
+          <li key={fase}>
+            <a href={c.fonte} rel="noopener noreferrer">
+              {c.autor}
+            </a>
+          </li>
+        ))}
+      </ul>
 
       <h2>Contato</h2>
       <p>

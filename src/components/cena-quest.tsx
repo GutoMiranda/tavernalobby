@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 import type { Fase } from "@/lib/aventura";
 import { cn } from "@/lib/utils";
 
@@ -44,14 +42,27 @@ export function CenaQuest({
   foto?: string | null;
 }) {
   if (foto) {
+    // Foto por link (Unsplash). O desenho fica embaixo: se a foto não carregar, ele aparece.
     return (
-      <Image
-        src={foto}
-        alt=""
-        fill
-        sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
-        className={cn("object-cover", className)}
-      />
+      <span className="absolute inset-0 block">
+        <span className="absolute inset-0 block">
+          <CenaQuest cena={cena} idBase={idBase} className={className} />
+        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element -- imagem externa do Unsplash por link, como o Unsplash pede */}
+        <img
+          src={foto}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <span
+          aria-hidden
+          className="absolute inset-0 block bg-[linear-gradient(180deg,rgb(242_165_65/0.18),rgb(29_22_17/0.45))] mix-blend-multiply"
+        />
+        <span aria-hidden className="absolute inset-0 block bg-[rgb(242_165_65/0.12)] mix-blend-soft-light" />
+      </span>
     );
   }
   const g = (n: string) => `${idBase}-${n}`;
