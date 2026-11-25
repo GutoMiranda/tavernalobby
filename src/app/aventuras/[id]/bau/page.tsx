@@ -27,7 +27,6 @@ import { carregarCustos } from "@/lib/custos-dados";
 import { centavosParaCampo } from "@/lib/dinheiro";
 import { avisoPixAtivo, lembreteDoPlano, saldoDoBau } from "@/lib/finance/bau";
 import { depositosDoNucleo, planoDeEconomia, valoresDoDeposito } from "@/lib/finance/economia";
-import { nivelDoTesouro } from "@/lib/finance/tesouro";
 import { formatarCentavos, formatarData, formatarDataHora, formatarDia, hojeEmSaoPaulo } from "@/lib/format";
 import { handleInfinitePay } from "@/lib/infinitepay";
 
@@ -187,6 +186,8 @@ export default async function BauPage({
   const meta = fundo.goal_cents ?? custos.rateio.totalCentavos;
   const progresso = meta > 0 ? Math.min(100, Math.floor((entradasCentavos * 100) / meta)) : 0;
   const estornados = new Set(lancamentos.filter((l) => l.kind === "estorno").map((l) => l.reverses_id));
+  // Progresso exato (com casas decimais) para os desenhos: todo depósito mexe um pouco na pilha e no baú.
+  const progressoExato = meta > 0 ? (saldoCentavos * 100) / meta : 0;
   const depositosConfirmados = lancamentos.filter(
     (l) => l.kind === "entrada" && l.status === "confirmado" && !estornados.has(l.id),
   ).length;
@@ -279,10 +280,7 @@ export default async function BauPage({
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           <div className="grid items-end justify-items-center gap-4 sm:grid-cols-3">
-            <PilhaDeOuro
-              progresso={meta > 0 ? (entradasCentavos * 100) / meta : 0}
-              className="order-3 max-w-56 sm:order-1"
-            />
+            <PilhaDeOuro progresso={progressoExato} className="order-3 max-w-56 sm:order-1" />
             <div className="order-2 flex flex-col items-center gap-2 pb-2 text-center">
               {progresso >= 100 && (
                 <p className="selo-meta inline-flex items-center gap-2 rounded-full border-2 border-gold bg-gold/15 px-4 py-1 font-display text-lg text-wood">
@@ -299,7 +297,7 @@ export default async function BauPage({
                   : `${depositosConfirmados} ${depositosConfirmados === 1 ? "depósito confirmado" : "depósitos confirmados"}`}
               </p>
             </div>
-            <BauDoTesouro nivel={nivelDoTesouro(depositosConfirmados, progresso)} className="order-1 sm:order-3" />
+            <BauDoTesouro progresso={progressoExato} className="order-1 sm:order-3" />
           </div>
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between gap-2 text-sm">

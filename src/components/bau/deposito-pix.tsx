@@ -176,52 +176,22 @@ export function DepositoPix(props: Props) {
           </form>
         )}
 
-        {chave ? (
+        {chave && automatico ? (
+          // Com o Pix automático ligado, a chave fica recolhida: pagar por ela não confirma sozinho.
+          <details className="group rounded-xl border border-border bg-surface/40 p-3 text-sm">
+            <summary className="cursor-pointer list-none text-muted-foreground marker:hidden">
+              <span className="underline underline-offset-4">Outra forma: Pix direto na chave</span> (não confirma
+              sozinho; precisa enviar o comprovante)
+            </summary>
+            <div className="mt-3">{blocoChave()}</div>
+          </details>
+        ) : chave ? (
           <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface/60 p-3">
             <p className="flex items-center gap-2 font-semibold">
               <QrCode className="size-5 text-bottle" aria-hidden />
-              {automatico ? "Ou Pix direto na chave" : "Pix direto na chave"}
+              Pix direto na chave
             </p>
-            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-              <dt className="text-muted-foreground">Banco</dt>
-              <dd>{props.banco ?? "—"}</dd>
-              <dt className="text-muted-foreground">Titular</dt>
-              <dd>{props.titular ?? "—"}</dd>
-              <dt className="text-muted-foreground">Chave</dt>
-              <dd className="break-all font-medium">{chave}</dd>
-            </dl>
-            {qr ? (
-              <div
-                className="mx-auto w-48 rounded-md border border-border bg-white p-2"
-                role="img"
-                aria-label={`QR code Pix de ${formatarCentavos(centavos)}`}
-                // SVG gerado no navegador pela biblioteca qrcode a partir do código Pix.
-                dangerouslySetInnerHTML={{ __html: qr }}
-              />
-            ) : (
-              <div className="mx-auto flex size-48 flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-border p-3 text-center text-sm text-muted-foreground">
-                <QrCode className="size-10 opacity-50" aria-hidden />O QR aparece aqui depois que você escolher o valor.
-              </div>
-            )}
-            <div className="flex flex-wrap justify-center gap-2">
-              {copiaECola && <CopiarBotao texto={copiaECola} rotulo={`Copiar Pix de ${formatarCentavos(centavos)}`} />}
-              <CopiarBotao texto={chave} rotulo="Copiar chave" />
-            </div>
-            <div className="flex flex-col gap-2 rounded-lg border border-gold/50 bg-gold/10 p-3 text-sm">
-              <p>
-                <strong className="text-wood">Este Pix não avisa o site sozinho.</strong> Depois de pagar pelo QR ou
-                pela chave, registre o depósito para o Tesoureiro conferir.
-                {automatico && " Para entrar na hora, com explosão de ouro, use o Pix automático acima."}
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={irParaPagueiPorFora}
-                className="h-auto min-h-10 whitespace-normal"
-              >
-                <ArrowDownCircle aria-hidden /> Já paguei pela chave: registrar depósito
-              </Button>
-            </div>
+            {blocoChave()}
           </div>
         ) : (
           !automatico && <p className="text-muted-foreground">O admin ainda não cadastrou a chave Pix.</p>
@@ -229,6 +199,54 @@ export function DepositoPix(props: Props) {
       </div>
     </div>
   );
+
+  function blocoChave() {
+    if (!chave) return null;
+    return (
+      <div className="flex flex-col gap-3">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+          <dt className="text-muted-foreground">Banco</dt>
+          <dd>{props.banco ?? "—"}</dd>
+          <dt className="text-muted-foreground">Titular</dt>
+          <dd>{props.titular ?? "—"}</dd>
+          <dt className="text-muted-foreground">Chave</dt>
+          <dd className="break-all font-medium">{chave}</dd>
+        </dl>
+        {qr ? (
+          <div
+            className="mx-auto w-48 rounded-md border border-border bg-white p-2"
+            role="img"
+            aria-label={`QR code Pix de ${formatarCentavos(centavos)}`}
+            // SVG gerado no navegador pela biblioteca qrcode a partir do código Pix.
+            dangerouslySetInnerHTML={{ __html: qr }}
+          />
+        ) : (
+          <div className="mx-auto flex size-48 flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-border p-3 text-center text-sm text-muted-foreground">
+            <QrCode className="size-10 opacity-50" aria-hidden />O QR aparece aqui depois que você escolher o valor.
+          </div>
+        )}
+        <div className="flex flex-wrap justify-center gap-2">
+          {copiaECola && <CopiarBotao texto={copiaECola} rotulo={`Copiar Pix de ${formatarCentavos(centavos)}`} />}
+          <CopiarBotao texto={chave} rotulo="Copiar chave" />
+        </div>
+        <div className="flex flex-col gap-2 rounded-lg border border-gold/50 bg-gold/10 p-3 text-sm">
+          <p>
+            <strong className="text-wood">Este Pix não avisa o site sozinho.</strong> Depois de pagar pelo QR ou pela
+            chave, registre o depósito para o Tesoureiro conferir.
+            {automatico && " Para entrar na hora, use o botão “Pagar com Pix automático” acima."}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={irParaPagueiPorFora}
+            className="h-auto min-h-10 whitespace-normal"
+          >
+            <ArrowDownCircle aria-hidden /> Já paguei pela chave: registrar depósito
+          </Button>
+        </div>
+      </div>
+    );
+  }
 }
 
 function BotaoPagar({ valido, centavos }: { valido: boolean; centavos: number }) {

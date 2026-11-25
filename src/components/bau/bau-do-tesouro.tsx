@@ -1,4 +1,4 @@
-import { NIVEL_MAXIMO_DO_TESOURO } from "@/lib/finance/tesouro";
+import { escalaDoTesouro, NIVEL_MAXIMO_DO_TESOURO, nivelDoTesouro } from "@/lib/finance/tesouro";
 import { cn } from "@/lib/utils";
 
 const NOMES = [
@@ -16,12 +16,12 @@ const NOMES = [
 ];
 
 /**
- * Baú do tesouro desenhado: começa pequeno e fechado e, a cada depósito confirmado (ou a cada
- * 10% da meta), cresce e ganha um item novo, até transbordar com a coroa no nível 10.
+ * Baú do tesouro desenhado: fechado com o baú vazio; abre com o primeiro valor guardado, cresce junto
+ * com o progresso da meta e ganha um item novo a cada 10%, até transbordar com a coroa (100%).
  */
-export function BauDoTesouro({ nivel, className }: { nivel: number; className?: string }) {
-  const n = Math.min(NIVEL_MAXIMO_DO_TESOURO, Math.max(0, Math.floor(nivel)));
-  const escala = 0.62 + (n / NIVEL_MAXIMO_DO_TESOURO) * 0.38;
+export function BauDoTesouro({ progresso, className }: { progresso: number; className?: string }) {
+  const n = nivelDoTesouro(progresso);
+  const escala = escalaDoTesouro(progresso);
   const aberto = n > 0;
   return (
     <svg
