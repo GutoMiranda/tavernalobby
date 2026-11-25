@@ -11,6 +11,7 @@ import type { Metadata } from "next";
 
 import { AcaoForm } from "@/components/acao-form";
 import { BarraDaMeta } from "@/components/bau/barra-da-meta";
+import { BauDoTesouro } from "@/components/bau/bau-do-tesouro";
 import { PilhaDeOuro } from "@/components/bau/pilha-de-ouro";
 import { TesouroVivo } from "@/components/bau/tesouro-vivo";
 import { IconeBau, IconeCoroa, IconeMoedas } from "@/components/icones";
@@ -26,6 +27,7 @@ import { carregarCustos } from "@/lib/custos-dados";
 import { centavosParaCampo } from "@/lib/dinheiro";
 import { avisoPixAtivo, lembreteDoPlano, saldoDoBau } from "@/lib/finance/bau";
 import { depositosDoNucleo, planoDeEconomia, valoresDoDeposito } from "@/lib/finance/economia";
+import { nivelDoTesouro } from "@/lib/finance/tesouro";
 import { formatarCentavos, formatarData, formatarDataHora, formatarDia, hojeEmSaoPaulo } from "@/lib/format";
 import { handleInfinitePay } from "@/lib/infinitepay";
 
@@ -185,6 +187,9 @@ export default async function BauPage({
   const meta = fundo.goal_cents ?? custos.rateio.totalCentavos;
   const progresso = meta > 0 ? Math.min(100, Math.floor((entradasCentavos * 100) / meta)) : 0;
   const estornados = new Set(lancamentos.filter((l) => l.kind === "estorno").map((l) => l.reverses_id));
+  const depositosConfirmados = lancamentos.filter(
+    (l) => l.kind === "entrada" && l.status === "confirmado" && !estornados.has(l.id),
+  ).length;
   const pendentes = lancamentos.filter((l) => l.kind === "entrada" && l.status === "pendente");
 
   const minhaParte = custos.rateio.porNucleo.get(pessoa.household_id) ?? 0;
@@ -273,9 +278,12 @@ export default async function BauPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
-          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-end sm:gap-8">
-            <PilhaDeOuro progresso={meta > 0 ? (entradasCentavos * 100) / meta : 0} className="sm:w-64 sm:shrink-0" />
-            <div className="flex flex-col items-center gap-2 sm:items-start">
+          <div className="grid items-end justify-items-center gap-4 sm:grid-cols-3">
+            <PilhaDeOuro
+              progresso={meta > 0 ? (entradasCentavos * 100) / meta : 0}
+              className="order-3 max-w-56 sm:order-1"
+            />
+            <div className="order-2 flex flex-col items-center gap-2 pb-2 text-center">
               {progresso >= 100 && (
                 <p className="selo-meta inline-flex items-center gap-2 rounded-full border-2 border-gold bg-gold/15 px-4 py-1 font-display text-lg text-wood">
                   <IconeCoroa className="size-6 text-gold" /> Meta alcançada!
@@ -285,7 +293,13 @@ export default async function BauPage({
               <p className="font-display text-5xl font-bold text-wood drop-shadow-[0_0_18px_rgb(242_165_65/0.35)]">
                 {formatarCentavos(saldoCentavos)}
               </p>
+              <p className="text-sm text-muted-foreground">
+                {depositosConfirmados === 0
+                  ? "O baú abre no primeiro depósito."
+                  : `${depositosConfirmados} ${depositosConfirmados === 1 ? "depósito confirmado" : "depósitos confirmados"}`}
+              </p>
             </div>
+            <BauDoTesouro nivel={nivelDoTesouro(depositosConfirmados, progresso)} className="order-1 sm:order-3" />
           </div>
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between gap-2 text-sm">
@@ -371,7 +385,7 @@ export default async function BauPage({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="paguei-por-fora" className="scroll-mt-28">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ArrowDownCircle className="size-5 text-bottle" aria-hidden />{" "}

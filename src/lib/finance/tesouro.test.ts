@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { ehDepositoNovo, metaAlcancadaAgora, MOEDAS_MAXIMAS, moedasDaPilha, posicoesDaPilha } from "./tesouro";
+import {
+  ehDepositoNovo,
+  metaAlcancadaAgora,
+  MOEDAS_MAXIMAS,
+  moedasDaPilha,
+  nivelDoTesouro,
+  posicoesDaPilha,
+} from "./tesouro";
 
 describe("pilha de ouro", () => {
   it("cresce com o progresso da meta", () => {
@@ -38,5 +45,19 @@ describe("explosão de moedas", () => {
     expect(metaAlcancadaAgora(90, 100)).toBe(true);
     expect(metaAlcancadaAgora(100, 100)).toBe(false);
     expect(metaAlcancadaAgora(40, 60)).toBe(false);
+  });
+});
+
+describe("baú desenhado que cresce", () => {
+  it("sobe um nível a cada depósito confirmado, até 10", () => {
+    expect(nivelDoTesouro(0, 0)).toBe(0);
+    expect(nivelDoTesouro(1, 0.01)).toBe(1);
+    expect(nivelDoTesouro(3, 0.05)).toBe(3);
+    expect(nivelDoTesouro(40, 20)).toBe(10);
+  });
+  it("nunca fica abaixo do progresso da meta", () => {
+    expect(nivelDoTesouro(1, 55)).toBe(5);
+    expect(nivelDoTesouro(2, 100)).toBe(10);
+    expect(nivelDoTesouro(0, Number.NaN)).toBe(0);
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { QrCode, Zap } from "lucide-react";
+import { ArrowDownCircle, QrCode, Zap } from "lucide-react";
 import QRCode from "qrcode";
 import { useActionState, useEffect, useId, useState } from "react";
 import { useFormStatus } from "react-dom";
@@ -80,6 +80,15 @@ export function DepositoPix(props: Props) {
   }, [copiaECola]);
 
   const avisoValor = tentou && !valido;
+
+  /** Leva ao card "Paguei por fora" já com o valor escolhido no campo. */
+  function irParaPagueiPorFora() {
+    const card = document.getElementById("paguei-por-fora");
+    const campo = document.getElementById("dep-valor") as HTMLInputElement | null;
+    if (campo && valido) campo.value = centavosParaCampo(centavos);
+    card?.scrollIntoView({ behavior: "smooth", block: "start" });
+    campo?.focus({ preventScroll: true });
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -198,11 +207,21 @@ export function DepositoPix(props: Props) {
               {copiaECola && <CopiarBotao texto={copiaECola} rotulo={`Copiar Pix de ${formatarCentavos(centavos)}`} />}
               <CopiarBotao texto={chave} rotulo="Copiar chave" />
             </div>
-            {automatico && (
-              <p className="text-sm text-muted-foreground">
-                Pagou direto na chave? Envie o comprovante em “Paguei por fora” para o Tesoureiro confirmar.
+            <div className="flex flex-col gap-2 rounded-lg border border-gold/50 bg-gold/10 p-3 text-sm">
+              <p>
+                <strong className="text-wood">Este Pix não avisa o site sozinho.</strong> Depois de pagar pelo QR ou
+                pela chave, registre o depósito para o Tesoureiro conferir.
+                {automatico && " Para entrar na hora, com explosão de ouro, use o Pix automático acima."}
               </p>
-            )}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={irParaPagueiPorFora}
+                className="h-auto min-h-10 whitespace-normal"
+              >
+                <ArrowDownCircle aria-hidden /> Já paguei pela chave: registrar depósito
+              </Button>
+            </div>
           </div>
         ) : (
           !automatico && <p className="text-muted-foreground">O admin ainda não cadastrou a chave Pix.</p>

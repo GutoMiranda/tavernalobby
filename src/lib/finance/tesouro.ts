@@ -44,3 +44,16 @@ export function ehDepositoNovo(
 export function metaAlcancadaAgora(antes: number, agora: number): boolean {
   return antes < 100 && agora >= 100;
 }
+
+/** Nível máximo do baú desenhado (0 = fechado e vazio, 10 = transbordando com coroa). */
+export const NIVEL_MAXIMO_DO_TESOURO = 10;
+
+/**
+ * Nível do baú desenhado no card da pilha: sobe um degrau a cada depósito confirmado
+ * (para todo depósito aparecer, mesmo um de R$ 1) e nunca fica abaixo do progresso da meta (10% = 1 nível).
+ */
+export function nivelDoTesouro(depositosConfirmados: number, progresso: number): number {
+  const porDepositos = Math.max(0, Math.floor(depositosConfirmados));
+  const porMeta = Number.isFinite(progresso) ? Math.floor(Math.min(100, Math.max(0, progresso)) / 10) : 0;
+  return Math.min(NIVEL_MAXIMO_DO_TESOURO, Math.max(porDepositos, porMeta));
+}
