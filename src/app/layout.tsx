@@ -1,22 +1,25 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
-import { Cinzel, Inter } from "next/font/google";
+import { Grenze, Nunito } from "next/font/google";
 
+import { FundoTaverna } from "@/components/fundo-taverna";
 import { RegistrarServiceWorker } from "@/components/registrar-sw";
 import { SiteHeader } from "@/components/site-header";
 
 import "./globals.css";
 
-const cinzel = Cinzel({
-  variable: "--font-cinzel",
+// Direção visual A · "Taverna à luz de vela": Grenze (letreiro de taverna) nos títulos, Nunito no texto.
+const grenze = Grenze({
+  variable: "--font-titulo",
   subsets: ["latin"],
   weight: ["500", "600", "700"],
   display: "swap",
 });
 
-const inter = Inter({
-  variable: "--font-inter",
+const nunito = Nunito({
+  variable: "--font-texto",
   subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
   display: "swap",
 });
 
@@ -42,7 +45,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#3B2A1E",
+  themeColor: "#1A130E",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -50,7 +53,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR" className={`${cinzel.variable} ${inter.variable}`}>
+    <html lang="pt-BR" className={`${grenze.variable} ${nunito.variable}`}>
       <body className="min-h-dvh">
         <a
           href="#conteudo"
@@ -58,6 +61,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         >
           Pular para o conteúdo
         </a>
+        <FundoTaverna />
         <SiteHeader />
         <main id="conteudo" className="mx-auto w-full max-w-screen-2xl px-4 pt-5 pb-8 sm:px-6 lg:px-8">
           {children}

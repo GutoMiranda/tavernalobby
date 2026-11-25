@@ -117,7 +117,7 @@ export default async function GeralPage({
       : null;
 
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-3">
+    <div className="grade-taverna">
       <Card className="lg:col-span-1">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -140,7 +140,7 @@ export default async function GeralPage({
           )}
 
           {roteiro && (
-            <div className="rounded-md bg-white/50 p-3 text-sm">
+            <div className="rounded-md bg-surface p-3 text-sm">
               <p className="mb-1 font-medium">Seu roteiro de carro</p>
               <ol className="flex flex-col gap-1">
                 <li className="flex items-center gap-1.5">
@@ -231,7 +231,7 @@ export default async function GeralPage({
                     id="de"
                     name="de"
                     defaultValue={de?.chave}
-                    className="h-10 rounded-md border border-input bg-white px-3 text-base md:text-sm"
+                    className="h-10 rounded-md border border-input bg-field px-3 text-base md:text-sm"
                   >
                     {todos.map((l) => (
                       <option key={l.chave} value={l.chave}>
@@ -246,7 +246,7 @@ export default async function GeralPage({
                     id="para"
                     name="para"
                     defaultValue={para?.chave}
-                    className="h-10 rounded-md border border-input bg-white px-3 text-base md:text-sm"
+                    className="h-10 rounded-md border border-input bg-field px-3 text-base md:text-sm"
                   >
                     {todos.map((l) => (
                       <option key={l.chave} value={l.chave}>
@@ -263,7 +263,7 @@ export default async function GeralPage({
                   {resumo.length > 0 && (
                     <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4" aria-label="Tempo por modo">
                       {resumo.map((r) => (
-                        <li key={r.modo} className="rounded-md border border-border bg-white/50 p-3">
+                        <li key={r.modo} className="rounded-md border border-border bg-surface p-3">
                           <p className="text-sm text-muted-foreground">{NOME_MODO[r.modo]}</p>
                           {r.segundos != null ? (
                             <>

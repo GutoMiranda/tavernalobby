@@ -8,7 +8,7 @@ import { reaisParaCentavos } from "@/lib/dinheiro";
 import { CATEGORIAS_ARMAZEM, custoDoItem, UNIDADES_ARMAZEM } from "@/lib/finance/armazem";
 import { formatarCentavos } from "@/lib/format";
 
-export const SELECT = "h-10 w-full rounded-md border border-input bg-white px-3 text-base md:text-sm";
+export const SELECT = "h-10 w-full rounded-md border border-input bg-field px-3 text-base md:text-sm";
 
 export type ValoresItem = {
   name: string;
@@ -125,7 +125,7 @@ export function CamposItem({ prefixo, item }: { prefixo: string; item?: ValoresI
         <input type="checkbox" name="alcoolico" defaultChecked={item?.is_alcoholic} className="size-5 accent-bottle" />
         Bebida alcoólica
       </label>
-      <p className="rounded-md bg-white/60 p-2 text-sm sm:col-span-2" aria-live="polite">
+      <p className="rounded-md bg-surface p-2 text-sm sm:col-span-2" aria-live="polite">
         Custo total (preço × quantidade): <strong>{formatarCentavos(total)}</strong>
       </p>
     </div>

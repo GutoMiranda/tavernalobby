@@ -32,7 +32,7 @@ export function CamposAventura({ evento }: { evento?: Evento }) {
           rows={3}
           maxLength={2000}
           defaultValue={evento?.description ?? ""}
-          className="rounded-md border border-input bg-white px-3 py-2 text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm"
+          className="rounded-md border border-input bg-field px-3 py-2 text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm"
         />
       </div>
       <div className="flex flex-col gap-1.5">

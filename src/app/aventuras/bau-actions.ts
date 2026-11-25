@@ -205,6 +205,15 @@ export async function confirmarCobrancaManual(_: EstadoAcao, d: FormData): Promi
   return { ok: "Confirmado. Loot guardado!" };
 }
 
+/** Tesoureiro/admin cancela uma cobrança da InfinitePay que não foi paga (fica no histórico). */
+export async function cancelarCobranca(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
+  const { supabase } = await exigirMembro();
+  const { error } = await supabase.rpc("cancel_pix_checkout", { p_checkout_id: txt(d, "id", 40) });
+  if (error) return { erro: mensagemErro(error) };
+  atualizar(txt(d, "evento", 40));
+  return { ok: "Cobrança cancelada." };
+}
+
 export async function confirmarDeposito(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
   const { supabase } = await exigirMembro();
   const { error } = await supabase.rpc("confirm_deposit", { p_transaction_id: txt(d, "id", 40) });

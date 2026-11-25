@@ -55,7 +55,7 @@ export function CampoComprovante({ userId }: { userId: string }) {
         type="file"
         accept={TIPOS}
         onChange={(e) => enviar(e.target.files?.[0])}
-        className="text-sm file:mr-3 file:rounded-md file:border file:border-border file:bg-white file:px-3 file:py-1.5"
+        className="text-sm file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-1.5"
       />
       <input type="hidden" name="comprovante" value={caminho} />
       <p role="status" aria-live="polite" className="text-sm">

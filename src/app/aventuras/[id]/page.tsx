@@ -134,7 +134,7 @@ export default async function PainelAventuraPage({
     .join("\n");
 
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-3">
+    <div className="grade-taverna">
       <Card className="border-gold/60">
         <CardHeader>
           <CardDescription>Fase atual · {FASE_INFO[evento.phase].nome}</CardDescription>

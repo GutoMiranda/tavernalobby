@@ -13,7 +13,7 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 
 ## Depois do MVP
 
-- [ ] **Rebranding visual completo (pedido do dono)**: visual atual parece antigo (fonte datada, sem animação, sem ícones/ilustrações do tema). Objetivo: leve, mas com impacto positivo e a cara do grupo (taverna, RPG/d20, aventuras): tipografia moderna, ícones e ilustrações SVG próprias, microanimações (CSS, respeitando "reduzir movimento"). Antes de implementar, apresentar 2 ou 3 direções visuais para o dono escolher.
+- [~] **Rebranding visual completo (pedido do dono)**: visual atual parece antigo (fonte datada, sem animação, sem ícones/ilustrações do tema). Objetivo: leve, mas com impacto positivo e a cara do grupo (taverna, RPG/d20, aventuras): tipografia moderna, ícones e ilustrações SVG próprias, microanimações (CSS, respeitando "reduzir movimento"). Antes de implementar, apresentar 2 ou 3 direções visuais para o dono escolher.
 - [ ] **Chat geral do grupo**: ao vivo e com histórico, lista de membros, menção com @, marcar dúvida direcionada; menções e dúvidas no sino de notificações (decisão 46). Sem integração com WhatsApp.
 
 ## Registro
@@ -46,3 +46,4 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 - 25/11/2026: Etapa 7 implementada: Armazém (quantidade sugerida por pessoas-dia, quem leva, comprado, alcoólico, custo integrado ao rateio, tempo real) e sino de notificações (tempo real, página de avisos, marcar como lidas, aviso de responsável no armazém, lembrete do plano de depósitos). Migração 13. 155 testes Vitest e 7 Playwright passando. Aguardando o dono: migração 13 e teste.
 - 25/11/2026: Armazém refeito como lista de compras a pedido do dono (unidade em lista, preço por unidade, custo calculado, tabela editável com sugestão, filtros e exclusão em lote). Migração 14. 159 testes Vitest e 7 Playwright passando. Publicação só depois da revisão do dono e do rebranding.
 - 25/11/2026: Etapa 8 (sem publicar): páginas de privacidade e termos no rodapé, cabeçalhos de segurança, revisão das server actions, testes de 375 px nas páginas públicas, `docs/manual-do-grupo.md`. 159 testes Vitest e 10 Playwright passando. Publicação depois da revisão do dono e do rebranding.
+- 25/11/2026: Rebranding fase 1 (direção A): tema à luz de vela, fundo com brasas, logo e ícones próprios, abas em placas, padrão de cards, frase na página inicial, cancelar Pix aguardando (migração 15). Corrigida rolagem lateral no celular causada pela tabela do Armazém. 162 testes Vitest e 10 Playwright passando. Próximas fases: 2 (efeitos do Baú), 3 (avatares e chat ao vivo), 4 (Salão do Mestre e permissões por aba), 5 (mapas e passagens).

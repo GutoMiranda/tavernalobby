@@ -46,7 +46,9 @@ export function ReacaoBotoes({
           aria-label={`${valor === 1 ? "Curtir" : "Descurtir"} ${rotulo} (${contagem})`}
           className={cn(
             "min-w-16",
-            ativo && valor === 1 && "border-bottle bg-bottle text-white hover:bg-bottle/90 hover:text-white",
+            ativo &&
+              valor === 1 &&
+              "border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
             ativo && valor === -1 && "border-alert bg-alert text-white hover:bg-alert/90 hover:text-white",
           )}
         >

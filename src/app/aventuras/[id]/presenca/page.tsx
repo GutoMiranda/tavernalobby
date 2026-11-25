@@ -13,7 +13,7 @@ import { salvarPresenca } from "../../custos-actions";
 
 export const metadata: Metadata = { title: "Presença" };
 
-const SELECT = "h-10 rounded-md border border-input bg-white px-3 text-base md:text-sm";
+const SELECT = "h-10 rounded-md border border-input bg-field px-3 text-base md:text-sm";
 
 export default async function PresencaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -37,7 +37,7 @@ export default async function PresencaPage({ params }: { params: Promise<{ id: s
   const alcool = vao.filter((p) => !p.is_child && presencas.get(p.id)?.alcohol_opt_in).length;
 
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-3">
+    <div className="grade-taverna">
       <Card className="lg:col-span-3">
         <CardHeader>
           <CardTitle>Presença · quem vai</CardTitle>
@@ -101,7 +101,7 @@ export default async function PresencaPage({ params }: { params: Promise<{ id: s
 
 function Numero({ rotulo, valor }: { rotulo: string; valor: number }) {
   return (
-    <li className="rounded-md border border-border bg-white/50 p-3">
+    <li className="rounded-md border border-border bg-surface p-3">
       <p className="text-2xl font-semibold text-wood">{valor}</p>
       <p className="text-sm text-muted-foreground">{rotulo}</p>
     </li>
@@ -111,7 +111,7 @@ function Numero({ rotulo, valor }: { rotulo: string; valor: number }) {
 function LinhaPessoa({ m, pr, totalDias }: { m: PessoaGrupo; pr: Presenca | undefined; totalDias: number | null }) {
   const status = pr?.status ?? "pendente";
   return (
-    <li className="flex flex-col gap-2 rounded-md border border-border bg-white/40 p-3">
+    <li className="flex flex-col gap-2 rounded-md border border-border bg-surface p-3">
       <input type="hidden" name="pessoa" value={m.id} />
       <p className="flex flex-wrap items-center gap-2 font-medium">
         {m.name}

@@ -48,7 +48,7 @@ export default async function NotificacoesPage() {
                   <button
                     type="submit"
                     className={`w-full rounded-md border p-3 text-left text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${
-                      n.read_at ? "border-border bg-white/30" : "border-gold bg-gold/10"
+                      n.read_at ? "border-border bg-surface" : "border-gold bg-gold/10"
                     }`}
                   >
                     <span className="flex flex-wrap items-center justify-between gap-2">

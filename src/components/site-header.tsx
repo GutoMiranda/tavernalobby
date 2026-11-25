@@ -16,14 +16,14 @@ export async function SiteHeader() {
   }
 
   return (
-    <header className="bg-madeira sticky top-0 z-40 border-b-2 border-gold/70 pt-[env(safe-area-inset-top)] text-parchment shadow-md">
-      <div className="mx-auto flex h-14 w-full max-w-screen-2xl items-center gap-3 px-4 sm:px-6 lg:px-8">
+    <header className="bg-madeira sticky top-0 z-40 border-b border-gold/40 pt-[env(safe-area-inset-top)] text-parchment shadow-[0_8px_24px_-12px_rgb(0_0_0/0.9)]">
+      <div className="mx-auto flex h-16 w-full max-w-screen-2xl items-center gap-3 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
           className="flex min-w-0 items-center gap-2 rounded-md focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none"
         >
-          <Logo size={36} />
-          <span className="truncate font-display text-lg leading-none font-bold tracking-wide text-gold">
+          <Logo size={44} className="drop-shadow-[0_0_10px_rgb(242_165_65/0.5)]" />
+          <span className="truncate font-display text-2xl leading-none font-bold tracking-wide text-gold">
             Taverna O Lobby
           </span>
         </Link>

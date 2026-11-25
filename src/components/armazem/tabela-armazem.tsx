@@ -130,7 +130,7 @@ export function TabelaArmazem({ linhas, eventoId }: { linhas: LinhaArmazem[]; ev
         </p>
       </form>
 
-      <div className="-mx-4 overflow-x-auto px-4">
+      <div className="relative -mx-4 overflow-x-auto px-4">
         <table className="w-full min-w-[760px] border-collapse text-sm">
           <caption className="sr-only">Itens do armazém</caption>
           <thead>

@@ -33,7 +33,7 @@ export default async function EditarAventuraPage({ params }: { params: Promise<{
               id="fase"
               name="fase"
               defaultValue={evento.phase}
-              className="h-10 rounded-md border border-input bg-white px-3 text-base md:text-sm"
+              className="h-10 rounded-md border border-input bg-field px-3 text-base md:text-sm"
             >
               {FASES.map((f) => (
                 <option key={f} value={f}>

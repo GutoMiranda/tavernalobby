@@ -51,7 +51,7 @@ export default async function EstalagensPage({ params }: { params: Promise<{ id:
                 return (
                   <li
                     key={e.id}
-                    className={`flex h-full flex-col gap-3 rounded-lg border p-3 ${ehEscolhida ? "border-bottle bg-bottle/10" : "border-border bg-white/40"}`}
+                    className={`flex h-full flex-col gap-3 rounded-lg border p-3 ${ehEscolhida ? "border-bottle bg-bottle/10" : "border-border bg-surface"}`}
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-display text-lg font-semibold text-wood">{e.posicao}º</span>
@@ -199,7 +199,7 @@ function TemposDaEstalagem({
   const meu = daqui.find((t) => t.household_id === meuNucleo);
 
   return (
-    <div className="rounded-md bg-white/50 p-2 text-sm">
+    <div className="rounded-md bg-surface p-2 text-sm">
       <p>
         <span className="font-medium">Viagem de carro</span>
         {meu?.duration_seconds != null && (

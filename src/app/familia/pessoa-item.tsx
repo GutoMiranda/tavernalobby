@@ -28,7 +28,7 @@ export function PessoaItem({ pessoa }: { pessoa: PessoaDaFamilia }) {
   const prefixo = `p-${pessoa.id}`;
 
   return (
-    <li className="flex flex-col gap-3 rounded-lg border border-border bg-white/40 p-3">
+    <li className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-3">
       <div className="flex flex-wrap items-center gap-2">
         <p className="font-medium">{pessoa.name}</p>
         {pessoa.relationship && <span className="text-sm text-muted-foreground">· {pessoa.relationship}</span>}

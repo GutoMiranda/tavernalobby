@@ -144,7 +144,7 @@ export function PainelMapa({
         </ul>
 
         {est && (
-          <section aria-live="polite" className="flex flex-col gap-3 rounded-lg border border-border bg-white/50 p-3">
+          <section aria-live="polite" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="font-display text-lg font-semibold text-wood">Rotas até {est.nome}</h3>
               {carregando && (
@@ -218,8 +218,8 @@ export function PainelMapa({
                   onClick={() => setSelecionada(e.id)}
                   aria-pressed={selecionada === e.id}
                   className={cn(
-                    "flex w-full gap-3 rounded-lg border p-2 text-left transition-colors hover:bg-white/70 focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none",
-                    selecionada === e.id ? "border-gold bg-gold/15" : "border-border bg-white/40",
+                    "flex w-full gap-3 rounded-lg border p-2 text-left transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none",
+                    selecionada === e.id ? "border-gold bg-gold/15" : "border-border bg-surface",
                   )}
                 >
                   {e.foto ? (
@@ -289,7 +289,7 @@ function Trecho({
   semOrigem: string;
 }) {
   return (
-    <div className="flex flex-col gap-2 rounded-md border-l-4 bg-white/60 p-2" style={{ borderLeftColor: cor }}>
+    <div className="flex flex-col gap-2 rounded-md border-l-4 bg-surface p-2" style={{ borderLeftColor: cor }}>
       <p className="font-medium">{titulo}</p>
       {!origem ? (
         <p className="text-sm text-muted-foreground">{semOrigem}</p>

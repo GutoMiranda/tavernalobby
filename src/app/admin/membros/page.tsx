@@ -64,7 +64,7 @@ export default async function MembrosPage() {
         <h1 className="text-2xl font-bold text-wood">Membros e tags</h1>
       </section>
 
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="grade-taverna grade-2">
         <Card>
           <CardHeader>
             <CardTitle>Link de convite</CardTitle>
@@ -73,7 +73,7 @@ export default async function MembrosPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            {linkConvite && <code className="rounded-md bg-white/60 p-2 text-sm break-all">{linkConvite}</code>}
+            {linkConvite && <code className="rounded-md bg-surface p-2 text-sm break-all">{linkConvite}</code>}
             <div className="flex flex-wrap gap-2">
               {linkConvite && <CopiarBotao texto={textoWhatsApp} rotulo="Copiar convite para o WhatsApp" />}
             </div>
@@ -103,7 +103,7 @@ export default async function MembrosPage() {
             ) : (
               <ul className="flex flex-col gap-3">
                 {pendentes.map((m) => (
-                  <li key={m.id} className="flex flex-col gap-2 rounded-lg border border-border bg-white/40 p-3">
+                  <li key={m.id} className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3">
                     <div>
                       <p className="font-medium">{m.name}</p>
                       <p className="text-sm text-muted-foreground">
@@ -146,7 +146,7 @@ export default async function MembrosPage() {
                 const minhas = m.person_tags.map((pt) => pt.tag_id);
                 const disponiveis = (tags ?? []).filter((t) => !minhas.includes(t.id));
                 return (
-                  <li key={m.id} className="flex flex-col gap-2 rounded-lg border border-border bg-white/40 p-3">
+                  <li key={m.id} className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium">{m.name}</p>
                       {m.is_admin && <Badge>Mestre da Taverna · admin</Badge>}
@@ -190,7 +190,7 @@ export default async function MembrosPage() {
                         <select
                           id={`tag-${m.id}`}
                           name="tag"
-                          className="h-8 rounded-md border border-input bg-white px-2 text-sm"
+                          className="h-8 rounded-md border border-input bg-field px-2 text-sm"
                           defaultValue=""
                           required
                         >

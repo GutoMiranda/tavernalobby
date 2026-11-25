@@ -52,7 +52,7 @@ export default async function FamiliaPage() {
         </p>
       </section>
 
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="grade-taverna grade-2">
         <Card className="lg:row-span-3">
           <CardHeader>
             <CardTitle>Quem é da família</CardTitle>

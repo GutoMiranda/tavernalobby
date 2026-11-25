@@ -19,7 +19,7 @@ export default async function AguardandoPage() {
       <Card>
         <CardHeader>
           <span
-            className="mb-1 inline-flex size-12 items-center justify-center rounded-full bg-wood text-gold"
+            className="mb-1 inline-flex size-12 items-center justify-center rounded-full bg-surface text-gold"
             aria-hidden
           >
             <Hourglass className="size-6" />

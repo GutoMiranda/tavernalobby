@@ -27,7 +27,7 @@ import {
 
 export const metadata: Metadata = { title: "Custos" };
 
-const SELECT = "h-10 rounded-md border border-input bg-white px-3 text-base md:text-sm";
+const SELECT = "h-10 rounded-md border border-input bg-field px-3 text-base md:text-sm";
 const num = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
 
 export default async function CustosPage({ params }: { params: Promise<{ id: string }> }) {
@@ -72,7 +72,7 @@ export default async function CustosPage({ params }: { params: Promise<{ id: str
   const ninguemConfirmou = !custos.pessoas.some((p) => custos.presencas.get(p.id)?.status === "vai");
 
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-3">
+    <div className="grade-taverna">
       <Card className="lg:col-span-3">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -154,7 +154,7 @@ export default async function CustosPage({ params }: { params: Promise<{ id: str
                 </ul>
               )}
             </div>
-            <div className="rounded-md bg-white/50 p-3 text-sm">
+            <div className="rounded-md bg-surface p-3 text-sm">
               <p className="font-medium">Plano mês a mês</p>
               {plano.faltaCentavos === 0 ? (
                 <p>Sua parte está coberta. Loot guardado!</p>
@@ -425,7 +425,7 @@ function Indicador({
   destaque?: boolean;
 }) {
   return (
-    <li className={`rounded-md border p-3 ${destaque ? "border-gold bg-gold/10" : "border-border bg-white/50"}`}>
+    <li className={`rounded-md border p-3 ${destaque ? "border-gold bg-gold/10" : "border-border bg-surface"}`}>
       <p className="text-sm text-muted-foreground">{rotulo}</p>
       <p className="text-xl font-semibold text-wood">{valor}</p>
       {detalhe && <p className="text-xs text-muted-foreground">{detalhe}</p>}
@@ -573,7 +573,7 @@ function MemoriaDeCalculo({
               <p className="font-medium">{l.nome}</p>
               <ul className="flex flex-col gap-1.5 text-sm">
                 {l.partes.map(({ r, item, parte }) => (
-                  <li key={r.itemId} className="rounded bg-white/50 p-2">
+                  <li key={r.itemId} className="rounded bg-surface p-2">
                     <div className="flex justify-between gap-2">
                       <span>{item.descricao}</span>
                       <strong>{formatarCentavos(parte!.centavos)}</strong>

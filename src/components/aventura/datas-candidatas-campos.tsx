@@ -19,7 +19,7 @@ export function DatasCandidatasCampos() {
         Cada opção vira uma data para a party curtir ou descurtir na aba Datas. Dá para adicionar mais depois.
       </p>
       {linhas.map((id, i) => (
-        <div key={id} className="flex flex-col gap-2 rounded-lg border border-border bg-white/40 p-3">
+        <div key={id} className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Opção {i + 1}</span>
             {linhas.length > 1 && (

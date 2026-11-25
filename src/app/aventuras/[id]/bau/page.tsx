@@ -3,7 +3,6 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   CheckCircle2,
-  Coins,
   ExternalLink,
   History,
   QrCode,
@@ -14,6 +13,7 @@ import type { Metadata } from "next";
 import QRCode from "qrcode";
 
 import { AcaoForm } from "@/components/acao-form";
+import { IconeBau, IconeMoedas } from "@/components/icones";
 import { CampoComprovante } from "@/components/bau/campo-comprovante";
 import { CopiarBotao } from "@/components/copiar-botao";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ import {
   abrirBau,
   confirmarDeposito,
   estornarLancamento,
+  cancelarCobranca,
   confirmarCobrancaManual,
   pagarComInfinitePay,
   recusarDeposito,
@@ -118,7 +119,7 @@ export default async function BauPage({
       <Card className="max-w-2xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Coins className="size-5 text-gold" aria-hidden /> Baú · caixinha
+            <IconeBau className="text-gold" /> Baú · caixinha
           </CardTitle>
           <CardDescription>
             O dinheiro fica numa conta real de um membro (ex.: cofrinho de banco digital). O site não guarda nem
@@ -227,7 +228,7 @@ export default async function BauPage({
     .sort((a, b) => (nomeNucleo.get(a.nid) ?? "").localeCompare(nomeNucleo.get(b.nid) ?? ""));
 
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-3">
+    <div className="grade-taverna">
       {avisoPixAtivo(fundo.pix_changed_at) && (
         <div
           role="alert"
@@ -268,7 +269,7 @@ export default async function BauPage({
       <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Coins className="size-5 text-gold" aria-hidden /> Pilha de tesouro
+            <IconeMoedas className="text-gold" /> Pilha de tesouro
           </CardTitle>
           <CardDescription>
             Saldo confirmado = entradas confirmadas − saídas (estornos já considerados).
@@ -296,19 +297,19 @@ export default async function BauPage({
             </div>
           </div>
           <ul className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-            <li className="rounded-md bg-white/50 p-2">
+            <li className="rounded-md bg-surface p-2">
               <p className="text-muted-foreground">Entradas</p>
               <p className="font-semibold">{formatarCentavos(entradasCentavos)}</p>
             </li>
-            <li className="rounded-md bg-white/50 p-2">
+            <li className="rounded-md bg-surface p-2">
               <p className="text-muted-foreground">Saídas</p>
               <p className="font-semibold">{formatarCentavos(saidasCentavos)}</p>
             </li>
-            <li className="rounded-md bg-white/50 p-2">
+            <li className="rounded-md bg-surface p-2">
               <p className="text-muted-foreground">Aguardando confirmação</p>
               <p className="font-semibold">{formatarCentavos(pendentes.reduce((s, l) => s + l.amount_cents, 0))}</p>
             </li>
-            <li className="rounded-md bg-white/50 p-2">
+            <li className="rounded-md bg-surface p-2">
               <p className="text-muted-foreground">Falta para a meta</p>
               <p className="font-semibold">{formatarCentavos(Math.max(0, meta - entradasCentavos))}</p>
             </li>
@@ -349,7 +350,7 @@ export default async function BauPage({
                   {cobrancasAbertas.map((c) => (
                     <li
                       key={c.id}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-white/40 p-2"
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-surface p-2"
                     >
                       <span>
                         {formatarCentavos(c.amount_cents)} · {formatarDataHora(c.created_at)}
@@ -465,7 +466,7 @@ export default async function BauPage({
         <CardContent className="flex flex-col gap-3">
           {lembrete && (
             <p
-              className={`rounded-md p-2 text-sm ${lembrete.situacao === "atrasado" ? "bg-alert/10 font-medium text-alert" : "bg-white/50"}`}
+              className={`rounded-md p-2 text-sm ${lembrete.situacao === "atrasado" ? "bg-alert/10 font-medium text-alert" : "bg-surface"}`}
             >
               {lembrete.situacao === "atrasado"
                 ? `Depósito do mês pendente: ${formatarCentavos(lembrete.valorCentavos)} (combinado para ${formatarDia(lembrete.data)}).`
@@ -548,14 +549,15 @@ export default async function BauPage({
           <CardHeader>
             <CardTitle>Pix pela InfinitePay sem confirmação ({todasAbertas.length})</CardTitle>
             <CardDescription>
-              Pagamentos começados no site que ainda não confirmaram sozinhos. Abra o app da InfinitePay em “Suas
-              vendas” (filtro “Checkout integrado”) e confirme só o que aparecer lá com o mesmo valor e horário.
+              Pagamentos começados no site que ainda não confirmaram sozinhos. Se não foi pago, cancele. Abra o app da
+              InfinitePay em “Suas vendas” (filtro “Checkout integrado”) e confirme só o que aparecer lá com o mesmo
+              valor e horário.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="grid gap-3 md:grid-cols-2">
               {todasAbertas.map((c) => (
-                <li key={c.id} className="rounded-md border border-border bg-white/50 p-3 text-sm">
+                <li key={c.id} className="rounded-md border border-border bg-surface p-3 text-sm">
                   <p className="font-medium">
                     {formatarCentavos(c.amount_cents)} · {nomeNucleo.get(c.household_id) ?? "Núcleo"}
                   </p>
@@ -572,6 +574,23 @@ export default async function BauPage({
                     <input type="hidden" name="id" value={c.id} />
                     <input type="hidden" name="evento" value={id} />
                   </AcaoForm>
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-sm text-alert">Cancelar (não foi pago)</summary>
+                    <AcaoForm
+                      action={cancelarCobranca}
+                      textoBotao="Confirmar cancelamento"
+                      variante="destructive"
+                      tamanho="sm"
+                      className="mt-2"
+                    >
+                      <input type="hidden" name="id" value={c.id} />
+                      <input type="hidden" name="evento" value={id} />
+                      <p className="text-xs text-muted-foreground">
+                        A cobrança some da lista e fica no histórico como cancelada. Se o pagamento aparecer depois, ele
+                        ainda entra no baú.
+                      </p>
+                    </AcaoForm>
+                  </details>
                 </li>
               ))}
             </ul>
@@ -597,7 +616,7 @@ export default async function BauPage({
               ) : (
                 <ul className="flex flex-col gap-3">
                   {pendentes.map((l) => (
-                    <li key={l.id} className="rounded-md border border-border bg-white/50 p-3 text-sm">
+                    <li key={l.id} className="rounded-md border border-border bg-surface p-3 text-sm">
                       <p className="font-medium">
                         {formatarCentavos(l.amount_cents)} · {nomeNucleo.get(l.household_id ?? "") ?? "Núcleo"} ·{" "}
                         {formatarDia(l.occurred_on)}
@@ -698,10 +717,7 @@ export default async function BauPage({
                   l.status === "confirmado" &&
                   !estornados.has(l.id);
                 return (
-                  <li
-                    key={l.id}
-                    className="flex flex-col gap-1 rounded-md border border-border bg-white/40 p-3 text-sm"
-                  >
+                  <li key={l.id} className="flex flex-col gap-1 rounded-md border border-border bg-surface p-3 text-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-semibold">
                         {l.kind === "saida" ||
@@ -859,7 +875,7 @@ export default async function BauPage({
           ) : (
             <ul className="flex flex-col gap-2 text-sm">
               {historico.map((h) => (
-                <li key={h.id} className="rounded-md bg-white/50 p-2">
+                <li key={h.id} className="rounded-md bg-surface p-2">
                   <p className="font-medium">
                     {formatarData(h.changed_at)} · {nomePessoa.get(h.changed_by ?? "") ?? "admin"}
                   </p>

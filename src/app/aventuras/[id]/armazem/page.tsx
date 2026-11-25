@@ -1,8 +1,8 @@
-import { ShoppingBasket } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AcaoForm } from "@/components/acao-form";
+import { IconeMantimentos } from "@/components/icones";
 import { CamposItem } from "@/components/armazem/campos-item";
 import { type LinhaArmazem, TabelaArmazem } from "@/components/armazem/tabela-armazem";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,11 +42,11 @@ export default async function ArmazemPage({ params }: { params: Promise<{ id: st
   });
 
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-3">
+    <div className="grade-taverna">
       <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ShoppingBasket className="size-5 text-bottle" aria-hidden /> Armazém · lista de compras
+            <IconeMantimentos className="text-gold" /> Armazém · lista de compras
           </CardTitle>
           <CardDescription>
             Tudo o que vamos comprar para a aventura e quanto custa. O custo entra sozinho na divisão de{" "}
@@ -59,19 +59,19 @@ export default async function ArmazemPage({ params }: { params: Promise<{ id: st
         </CardHeader>
         <CardContent>
           <ul className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-            <li className="rounded-md bg-white/50 p-2">
+            <li className="rounded-md bg-surface p-2">
               <p className="text-muted-foreground">Custo total</p>
               <p className="text-lg font-semibold">{formatarCentavos(alimentacaoCentavos + alcoolCentavos)}</p>
             </li>
-            <li className="rounded-md bg-white/50 p-2">
+            <li className="rounded-md bg-surface p-2">
               <p className="text-muted-foreground">Comida e sem álcool</p>
               <p className="font-semibold">{formatarCentavos(alimentacaoCentavos)}</p>
             </li>
-            <li className="rounded-md bg-white/50 p-2">
+            <li className="rounded-md bg-surface p-2">
               <p className="text-muted-foreground">Bebidas alcoólicas</p>
               <p className="font-semibold">{formatarCentavos(alcoolCentavos)}</p>
             </li>
-            <li className="rounded-md bg-white/50 p-2">
+            <li className="rounded-md bg-surface p-2">
               <p className="text-muted-foreground">Itens</p>
               <p className="font-semibold">{despensa.length}</p>
             </li>

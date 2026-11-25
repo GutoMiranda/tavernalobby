@@ -2,44 +2,61 @@
 @import "tw-animate-css";
 
 /*
- * Tema "Taverna O Lobby" (escopo, seção 2).
- * Modo claro: cartões em pergaminho e cabeçalho em madeira.
- * Todas as combinações de texto/fundo abaixo passam no contraste WCAG AA.
+ * Tema "Taverna à luz de vela" (rebranding, direção A escolhida pelo dono em 25/11/2026).
+ * Madeira escura, luz âmbar de vela, pergaminho no texto. Os nomes antigos dos tokens
+ * (wood, gold, bottle, parchment, alert) foram mantidos com novos valores para o tema escuro:
+ *  - wood: cor dos títulos (âmbar claro)        - gold: âmbar da vela (destaques, botão principal)
+ *  - bottle: verde garrafa claro (sucesso, links) - alert: vermelho brasa (avisos)
+ * Combinações de texto e fundo conferidas para contraste WCAG AA.
  */
 :root {
-  --wood: #3b2a1e;
-  --gold: #e0a030;
-  --bottle: #1f4d3a;
-  --parchment: #f3e7cf;
-  --alert: #8b2e2e;
+  --wood: #f6c879;
+  --gold: #f2a541;
+  --on-gold: #1d1611;
+  --bottle: #9bd394;
+  --parchment: #f3e6cf;
+  --alert: #f28b72;
 
-  --radius: 0.625rem;
-  --background: #e9dcc1;
-  --foreground: #2a1d14;
-  --card: var(--parchment);
-  --card-foreground: #2a1d14;
-  --popover: var(--parchment);
-  --popover-foreground: #2a1d14;
-  --primary: var(--bottle);
-  --primary-foreground: #ffffff;
-  --secondary: #e2cfa8;
-  --secondary-foreground: #2a1d14;
-  --muted: #e6d6b6;
-  --muted-foreground: #5e4b3b;
-  --accent: #ead9b5;
-  --accent-foreground: #2a1d14;
-  --destructive: var(--alert);
-  --border: #cbb48a;
-  --input: #b89f74;
-  --ring: var(--bottle);
+  --madeira-escura: #120d09;
+  --madeira: #1d1611;
+  --madeira-clara: #2a1f17;
+
+  --radius: 0.9rem;
+  --background: var(--madeira-escura);
+  --foreground: #f3e6cf;
+  --card: #231a13;
+  --card-foreground: #f3e6cf;
+  --popover: #2a1f17;
+  --popover-foreground: #f3e6cf;
+  --surface: #2e2219;
+  --field: #171009;
+  --primary: var(--gold);
+  --primary-foreground: var(--on-gold);
+  --secondary: #3a2b1f;
+  --secondary-foreground: #f3e6cf;
+  --muted: #2e2219;
+  --muted-foreground: #cdb999;
+  --accent: #3a2b1f;
+  --accent-foreground: #f3e6cf;
+  --destructive: #b8452f;
+  --border: #4a3725;
+  --input: #6e5337;
+  --ring: var(--gold);
+
+  --brilho-vela:
+    0 0 0 1px rgb(242 165 65 / 0.18), 0 10px 30px -12px rgb(0 0 0 / 0.7), 0 0 40px -20px rgb(242 165 65 / 0.35);
 }
 
 @theme inline {
   --color-wood: var(--wood);
   --color-gold: var(--gold);
+  --color-on-gold: var(--on-gold);
   --color-bottle: var(--bottle);
   --color-parchment: var(--parchment);
   --color-alert: var(--alert);
+  --color-madeira: var(--madeira);
+  --color-surface: var(--surface);
+  --color-field: var(--field);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -60,13 +77,13 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-cinzel), Georgia, serif;
+  --font-sans: var(--font-texto), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-titulo), Georgia, serif;
 }
 
 @layer base {
@@ -74,20 +91,111 @@
     @apply border-border outline-ring/50;
   }
   html {
-    color-scheme: light;
+    color-scheme: dark;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply text-foreground font-sans antialiased;
+    background-color: var(--background);
+    /* Luz de vela vinda dos cantos sobre madeira escura; as brasas animadas ficam no FundoTaverna. */
+    background-image:
+      radial-gradient(60rem 40rem at 10% -10%, rgb(242 165 65 / 0.14), transparent 60%),
+      radial-gradient(50rem 36rem at 110% 20%, rgb(200 90 40 / 0.1), transparent 60%),
+      repeating-linear-gradient(90deg, rgb(255 255 255 / 0.012) 0 2px, transparent 2px 11px),
+      linear-gradient(180deg, var(--madeira) 0%, var(--madeira-escura) 70%);
+    background-attachment: fixed;
   }
   h1,
   h2,
   h3 {
     @apply font-display;
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+  }
+  ::selection {
+    background: rgb(242 165 65 / 0.35);
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.85) sepia(0.4);
   }
 }
 
-/* Textura de madeira discreta para o cabeçalho. */
+/* Cabeçalho em madeira com friso dourado. */
 .bg-madeira {
-  background-color: var(--wood);
-  background-image: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.025) 0 2px, transparent 2px 9px);
+  background-color: rgb(29 22 17 / 0.92);
+  background-image:
+    linear-gradient(180deg, rgb(255 255 255 / 0.03), transparent),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.02) 0 2px, transparent 2px 9px);
+  backdrop-filter: blur(6px);
+}
+
+/* Cartão: madeira com borda acesa e brilho de vela. */
+[data-slot="card"] {
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.025), transparent 40%);
+  box-shadow: var(--brilho-vela);
+}
+
+/* Botão principal com brilho suave de vela (some com "reduzir movimento"). */
+@keyframes brilho-vela {
+  50% {
+    box-shadow:
+      0 0 0 1px rgb(242 165 65 / 0.5),
+      0 0 22px 2px rgb(242 165 65 / 0.35);
+  }
+}
+.brilho-vela {
+  animation: brilho-vela 2.8s ease-in-out infinite;
+}
+
+@keyframes chama {
+  0%,
+  100% {
+    transform: scale(1, 1) rotate(0deg);
+  }
+  35% {
+    transform: scale(1.05, 0.94) rotate(-3deg);
+  }
+  70% {
+    transform: scale(0.96, 1.04) rotate(2deg);
+  }
+}
+.chama {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: chama 1.9s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brilho-vela,
+  .chama {
+    animation: none;
+  }
+}
+
+/*
+ * Padrão de cards das telas: grade de 1 coluna no celular, 2 no tablet e 3 no computador.
+ * Os cards de uma linha ficam com a mesma altura. Tamanhos: normal (1 coluna),
+ * destaque (lg:col-span-2) e inteiro (lg:col-span-3).
+ */
+.grade-taverna {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+}
+@media (min-width: 768px) {
+  .grade-taverna {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grade-taverna > [class*="lg:col-span-2"],
+  .grade-taverna > [class*="lg:col-span-3"] {
+    grid-column: 1 / -1;
+  }
+}
+@media (min-width: 1024px) {
+  .grade-taverna:not(.grade-2) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .grade-taverna > [class*="lg:col-span-2"] {
+    grid-column: span 2 / span 2;
+  }
 }

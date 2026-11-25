@@ -139,4 +139,29 @@ describe("Pix pela InfinitePay", () => {
     );
     expect(l).toEqual({ status: "confirmado", reviewed_by: (await b.pessoaDe(tesoureiro)).id, amount_cents: 100 });
   });
+
+  it("Tesoureiro ou admin cancelam cobrança aberta; membro não; pagamento tardio ainda credita", async () => {
+    const p = await b.pessoaDe(membro);
+    const [{ id: c3 }] = await b.como<{ id: string }>(
+      membro,
+      "insert into public.pix_checkouts (fund_id, household_id, amount_cents, checkout_url, created_by) values ($1, $2, 200, 'u', $3) returning id",
+      [fundId, p.household_id, p.id],
+    );
+    await expect(b.como(membro, "select public.cancel_pix_checkout($1)", [c3])).rejects.toMatchObject({
+      code: "42501",
+    });
+    await b.como(tesoureiro, "select public.cancel_pix_checkout($1)", [c3]);
+    const [c] = await b.como<{ status: string; canceled_by: string }>(
+      membro,
+      "select status, canceled_by from public.pix_checkouts where id = $1",
+      [c3],
+    );
+    expect(c).toEqual({ status: "cancelado", canceled_by: (await b.pessoaDe(tesoureiro)).id });
+    await expect(b.como(admin, "select public.cancel_pix_checkout($1)", [c3])).rejects.toMatchObject({ code: "P0002" });
+    const [{ id }] = await comoServidor<{ id: string }>(
+      "select public.confirm_pix_checkout($1, 200, 's', 't', 'pix', null) as id",
+      [c3],
+    );
+    expect(id).toBeTruthy();
+  });
 });

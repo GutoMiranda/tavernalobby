@@ -34,7 +34,10 @@ export function RotaViewer({ origem, destino }: { origem: Ponto; destino: Ponto 
             variant="outline"
             size="sm"
             onClick={() => setModo(id)}
-            className={cn(modo === id && "border-bottle bg-bottle text-white hover:bg-bottle/90 hover:text-white")}
+            className={cn(
+              modo === id &&
+                "border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+            )}
           >
             <Icone aria-hidden /> {rotulo}
           </Button>

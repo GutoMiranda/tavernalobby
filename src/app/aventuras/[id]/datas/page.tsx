@@ -44,7 +44,7 @@ export default async function DatasPage({ params }: { params: Promise<{ id: stri
                 return (
                   <li
                     key={d.id}
-                    className={`flex flex-col gap-2 rounded-lg border p-3 ${escolhida ? "border-bottle bg-bottle/10" : "border-border bg-white/40"}`}
+                    className={`flex flex-col gap-2 rounded-lg border p-3 ${escolhida ? "border-bottle bg-bottle/10" : "border-border bg-surface"}`}
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-display text-lg font-semibold text-wood">{d.posicao}º</span>
