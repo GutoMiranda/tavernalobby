@@ -12,7 +12,7 @@ export default async function SalaoLayout({ children }: { children: React.ReactN
   const abas: AbaSalao[] = [
     { href: "/mestre", rotulo: "Painel", comum: "aventuras", exata: true },
     ...(permissoes.membros.ver ? [{ href: "/mestre/membros", rotulo: "Membros", comum: "aprovação" }] : []),
-    ...(pessoa.is_admin ? [{ href: "/mestre/tags", rotulo: "Tags", comum: "permissões" }] : []),
+    ...(permissoes.permissoes.ver ? [{ href: "/mestre/permissoes", rotulo: "Permissões", comum: "por usuário" }] : []),
   ];
   return (
     <div className="flex flex-col gap-5">

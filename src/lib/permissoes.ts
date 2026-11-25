@@ -1,4 +1,4 @@
-/** Áreas (abas) que as tags podem controlar e o que cada ação quer dizer. Espelha a migração 18. */
+/** Áreas (abas) em que cada pessoa recebe permissão e o que cada ação quer dizer. Espelha a migração 19. */
 export const AREAS = [
   "aventura",
   "datas",
@@ -9,6 +9,7 @@ export const AREAS = [
   "bau",
   "membros",
   "chat",
+  "permissoes",
 ] as const;
 export type Area = (typeof AREAS)[number];
 export type Acao = "ver" | "editar" | "excluir";
@@ -50,6 +51,12 @@ export const AREA_INFO: Record<Area, { nome: string; comum: string; editar: stri
     comum: "moderação",
     editar: "marcar dúvidas dos outros como resolvidas",
     excluir: "apagar mensagens dos outros",
+  },
+  permissoes: {
+    nome: "Permissões",
+    comum: "quem pode o quê",
+    editar: "dar e tirar permissões dos outros membros (nunca as próprias nem as do Mestre)",
+    excluir: "—",
   },
 };
 

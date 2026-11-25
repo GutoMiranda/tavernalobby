@@ -47,21 +47,6 @@ export async function removerTag(_: EstadoAcao, dados: FormData): Promise<Estado
   return { ok: "Tag removida." };
 }
 
-export async function criarTag(_: EstadoAcao, dados: FormData): Promise<EstadoAcao> {
-  const { supabase, pessoa } = await exigirAdmin();
-  const nome = valor(dados, "nome", 40);
-  if (!nome) return { erro: "Informe o nome da tag." };
-  const { error } = await supabase.from("tags").insert({
-    name: nome,
-    label: valor(dados, "rotulo", 60) || null,
-    description: valor(dados, "descricao", 200) || null,
-    created_by: pessoa.id,
-  });
-  if (error) return { erro: mensagemErro(error) };
-  revalidatePath("/mestre", "layout");
-  return { ok: `Tag "${nome}" criada.` };
-}
-
 export async function novoCodigoConvite(_: EstadoAcao): Promise<EstadoAcao> {
   const { supabase } = await exigirPermissao("membros", "editar");
   const { error } = await supabase.rpc("regenerate_invite_code");
@@ -70,42 +55,26 @@ export async function novoCodigoConvite(_: EstadoAcao): Promise<EstadoAcao> {
   return { ok: "Novo link gerado. O link antigo não funciona mais." };
 }
 
-/** Salva a matriz de permissões de uma tag (campos "<area>:ver|editar|excluir"). Só o Mestre. */
-export async function salvarPermissoes(_: EstadoAcao, dados: FormData): Promise<EstadoAcao> {
-  const { supabase, pessoa } = await exigirAdmin();
-  const tag = valor(dados, "tag", 40);
-  if (!UUID.test(tag)) return { erro: "Tag inválida." };
-  const linhas = AREAS.map((area) => {
+/** Salva as permissões de uma pessoa, aba por aba (campos "<area>:ver|editar|excluir"). O banco confere quem pode. */
+export async function salvarPermissoesDaPessoa(_: EstadoAcao, dados: FormData): Promise<EstadoAcao> {
+  const { supabase } = await exigirPermissao("permissoes", "editar");
+  const pessoaId = valor(dados, "pessoa", 40);
+  if (!UUID.test(pessoaId)) return { erro: "Escolha uma pessoa." };
+  for (const area of AREAS) {
     const p = normalizarPermissao(
       dados.get(`${area}:ver`) === "on",
       dados.get(`${area}:editar`) === "on",
       dados.get(`${area}:excluir`) === "on",
     );
-    return { tag_id: tag, area, can_view: p.ver, can_edit: p.editar, can_delete: p.excluir, updated_by: pessoa.id };
-  });
-  const ativas = linhas.filter((l) => l.can_view);
-  const vazias = linhas.filter((l) => !l.can_view).map((l) => l.area);
-  if (ativas.length > 0) {
-    const { error } = await supabase
-      .from("tag_permissions")
-      .upsert(ativas.map((l) => ({ ...l, updated_at: new Date().toISOString() })));
-    if (error) return { erro: mensagemErro(error) };
-  }
-  if (vazias.length > 0) {
-    const { error } = await supabase.from("tag_permissions").delete().eq("tag_id", tag).in("area", vazias);
+    const { error } = await supabase.rpc("set_person_permission", {
+      p_person_id: pessoaId,
+      p_area: area,
+      p_ver: p.ver,
+      p_editar: p.editar,
+      p_excluir: p.excluir,
+    });
     if (error) return { erro: mensagemErro(error) };
   }
   revalidatePath("/", "layout");
   return { ok: "Permissões salvas." };
-}
-
-/** Apaga uma tag criada pelo Mestre (quem tinha perde as permissões dela). Tesoureiro não pode ser apagada. */
-export async function apagarTag(_: EstadoAcao, dados: FormData): Promise<EstadoAcao> {
-  const { supabase } = await exigirAdmin();
-  const tag = valor(dados, "tag", 40);
-  const { data, error } = await supabase.from("tags").delete().eq("id", tag).select("id");
-  if (error) return { erro: mensagemErro(error) };
-  if (!data?.length) return { erro: "Essa tag não pode ser apagada." };
-  revalidatePath("/", "layout");
-  return { ok: "Tag apagada." };
 }

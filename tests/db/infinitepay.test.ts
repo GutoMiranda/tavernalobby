@@ -29,6 +29,9 @@ beforeAll(async () => {
     await b.como(admin, "select public.approve_member($1, true)", [(await b.pessoaDe(u)).id]);
   const [tag] = await b.admin<{ id: string }>("select id from public.tags where name = 'Tesoureiro'");
   await b.como(admin, "select public.assign_tag($1, $2)", [(await b.pessoaDe(tesoureiro)).id, tag.id]);
+  await b.como(admin, "select public.set_person_permission($1, 'bau', true, true, true)", [
+    (await b.pessoaDe(tesoureiro)).id,
+  ]);
   const [{ id: ev }] = await b.como<{ id: string }>(
     admin,
     "insert into public.events (name) values ('X') returning id",

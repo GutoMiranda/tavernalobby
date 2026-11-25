@@ -34,6 +34,8 @@ beforeAll(async () => {
   const [tag] = await b.admin<{ id: string }>("select id from public.tags where name = 'Tesoureiro'");
   const t = await b.pessoaDe(tesoureiro);
   await b.como(admin, "select public.assign_tag($1, $2)", [t.id, tag.id]);
+  // Permissão é por pessoa: o Guardião do Baú recebe ver/editar/excluir no Baú.
+  await b.como(admin, "select public.set_person_permission($1, 'bau', true, true, true)", [t.id]);
 
   // Admin cria uma aventura e o baú.
   [{ id: eventId }] = await b.como<{ id: string }>(

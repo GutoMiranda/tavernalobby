@@ -139,7 +139,8 @@ export default async function MembrosPage() {
           <CardHeader>
             <CardTitle>Membros da party</CardTitle>
             <CardDescription>
-              Quem tem a tag ganha as permissões dela (veja em Tags). O Guardião do Baú (Tesoureiro) confirma depósitos.
+              A tag é só o título que aparece no avatar (ex.: Guardião do Baú). O que cada um pode fazer fica em
+              Permissões.
             </CardDescription>
           </CardHeader>
           <CardContent>
