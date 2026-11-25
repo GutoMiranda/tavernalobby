@@ -7,6 +7,7 @@ let b: BancoDeTeste;
 let admin: string;
 let membro: string;
 let outro: string;
+let tesoureiro: string;
 let fundId: string;
 
 async function comoServidor<T>(sql: string, params: unknown[] = []): Promise<T[]> {
@@ -23,8 +24,11 @@ beforeAll(async () => {
   admin = await b.criarUsuario("guto.miranda90@gmail.com", "Gus");
   membro = await b.criarUsuario("membro@example.com", "Bia");
   outro = await b.criarUsuario("outro@example.com", "Caio");
-  for (const u of [membro, outro])
+  tesoureiro = await b.criarUsuario("tesoureiro@example.com", "Dani");
+  for (const u of [membro, outro, tesoureiro])
     await b.como(admin, "select public.approve_member($1, true)", [(await b.pessoaDe(u)).id]);
+  const [tag] = await b.admin<{ id: string }>("select id from public.tags where name = 'Tesoureiro'");
+  await b.como(admin, "select public.assign_tag($1, $2)", [(await b.pessoaDe(tesoureiro)).id, tag.id]);
   const [{ id: ev }] = await b.como<{ id: string }>(
     admin,
     "insert into public.events (name) values ('X') returning id",
@@ -107,5 +111,32 @@ describe("Pix pela InfinitePay", () => {
         [fundId, p.household_id, p.id],
       ),
     ).rejects.toMatchObject({ code: "23514" });
+  });
+
+  it("sem aviso automático, só Tesoureiro ou admin confirma a cobrança, uma vez", async () => {
+    const p = await b.pessoaDe(membro);
+    const [{ id: c2 }] = await b.como<{ id: string }>(
+      membro,
+      "insert into public.pix_checkouts (fund_id, household_id, amount_cents, checkout_url, created_by) values ($1, $2, 100, 'u', $3) returning id",
+      [fundId, p.household_id, p.id],
+    );
+    await expect(b.como(membro, "select public.confirm_pix_checkout_manual($1)", [c2])).rejects.toMatchObject({
+      code: "42501",
+    });
+    const [{ id: t1 }] = await b.como<{ id: string }>(
+      tesoureiro,
+      "select public.confirm_pix_checkout_manual($1) as id",
+      [c2],
+    );
+    const [{ id: t2 }] = await b.como<{ id: string }>(admin, "select public.confirm_pix_checkout_manual($1) as id", [
+      c2,
+    ]);
+    expect(t2).toBe(t1);
+    const [l] = await b.como<{ status: string; reviewed_by: string; amount_cents: number }>(
+      membro,
+      "select status, reviewed_by, amount_cents from public.fund_transactions where id = $1",
+      [t1],
+    );
+    expect(l).toEqual({ status: "confirmado", reviewed_by: (await b.pessoaDe(tesoureiro)).id, amount_cents: 100 });
   });
 });

@@ -34,6 +34,7 @@ import {
   abrirBau,
   confirmarDeposito,
   estornarLancamento,
+  confirmarCobrancaManual,
   pagarComInfinitePay,
   recusarDeposito,
   registrarDeposito,
@@ -81,7 +82,14 @@ type Lanc = {
   external_receipt_url: string | null;
   created_at: string;
 };
-type Cobranca = { id: string; amount_cents: number; checkout_url: string; created_at: string };
+type Cobranca = {
+  id: string;
+  amount_cents: number;
+  checkout_url: string;
+  created_at: string;
+  created_by: string;
+  household_id: string;
+};
 
 export default async function BauPage({
   params,
@@ -153,16 +161,20 @@ export default async function BauPage({
       .returns<{ household_id: string; amount_cents: number; day_of_month: number }[]>(),
     supabase
       .from("pix_checkouts")
-      .select("id, amount_cents, checkout_url, created_at")
+      .select("id, amount_cents, checkout_url, created_at, created_by, household_id")
       .eq("fund_id", fundo.id)
-      .eq("created_by", pessoa.id)
       .eq("status", "aberto")
-      .gte("created_at", new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString())
+      .gte("created_at", new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString())
       .order("created_at", { ascending: false })
-      .limit(5)
+      .limit(50)
       .returns<Cobranca[]>(),
   ]);
-  const cobrancasAbertas = cobrancasR.data ?? [];
+  const todasAbertas = cobrancasR.data ?? [];
+  const limiteMinhas = new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString();
+  const cobrancasAbertas = todasAbertas
+    .filter((c) => c.created_by === pessoa.id && c.created_at >= limiteMinhas)
+    .slice(0, 5);
+  const confereCobrancas = tesoureiro || pessoa.is_admin;
   const lancamentos = lancR.data ?? [];
   const historico = histR.data ?? [];
   const meuPlano = (planosR.data ?? []).find((p) => p.household_id === pessoa.household_id);
@@ -530,6 +542,42 @@ export default async function BauPage({
           )}
         </CardContent>
       </Card>
+
+      {confereCobrancas && todasAbertas.length > 0 && (
+        <Card className="border-gold/60 lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Pix pela InfinitePay sem confirmação ({todasAbertas.length})</CardTitle>
+            <CardDescription>
+              Pagamentos começados no site que ainda não confirmaram sozinhos. Abra o app da InfinitePay em “Suas
+              vendas” (filtro “Checkout integrado”) e confirme só o que aparecer lá com o mesmo valor e horário.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="grid gap-3 md:grid-cols-2">
+              {todasAbertas.map((c) => (
+                <li key={c.id} className="rounded-md border border-border bg-white/50 p-3 text-sm">
+                  <p className="font-medium">
+                    {formatarCentavos(c.amount_cents)} · {nomeNucleo.get(c.household_id) ?? "Núcleo"}
+                  </p>
+                  <p className="text-muted-foreground">
+                    Começado por {nomePessoa.get(c.created_by) ?? "alguém"} em {formatarDataHora(c.created_at)}
+                  </p>
+                  <AcaoForm
+                    action={confirmarCobrancaManual}
+                    textoBotao="Confirmar: vi na InfinitePay"
+                    tamanho="sm"
+                    textoEnviando="…"
+                    className="mt-2"
+                  >
+                    <input type="hidden" name="id" value={c.id} />
+                    <input type="hidden" name="evento" value={id} />
+                  </AcaoForm>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       {tesoureiro && (
         <Card className="border-gold/60 lg:col-span-3">

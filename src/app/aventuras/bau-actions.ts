@@ -178,6 +178,8 @@ export async function pagarComInfinitePay(_: EstadoAcao, d: FormData): Promise<E
       descricao: `Baú: ${evento?.name ?? "aventura"}`.slice(0, 100),
       retorno: new URL("/api/infinitepay/retorno", site).toString(),
       aviso: urlDoAviso(site),
+      // Nome e e-mail já preenchidos na página da InfinitePay (encurta o cadastro deles).
+      cliente: { name: pessoa.name, ...(pessoa.email ? { email: pessoa.email } : {}) },
     });
   } catch {
     return { erro: 'Não foi possível falar com a InfinitePay agora. Tente de novo ou use "Paguei por fora".' };
@@ -192,6 +194,15 @@ export async function pagarComInfinitePay(_: EstadoAcao, d: FormData): Promise<E
   });
   if (error) return { erro: mensagemErro(error) };
   redirect(url);
+}
+
+/** Tesoureiro/admin confirma uma cobrança da InfinitePay depois de ver o pagamento no app. */
+export async function confirmarCobrancaManual(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
+  const { supabase } = await exigirMembro();
+  const { error } = await supabase.rpc("confirm_pix_checkout_manual", { p_checkout_id: txt(d, "id", 40) });
+  if (error) return { erro: mensagemErro(error) };
+  atualizar(txt(d, "evento", 40));
+  return { ok: "Confirmado. Loot guardado!" };
 }
 
 export async function confirmarDeposito(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {

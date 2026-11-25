@@ -12,9 +12,15 @@ export async function GET(req: Request) {
   const aviso = lerAviso(Object.fromEntries(url.searchParams));
   let destino = "/aventuras";
   let situacao = "pendente";
+  console.info("[infinitepay] retorno recebido", aviso ? `pedido ${aviso.orderNsu}` : "sem dados do pagamento");
   if (aviso) {
     try {
-      const r = await confirmarCobranca(aviso);
+      // O Pix pode levar alguns segundos para aparecer como pago na consulta: tenta 3 vezes.
+      let r = await confirmarCobranca(aviso);
+      for (let i = 0; i < 2 && r.situacao === "pendente"; i++) {
+        await new Promise((ok) => setTimeout(ok, 2000));
+        r = await confirmarCobranca(aviso);
+      }
       if (r.eventId) destino = `/aventuras/${r.eventId}/bau`;
       situacao = r.situacao === "pago" ? "ok" : "pendente";
     } catch (e) {
