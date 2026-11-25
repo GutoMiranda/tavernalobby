@@ -89,13 +89,13 @@ export async function confirmarCobranca(aviso: AvisoInfinitePay): Promise<Result
     return { situacao: "invalido", eventId: null };
   }
 
-  const { data: c } = await admin
+  const { data: c, error: erroBusca } = await admin
     .from("pix_checkouts")
     .select("id, amount_cents, status, funds(event_id)")
     .eq("id", aviso.orderNsu)
     .maybeSingle();
   if (!c) {
-    console.warn("[infinitepay] pedido não encontrado", aviso.orderNsu);
+    console.warn("[infinitepay] pedido não encontrado", aviso.orderNsu, erroBusca?.message ?? "");
     return { situacao: "invalido", eventId: null };
   }
   const fundo = c.funds as unknown as { event_id: string } | null;

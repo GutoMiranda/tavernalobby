@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 
+import { chaveSecretaValida } from "./chave";
 import { supabaseEnv } from "./env";
 
 /**
@@ -12,6 +13,11 @@ import { supabaseEnv } from "./env";
 export function createAdminClient() {
   const chave = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!chave) return null;
+  if (!chaveSecretaValida(chave)) {
+    console.error(
+      "[supabase] SUPABASE_SERVICE_ROLE_KEY não é a chave secreta (parece a pública/anon). Veja docs/setup.md, seção 2.",
+    );
+  }
   const { url } = supabaseEnv();
   return createClient(url, chave, { auth: { persistSession: false, autoRefreshToken: false } });
 }
