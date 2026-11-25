@@ -67,6 +67,14 @@ export async function conferirPagamento(p: {
   })) ?? {}) as ConferenciaInfinitePay;
 }
 
+/** Aventura da cobrança, para levar a pessoa de volta ao Baú certo mesmo sem dados completos. */
+export async function aventuraDoPedido(pedido: string): Promise<string | null> {
+  const admin = createAdminClient();
+  if (!admin || !/^[0-9a-f-]{36}$/i.test(pedido)) return null;
+  const { data } = await admin.from("pix_checkouts").select("funds(event_id)").eq("id", pedido).maybeSingle();
+  return (data?.funds as unknown as { event_id: string } | null)?.event_id ?? null;
+}
+
 export type ResultadoCobranca = { situacao: "pago" | "pendente" | "invalido"; eventId: string | null };
 
 /**
@@ -76,14 +84,20 @@ export type ResultadoCobranca = { situacao: "pago" | "pendente" | "invalido"; ev
 export async function confirmarCobranca(aviso: AvisoInfinitePay): Promise<ResultadoCobranca> {
   const admin = createAdminClient();
   const handle = handleInfinitePay();
-  if (!admin || !handle) return { situacao: "invalido", eventId: null };
+  if (!admin || !handle) {
+    console.error("[infinitepay] falta", !admin ? "SUPABASE_SERVICE_ROLE_KEY" : "INFINITEPAY_HANDLE", "no .env.local");
+    return { situacao: "invalido", eventId: null };
+  }
 
   const { data: c } = await admin
     .from("pix_checkouts")
     .select("id, amount_cents, status, funds(event_id)")
     .eq("id", aviso.orderNsu)
     .maybeSingle();
-  if (!c) return { situacao: "invalido", eventId: null };
+  if (!c) {
+    console.warn("[infinitepay] pedido não encontrado", aviso.orderNsu);
+    return { situacao: "invalido", eventId: null };
+  }
   const fundo = c.funds as unknown as { event_id: string } | null;
   const eventId = fundo?.event_id ?? null;
   if (c.status === "pago") return { situacao: "pago", eventId };

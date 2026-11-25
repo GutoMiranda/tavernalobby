@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { lerAviso } from "@/lib/finance/infinitepay";
-import { confirmarCobranca } from "@/lib/infinitepay";
+import { aventuraDoPedido, confirmarCobranca } from "@/lib/infinitepay";
 
 /**
  * A InfinitePay manda a pessoa de volta para cá depois do pagamento. Os parâmetros da URL não
@@ -9,10 +9,21 @@ import { confirmarCobranca } from "@/lib/infinitepay";
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const aviso = lerAviso(Object.fromEntries(url.searchParams));
+  const params = Object.fromEntries(url.searchParams);
+  const aviso = lerAviso(params);
   let destino = "/aventuras";
   let situacao = "pendente";
-  console.info("[infinitepay] retorno recebido", aviso ? `pedido ${aviso.orderNsu}` : "sem dados do pagamento");
+  // Só os nomes dos parâmetros (sem valores), para diagnosticar se a InfinitePay mudar o formato.
+  console.info(
+    "[infinitepay] retorno recebido",
+    aviso ? `pedido ${aviso.orderNsu}` : "sem dados completos",
+    `parâmetros: ${Object.keys(params).join(", ") || "nenhum"}`,
+  );
+  const pedido = typeof params.order_nsu === "string" ? params.order_nsu.trim().toLowerCase() : "";
+  if (pedido) {
+    const ev = await aventuraDoPedido(pedido).catch(() => null);
+    if (ev) destino = `/aventuras/${ev}/bau`;
+  }
   if (aviso) {
     try {
       // O Pix pode levar alguns segundos para aparecer como pago na consulta: tenta 3 vezes.
