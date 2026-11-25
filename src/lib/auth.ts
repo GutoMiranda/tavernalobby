@@ -18,10 +18,11 @@ export type Pessoa = {
   avatar: string | null;
   avatar_color: string | null;
   epithet: string | null;
+  avatar_path: string | null;
 };
 
 export const COLUNAS_PESSOA =
-  "id, household_id, user_id, name, email, relationship, is_child, is_admin, status, avatar, avatar_color, epithet";
+  "id, household_id, user_id, name, email, relationship, is_child, is_admin, status, avatar, avatar_color, epithet, avatar_path";
 
 /** Sessão atual: usuário do Supabase, pessoa ligada a ele e suas tags. Cacheada por requisição. */
 export const getSessao = cache(async () => {

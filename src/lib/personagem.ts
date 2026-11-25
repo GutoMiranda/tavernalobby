@@ -75,3 +75,22 @@ export function lerPersonagem(dados: { avatar?: string; cor?: string; epiteto?: 
   if (epiteto.length > 40) return { erro: "O epíteto pode ter até 40 caracteres." } as const;
   return { avatar, cor, epiteto: epiteto || null } as const;
 }
+
+const CAMINHO_FOTO = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.webp$/;
+
+/**
+ * Caminho da foto do avatar que o formulário pode gravar: vazio (sem foto), a foto que a pessoa
+ * já tem, ou uma foto nova enviada agora por quem está logado (pasta = id do login).
+ */
+export function caminhoDeFotoValido(caminho: string, userId: string, atual: string | null): string | null | false {
+  if (!caminho) return null;
+  if (caminho === atual) return caminho;
+  if (CAMINHO_FOTO.test(caminho) && caminho.startsWith(`${userId}/`)) return caminho;
+  return false;
+}
+
+/** Recorte quadrado central de uma imagem (para a foto do avatar). */
+export function recorteQuadrado(largura: number, altura: number) {
+  const lado = Math.min(largura, altura);
+  return { x: Math.floor((largura - lado) / 2), y: Math.floor((altura - lado) / 2), lado };
+}

@@ -190,7 +190,7 @@
 .cena-quest {
   position: relative;
   margin: -0.25rem 0.75rem 0;
-  height: 7.5rem;
+  height: 9rem;
   overflow: hidden;
   border-radius: 0.4rem;
   border: 2px solid color-mix(in srgb, var(--metal-liso, #c9933f) 70%, black);

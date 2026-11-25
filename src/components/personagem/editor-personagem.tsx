@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { Camera, Trash2 } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 
 import { AcaoForm } from "@/components/acao-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { EstadoAcao } from "@/lib/erros";
-import { AVATARES, CORES_AVATAR, IDS_AVATARES, IDS_CORES, type Papel } from "@/lib/personagem";
+import { AVATARES, CORES_AVATAR, IDS_AVATARES, IDS_CORES, type Papel, recorteQuadrado } from "@/lib/personagem";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 import { Avatar } from "./avatar";
@@ -16,24 +18,81 @@ type Props = {
   pessoaId: string;
   nome: string;
   papel: Papel;
-  inicial: { avatar: string | null; cor: string | null; epiteto: string | null };
+  /** Login de quem está editando (a foto vai para a pasta dele no armazenamento). */
+  userId: string;
+  inicial: {
+    avatar: string | null;
+    cor: string | null;
+    epiteto: string | null;
+    fotoCaminho: string | null;
+    fotoUrl: string | null;
+  };
   acao: (estado: EstadoAcao, dados: FormData) => Promise<EstadoAcao>;
 };
 
-/** Escolha do personagem com prévia ao vivo: emblema, cor e epíteto. */
-export function EditorPersonagem({ pessoaId, nome, papel, inicial, acao }: Props) {
+/** Foto do avatar: recorte quadrado central, 256×256, em WebP (fica leve, por volta de 20 KB). */
+async function prepararFoto(arquivo: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(arquivo);
+  const { x, y, lado } = recorteQuadrado(bitmap.width, bitmap.height);
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  canvas.getContext("2d")!.drawImage(bitmap, x, y, lado, lado, 0, 0, 256, 256);
+  bitmap.close();
+  const blob = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, "image/webp", 0.85));
+  if (!blob || blob.type !== "image/webp") throw new Error("webp");
+  return blob;
+}
+
+/** Escolha do personagem com prévia ao vivo: foto (opcional), emblema, cor e epíteto. */
+export function EditorPersonagem({ pessoaId, nome, papel, userId, inicial, acao }: Props) {
   const [avatar, setAvatar] = useState(inicial.avatar ?? "");
   const [cor, setCor] = useState(inicial.cor ?? "");
   const [epiteto, setEpiteto] = useState(inicial.epiteto ?? "");
+  const [fotoCaminho, setFotoCaminho] = useState(inicial.fotoCaminho ?? "");
+  const [fotoUrl, setFotoUrl] = useState(inicial.fotoUrl);
+  const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const [erroFoto, setErroFoto] = useState<string | null>(null);
+  const arquivoRef = useRef<HTMLInputElement>(null);
+  const supabase = useMemo(() => createClient(), []);
+
+  async function escolherFoto(arquivo: File | undefined) {
+    if (!arquivo) return;
+    setErroFoto(null);
+    setEnviandoFoto(true);
+    try {
+      const blob = await prepararFoto(arquivo);
+      const caminho = `${userId}/${crypto.randomUUID()}.webp`;
+      const { error } = await supabase.storage
+        .from("avatares")
+        .upload(caminho, blob, { contentType: "image/webp", upsert: false });
+      if (error) throw error;
+      setFotoCaminho(caminho);
+      setFotoUrl(URL.createObjectURL(blob));
+    } catch {
+      setErroFoto("Não foi possível usar essa imagem. Tente uma foto JPG ou PNG.");
+    } finally {
+      setEnviandoFoto(false);
+      if (arquivoRef.current) arquivoRef.current.value = "";
+    }
+  }
 
   return (
     <AcaoForm action={acao} textoBotao="Salvar personagem">
       <input type="hidden" name="pessoa" value={pessoaId} />
       <input type="hidden" name="avatar" value={avatar} />
       <input type="hidden" name="cor" value={cor} />
+      <input type="hidden" name="foto" value={fotoCaminho} />
 
       <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-gold/30 bg-black/20 p-4 text-center sm:flex-row sm:text-left">
-        <Avatar nome={nome} avatar={avatar || null} cor={cor || null} papel={papel} tamanho={84} />
+        <Avatar
+          nome={nome}
+          avatar={avatar || null}
+          foto={fotoCaminho ? fotoUrl : null}
+          cor={cor || null}
+          papel={papel}
+          tamanho={84}
+        />
         <NomeEnfeitado
           nome={nome}
           epiteto={epiteto.trim() || null}
@@ -41,6 +100,44 @@ export function EditorPersonagem({ pessoaId, nome, papel, inicial, acao }: Props
           mostrarTitulo
           className="text-xl [&_.truncate]:whitespace-normal"
         />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <p className="font-medium">Foto (opcional)</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={arquivoRef}
+            id={`foto-${pessoaId}`}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="sr-only"
+            onChange={(e) => escolherFoto(e.target.files?.[0])}
+          />
+          <label
+            htmlFor={`foto-${pessoaId}`}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-input bg-field px-3 py-2 text-sm hover:border-gold focus-within:ring-2 focus-within:ring-gold"
+          >
+            <Camera className="size-4" aria-hidden />{" "}
+            {enviandoFoto ? "Enviando…" : fotoCaminho ? "Trocar foto" : "Enviar foto"}
+          </label>
+          {fotoCaminho && (
+            <button
+              type="button"
+              onClick={() => setFotoCaminho("")}
+              className="inline-flex items-center gap-1 rounded-md px-2 py-2 text-sm text-muted-foreground hover:text-alert"
+            >
+              <Trash2 className="size-4" aria-hidden /> Usar emblema no lugar da foto
+            </button>
+          )}
+        </div>
+        <p className="text-sm text-muted-foreground">
+          A foto é cortada no meio em quadrado e só membros aprovados veem. Sem foto, vale o emblema abaixo.
+        </p>
+        {erroFoto && (
+          <p role="alert" className="text-sm text-alert">
+            {erroFoto}
+          </p>
+        )}
       </div>
 
       <fieldset className="flex flex-col gap-2">

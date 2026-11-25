@@ -121,6 +121,8 @@ const ARO: Record<Papel, string> = {
 type Props = {
   nome: string;
   avatar?: string | null;
+  /** URL (assinada) da foto enviada pela pessoa; tem prioridade sobre o emblema. */
+  foto?: string | null;
   cor?: string | null;
   papel?: Papel;
   /** Diâmetro em px. */
@@ -133,7 +135,7 @@ type Props = {
  * Medalhão do personagem: emblema (ou iniciais) sobre a cor escolhida, com aro pela função
  * (ouro e coroa para o Mestre da Taverna, verde para o Guardião do Baú, bronze para o do Armazém).
  */
-export function Avatar({ nome, avatar, cor, papel = "membro", tamanho = 40, online, className }: Props) {
+export function Avatar({ nome, avatar, foto, cor, papel = "membro", tamanho = 40, online, className }: Props) {
   const fundo = corDoAvatar(nome, cor);
   const emblema = avatar && avatar in AVATARES ? EMBLEMAS[avatar as TipoAvatar] : null;
   const aro = ARO[papel];
@@ -142,10 +144,13 @@ export function Avatar({ nome, avatar, cor, papel = "membro", tamanho = 40, onli
       className={cn("relative inline-block shrink-0", className)}
       style={{ width: tamanho, height: tamanho }}
       role="img"
-      aria-label={`${nome}${avatar && avatar in AVATARES ? ` (${AVATARES[avatar as TipoAvatar]})` : ""}${online ? ", online" : ""}`}
+      aria-label={`${nome}${foto ? " (foto)" : ""}${!foto && avatar && avatar in AVATARES ? ` (${AVATARES[avatar as TipoAvatar]})` : ""}${online ? ", online" : ""}`}
     >
       <svg viewBox="0 0 48 48" width={tamanho} height={tamanho} aria-hidden className="block">
         <defs>
+          <clipPath id="av-recorte">
+            <circle cx="24" cy="24" r="21" />
+          </clipPath>
           <radialGradient id={`av-${papel}`} cx="35%" cy="30%" r="75%">
             <stop offset="0" stopColor="#fff" stopOpacity="0.28" />
             <stop offset="1" stopColor="#000" stopOpacity="0.25" />
@@ -153,22 +158,34 @@ export function Avatar({ nome, avatar, cor, papel = "membro", tamanho = 40, onli
         </defs>
         <circle cx="24" cy="24" r="22" fill={fundo} />
         <circle cx="24" cy="24" r="22" fill={`url(#av-${papel})`} />
-        <g transform="translate(2.4 2.4) scale(0.9)">
-          {emblema ?? (
-            <text
-              x="24"
-              y="24"
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontSize={iniciais(nome).length > 1 ? 18 : 22}
-              fontWeight="700"
-              fill={TINTA}
-              fontFamily="var(--font-titulo), Georgia, serif"
-            >
-              {iniciais(nome)}
-            </text>
-          )}
-        </g>
+        {foto ? (
+          <image
+            href={foto}
+            x="3"
+            y="3"
+            width="42"
+            height="42"
+            preserveAspectRatio="xMidYMid slice"
+            clipPath="url(#av-recorte)"
+          />
+        ) : (
+          <g transform="translate(2.4 2.4) scale(0.9)">
+            {emblema ?? (
+              <text
+                x="24"
+                y="24"
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontSize={iniciais(nome).length > 1 ? 18 : 22}
+                fontWeight="700"
+                fill={TINTA}
+                fontFamily="var(--font-titulo), Georgia, serif"
+              >
+                {iniciais(nome)}
+              </text>
+            )}
+          </g>
+        )}
         <circle cx="24" cy="24" r="22" fill="none" stroke={aro} strokeWidth={papel === "membro" ? 2 : 3} />
         {papel !== "membro" && (
           <circle cx="24" cy="24" r="19.6" fill="none" stroke={aro} strokeWidth="0.8" opacity="0.6" />

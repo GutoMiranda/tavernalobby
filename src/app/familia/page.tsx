@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { COLUNAS_PESSOA, exigirMembro, type Pessoa } from "@/lib/auth";
+import { urlsDasFotos } from "@/lib/membros-dados";
 import { papelDe } from "@/lib/personagem";
 
 import { adicionarDependente, renomearNucleo, salvarOrigem, salvarPersonagem } from "./actions";
@@ -15,7 +16,7 @@ import { PessoaItem } from "./pessoa-item";
 export const metadata: Metadata = { title: "Minha família" };
 
 export default async function FamiliaPage() {
-  const { supabase, pessoa, tags } = await exigirMembro();
+  const { supabase, pessoa, tags, user } = await exigirMembro();
 
   const [{ data: nucleo }, { data: membros }] = await Promise.all([
     supabase
@@ -68,7 +69,15 @@ export default async function FamiliaPage() {
               pessoaId={pessoa.id}
               nome={pessoa.name}
               papel={papelDe(pessoa, tags)}
-              inicial={{ avatar: pessoa.avatar, cor: pessoa.avatar_color, epiteto: pessoa.epithet }}
+              userId={user.id}
+              inicial={{
+                avatar: pessoa.avatar,
+                cor: pessoa.avatar_color,
+                epiteto: pessoa.epithet,
+                fotoCaminho: pessoa.avatar_path,
+                fotoUrl:
+                  (await urlsDasFotos(supabase, [pessoa.avatar_path ?? ""])).get(pessoa.avatar_path ?? "") ?? null,
+              }}
               acao={salvarPersonagem}
             />
           </CardContent>

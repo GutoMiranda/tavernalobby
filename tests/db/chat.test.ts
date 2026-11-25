@@ -127,3 +127,29 @@ describe("Chat geral", () => {
     await b.como(admin, "select public.delete_chat_message($1)", [outra]);
   });
 });
+
+describe("Foto do avatar", () => {
+  it("membro envia foto só na própria pasta e grava o caminho na pessoa", async () => {
+    const pasta = bia;
+    const caminho = `${pasta}/11111111-1111-1111-1111-111111111111.webp`;
+    await b.como(bia, "insert into storage.objects (bucket_id, name) values ('avatares', $1)", [caminho]);
+    await expect(
+      b.como(bia, "insert into storage.objects (bucket_id, name) values ('avatares', $1)", [
+        `${caio}/22222222-2222-2222-2222-222222222222.webp`,
+      ]),
+    ).rejects.toThrow();
+    await b.como(bia, "update public.people set avatar_path = $2 where id = $1", [biaId, caminho]);
+    const [p] = await b.como<{ avatar_path: string }>(caio, "select avatar_path from public.people where id = $1", [
+      biaId,
+    ]);
+    expect(p.avatar_path).toBe(caminho);
+    expect(await b.como(caio, "select 1 from storage.objects where bucket_id = 'avatares'")).toHaveLength(1);
+    expect(await b.como(novato, "select 1 from storage.objects where bucket_id = 'avatares'")).toHaveLength(0);
+  });
+
+  it("caminho fora do padrão é recusado", async () => {
+    await expect(
+      b.como(bia, "update public.people set avatar_path = '../outra/coisa.png' where id = $1", [biaId]),
+    ).rejects.toThrow();
+  });
+});

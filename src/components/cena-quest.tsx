@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 import type { Fase } from "@/lib/aventura";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +31,29 @@ export const MOLDURA_DA_FASE: Record<Fase, Moldura> = {
   cancelada: "prata",
 };
 
-export function CenaQuest({ cena, idBase, className }: { cena: Cena; idBase: string; className?: string }) {
+/** Cena da fase: a foto escolhida pelo dono (public/cenas) ou, sem foto, o desenho do site. */
+export function CenaQuest({
+  cena,
+  idBase,
+  className,
+  foto,
+}: {
+  cena: Cena;
+  idBase: string;
+  className?: string;
+  foto?: string | null;
+}) {
+  if (foto) {
+    return (
+      <Image
+        src={foto}
+        alt=""
+        fill
+        sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
+        className={cn("object-cover", className)}
+      />
+    );
+  }
   const g = (n: string) => `${idBase}-${n}`;
   return (
     <svg

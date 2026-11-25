@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { PainelChat } from "@/components/chat/painel-chat";
 import { Logo } from "@/components/logo";
-import { Avatar } from "@/components/personagem/avatar";
+import { BotaoPersonagem } from "@/components/personagem/botao-personagem";
 import { SinoNotificacoes } from "@/components/sino-notificacoes";
 import { getSessao } from "@/lib/auth";
 import { carregarMembros, type Membro } from "@/lib/membros-dados";
@@ -29,6 +29,7 @@ export async function SiteHeader() {
           avatar: pessoa.avatar,
           avatar_color: pessoa.avatar_color,
           epithet: pessoa.epithet,
+          foto: null,
           papel: papelDe(pessoa, sessao?.tags ?? []),
         })
       : undefined;
@@ -55,17 +56,21 @@ export async function SiteHeader() {
         <div className="ml-auto flex items-center gap-0.5 sm:gap-1.5">
           {aprovado && pessoa && membros && <PainelChat eu={eu!} souAdmin={pessoa.is_admin} membros={membros} />}
           {aprovado && pessoa && <SinoNotificacoes pessoaId={pessoa.id} naoLidas={naoLidas} />}
-          {aprovado && eu && (
-            <Link
-              href="/familia"
-              className="hidden rounded-full focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none sm:block"
-              title="Seu personagem"
-            >
-              <Avatar nome={eu.name} avatar={eu.avatar} cor={eu.avatar_color} papel={eu.papel} tamanho={36} />
-            </Link>
+          {aprovado && eu && pessoa && sessao && (
+            <BotaoPersonagem
+              pessoaId={pessoa.id}
+              userId={sessao.user.id}
+              nome={eu.name}
+              papel={eu.papel}
+              avatar={eu.avatar}
+              cor={eu.avatar_color}
+              epiteto={eu.epithet}
+              fotoCaminho={pessoa.avatar_path}
+              fotoUrl={eu.foto}
+            />
           )}
           {sessao && (
-            <form action="/auth/sair" method="post">
+            <form action="/auth/sair" method="post" className={aprovado ? "hidden sm:block" : undefined}>
               <button
                 type="submit"
                 className="rounded-md px-2 py-1 text-sm text-parchment underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none"

@@ -29,6 +29,7 @@ export type MembroChat = {
   avatar: string | null;
   avatar_color: string | null;
   epithet: string | null;
+  foto?: string | null;
   papel: Papel;
 };
 
@@ -318,6 +319,7 @@ export function ChatConversa({ eu, souAdmin, membros, compacto, destacarHash }: 
                       <Avatar
                         nome={autor.name}
                         avatar={autor.avatar}
+                        foto={autor.foto}
                         cor={autor.avatar_color}
                         papel={autor.papel}
                         tamanho={36}
@@ -455,7 +457,14 @@ export function ChatConversa({ eu, souAdmin, membros, compacto, destacarHash }: 
                     i === indiceSugestao ? "bg-gold/15" : "hover:bg-white/5",
                   )}
                 >
-                  <Avatar nome={m.name} avatar={m.avatar} cor={m.avatar_color} papel={m.papel} tamanho={28} />
+                  <Avatar
+                    nome={m.name}
+                    avatar={m.avatar}
+                    foto={m.foto}
+                    cor={m.avatar_color}
+                    papel={m.papel}
+                    tamanho={28}
+                  />
                   <NomeEnfeitado nome={m.name} epiteto={m.epithet} papel={m.papel} />
                 </button>
               </li>

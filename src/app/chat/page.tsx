@@ -18,6 +18,7 @@ export default async function ChatPage() {
     avatar: pessoa.avatar,
     avatar_color: pessoa.avatar_color,
     epithet: pessoa.epithet,
+    foto: null,
     papel: "membro" as const,
   };
 

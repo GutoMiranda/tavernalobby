@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { exigirMembro } from "@/lib/auth";
 import { FASE_INFO } from "@/lib/aventura";
+import { fotoDaFase } from "@/lib/cenas";
 import { carregarAventura } from "@/lib/aventura-dados";
 import { formatarPeriodo } from "@/lib/format";
 
@@ -44,7 +45,7 @@ export default async function AventuraLayout({
       <Card moldura={MOLDURA_DA_FASE[evento.phase]} className="overflow-hidden py-0">
         <div className="relative isolate flex min-h-40 flex-col items-center justify-center gap-1.5 px-6 py-6 text-center">
           <div className="absolute inset-0 -z-10 opacity-95">
-            <CenaQuest cena={CENA_DA_FASE[evento.phase]} idBase={`banner-${id}`} />
+            <CenaQuest cena={CENA_DA_FASE[evento.phase]} idBase={`banner-${id}`} foto={fotoDaFase(evento.phase)} />
           </div>
           <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgb(18_13_9/0.7)_0%,rgb(18_13_9/0.35)_50%,transparent_85%)]" />
           <p className="text-sm tracking-widest text-parchment/80 uppercase">Aventura · encontro</p>

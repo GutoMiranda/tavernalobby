@@ -217,6 +217,7 @@ export function ListaNaTaverna({
           <Avatar
             nome={m.name}
             avatar={m.avatar}
+            foto={m.foto}
             cor={m.avatar_color}
             papel={m.papel}
             tamanho={40}
