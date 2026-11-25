@@ -364,3 +364,35 @@
     transition: none;
   }
 }
+
+/* Gavetas laterais (chat, avisos, personagem): madeira escura com moldura dourada. */
+.gaveta-moldura {
+  background: linear-gradient(180deg, #221a14, #17110d);
+  border-left: 2px solid rgb(242 165 65 / 0.6);
+  box-shadow:
+    -20px 0 40px -10px rgb(0 0 0 / 0.85),
+    inset 0 0 0 1px rgb(0 0 0 / 0.6);
+  overflow: hidden;
+}
+@media (min-width: 640px) {
+  .gaveta-moldura {
+    border: 2px solid rgb(242 165 65 / 0.7);
+    border-radius: 0.9rem;
+    box-shadow:
+      0 0 0 1px rgb(0 0 0 / 0.7),
+      inset 0 0 0 3px rgb(201 147 63 / 0.25),
+      -20px 0 40px -10px rgb(0 0 0 / 0.85),
+      0 0 30px -18px var(--gold);
+  }
+}
+/* Chat fixo ("manter aberto") no computador: a página abre espaço à direita. */
+@media (min-width: 1024px) {
+  html.chat-fixo body {
+    padding-right: 31rem;
+  }
+}
+@media (min-width: 1280px) {
+  html.chat-fixo body {
+    padding-right: 35rem;
+  }
+}

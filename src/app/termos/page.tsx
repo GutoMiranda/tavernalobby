@@ -52,17 +52,21 @@ export default function TermosPage() {
         de funcionamento contínuo.
       </p>
 
-      <h2>Créditos das imagens</h2>
-      <p>Fotos das aventuras do Unsplash (Unsplash License):</p>
-      <ul>
-        {Object.entries(CREDITOS_DAS_CENAS).map(([fase, c]) => (
-          <li key={fase}>
-            <a href={c.fonte} rel="noopener noreferrer">
-              {c.autor}
-            </a>
-          </li>
-        ))}
-      </ul>
+      {Object.keys(CREDITOS_DAS_CENAS).length > 0 && (
+        <>
+          <h2>Créditos das imagens</h2>
+          <p>Fotos das aventuras do Unsplash (Unsplash License):</p>
+          <ul>
+            {Object.entries(CREDITOS_DAS_CENAS).map(([fase, c]) => (
+              <li key={fase}>
+                <a href={c.fonte} rel="noopener noreferrer">
+                  {c.autor}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
       <h2>Contato</h2>
       <p>

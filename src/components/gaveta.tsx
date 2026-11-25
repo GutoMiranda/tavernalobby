@@ -54,8 +54,8 @@ export function Gaveta({
         aria-hidden={!aberta}
         inert={!aberta}
         className={cn(
-          "fixed inset-y-0 right-0 z-[56] flex w-full flex-col border-l-2 border-gold/50 bg-[#1b1511] shadow-[-20px_0_40px_-10px_rgb(0_0_0/0.8)] transition-transform duration-300 sm:w-[26rem]",
-          aberta ? "translate-x-0" : "translate-x-full",
+          "gaveta-moldura fixed inset-y-0 right-0 z-[56] flex w-full flex-col transition-transform duration-300 sm:inset-y-2 sm:right-2 sm:w-[30rem]",
+          aberta ? "translate-x-0" : "translate-x-[110%]",
         )}
         style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
       >

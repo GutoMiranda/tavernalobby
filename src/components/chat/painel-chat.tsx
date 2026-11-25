@@ -1,6 +1,6 @@
 "use client";
 
-import { AtSign, MessagesSquare, X } from "lucide-react";
+import { AtSign, MessagesSquare, Pin, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -14,6 +14,23 @@ import { ChatConversa, type MembroChat } from "./chat-conversa";
 import { chatStore, useChatStore } from "./estado-chat";
 
 const CHAVE_VISTO = "taverna-chat-visto";
+const CHAVE_FIXO = "taverna-chat-fixo";
+
+function lerFixo(): boolean {
+  try {
+    return localStorage.getItem(CHAVE_FIXO) === "1";
+  } catch {
+    return false;
+  }
+}
+function gravarFixo(fixo: boolean) {
+  try {
+    if (fixo) localStorage.setItem(CHAVE_FIXO, "1");
+    else localStorage.removeItem(CHAVE_FIXO);
+  } catch {
+    // Sem armazenamento: vale só nesta aba.
+  }
+}
 
 function lerVisto(): string {
   try {
@@ -45,7 +62,28 @@ export function PainelChat({ eu, souAdmin, membros }: { eu: MembroChat; souAdmin
   const pathname = usePathname();
   const naPaginaDoChat = pathname === "/chat";
 
-  useEffect(() => setMontado(true), []);
+  const [fixo, setFixo] = useState(false);
+
+  // "Manter aberto": lembra a escolha e reabre o chat ao carregar o site.
+  useEffect(() => {
+    setMontado(true);
+    if (lerFixo()) {
+      setFixo(true);
+      chatStore.abrir();
+    }
+  }, []);
+
+  // No computador, com o chat fixo e aberto, a página abre espaço à direita em vez de ficar coberta.
+  useEffect(() => {
+    const html = document.documentElement;
+    html.classList.toggle("chat-fixo", fixo && aberto);
+    return () => html.classList.remove("chat-fixo");
+  }, [fixo, aberto]);
+
+  function alternarFixo(valor: boolean) {
+    setFixo(valor);
+    gravarFixo(valor);
+  }
   useEffect(() => {
     if (rascunho) setAba("conversa");
   }, [rascunho]);
@@ -93,11 +131,11 @@ export function PainelChat({ eu, souAdmin, membros }: { eu: MembroChat; souAdmin
   }, [aberto, naPaginaDoChat]);
 
   useEffect(() => {
-    if (!aberto) return;
+    if (!aberto || fixo) return;
     const fechar = (e: KeyboardEvent) => e.key === "Escape" && chatStore.fechar();
     window.addEventListener("keydown", fechar);
     return () => window.removeEventListener("keydown", fechar);
-  }, [aberto]);
+  }, [aberto, fixo]);
 
   const quantosOnline = online.size;
   const ordenados = [...membros].sort(
@@ -139,6 +177,7 @@ export function PainelChat({ eu, souAdmin, membros }: { eu: MembroChat; souAdmin
               className={cn(
                 "fixed inset-0 z-[55] bg-black/50 transition-opacity lg:bg-black/20",
                 aberto ? "opacity-100" : "pointer-events-none opacity-0",
+                fixo && "lg:hidden",
               )}
             />
             <aside
@@ -147,8 +186,8 @@ export function PainelChat({ eu, souAdmin, membros }: { eu: MembroChat; souAdmin
               aria-hidden={!aberto}
               inert={!aberto}
               className={cn(
-                "fixed inset-y-0 right-0 z-[56] flex w-full flex-col border-l-2 border-gold/50 bg-[#1b1511] shadow-[-20px_0_40px_-10px_rgb(0_0_0/0.8)] transition-transform duration-300 sm:w-[26rem]",
-                aberto ? "translate-x-0" : "translate-x-full",
+                "gaveta-moldura fixed inset-y-0 right-0 z-[56] flex w-full flex-col transition-transform duration-300 sm:inset-y-2 sm:right-2 sm:w-[30rem] xl:w-[34rem]",
+                aberto ? "translate-x-0" : "translate-x-[110%]",
               )}
               style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
             >
@@ -161,6 +200,21 @@ export function PainelChat({ eu, souAdmin, membros }: { eu: MembroChat; souAdmin
                     Na taverna <span className="text-bottle">({quantosOnline} online)</span>
                   </AbaBotao>
                 </div>
+                <label
+                  className={cn(
+                    "hidden cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-sm lg:inline-flex",
+                    fixo ? "bg-gold/15 text-wood" : "text-muted-foreground hover:text-parchment",
+                  )}
+                  title="Deixa o chat aberto ao lado da página, mesmo trocando de tela"
+                >
+                  <input
+                    type="checkbox"
+                    checked={fixo}
+                    onChange={(e) => alternarFixo(e.target.checked)}
+                    className="size-4 accent-[var(--gold)]"
+                  />
+                  <Pin className="size-4" aria-hidden /> Manter aberto
+                </label>
                 <button
                   type="button"
                   onClick={() => chatStore.fechar()}
