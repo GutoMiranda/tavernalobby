@@ -2,18 +2,20 @@ import type { Metadata } from "next";
 
 import { AcaoForm } from "@/components/acao-form";
 import { CampoLugar } from "@/components/mapas/campo-lugar";
+import { EditorPersonagem } from "@/components/personagem/editor-personagem";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { COLUNAS_PESSOA, exigirMembro, type Pessoa } from "@/lib/auth";
+import { papelDe } from "@/lib/personagem";
 
-import { adicionarDependente, renomearNucleo, salvarOrigem } from "./actions";
+import { adicionarDependente, renomearNucleo, salvarOrigem, salvarPersonagem } from "./actions";
 import { PessoaItem } from "./pessoa-item";
 
 export const metadata: Metadata = { title: "Minha família" };
 
 export default async function FamiliaPage() {
-  const { supabase, pessoa } = await exigirMembro();
+  const { supabase, pessoa, tags } = await exigirMembro();
 
   const [{ data: nucleo }, { data: membros }] = await Promise.all([
     supabase
@@ -53,6 +55,25 @@ export default async function FamiliaPage() {
       </section>
 
       <div className="grade-taverna grade-2">
+        <Card className="lg:col-span-2" moldura="verde">
+          <CardHeader>
+            <CardTitle>Seu personagem</CardTitle>
+            <CardDescription>
+              Como a taverna te mostra no chat e na lista de quem está online: emblema, cor e um epíteto. A moldura do
+              nome vem da sua função no grupo.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <EditorPersonagem
+              pessoaId={pessoa.id}
+              nome={pessoa.name}
+              papel={papelDe(pessoa, tags)}
+              inicial={{ avatar: pessoa.avatar, cor: pessoa.avatar_color, epiteto: pessoa.epithet }}
+              acao={salvarPersonagem}
+            />
+          </CardContent>
+        </Card>
+
         <Card className="lg:row-span-3">
           <CardHeader>
             <CardTitle>Quem é da família</CardTitle>

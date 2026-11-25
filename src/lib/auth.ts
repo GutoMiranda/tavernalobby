@@ -15,9 +15,13 @@ export type Pessoa = {
   is_child: boolean;
   is_admin: boolean;
   status: "pending" | "approved" | "rejected";
+  avatar: string | null;
+  avatar_color: string | null;
+  epithet: string | null;
 };
 
-export const COLUNAS_PESSOA = "id, household_id, user_id, name, email, relationship, is_child, is_admin, status";
+export const COLUNAS_PESSOA =
+  "id, household_id, user_id, name, email, relationship, is_child, is_admin, status, avatar, avatar_color, epithet";
 
 /** Sessão atual: usuário do Supabase, pessoa ligada a ele e suas tags. Cacheada por requisição. */
 export const getSessao = cache(async () => {

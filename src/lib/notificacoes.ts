@@ -1,6 +1,6 @@
 /**
  * Notificações gerais do site (sino). Genéricas: tipo, mensagem, link, quem causou e lida.
- * Novos tipos (ex.: menção e dúvida no chat futuro) só precisam de um rótulo aqui.
+ * Novos tipos só precisam de um rótulo aqui.
  */
 export const TIPOS_NOTIFICACAO: Record<string, string> = {
   loot_guardado: "Baú · depósito confirmado",
@@ -9,6 +9,9 @@ export const TIPOS_NOTIFICACAO: Record<string, string> = {
   lembrete_deposito: "Baú · lembrete de depósito",
   armazem_responsavel: "Armazém · despensa",
   membro_aprovado: "Taverna · entrada aprovada",
+  chat_mencao: "Chat · menção",
+  chat_pergunta: "Chat · dúvida para você",
+  chat_resposta: "Chat · resposta à sua dúvida",
 };
 
 export function rotuloNotificacao(tipo: string): string {

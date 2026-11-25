@@ -1,19 +1,37 @@
 import Link from "next/link";
 
+import { PainelChat } from "@/components/chat/painel-chat";
 import { Logo } from "@/components/logo";
+import { Avatar } from "@/components/personagem/avatar";
 import { SinoNotificacoes } from "@/components/sino-notificacoes";
 import { getSessao } from "@/lib/auth";
+import { carregarMembros, type Membro } from "@/lib/membros-dados";
 import { contarNaoLidas, garantirLembretesDeDeposito } from "@/lib/notificacoes-dados";
+import { papelDe } from "@/lib/personagem";
 
 export async function SiteHeader() {
   const sessao = await getSessao().catch(() => null);
   const pessoa = sessao?.pessoa;
   const aprovado = pessoa?.status === "approved";
   let naoLidas = 0;
+  let membros: Membro[] | null = null;
   if (sessao && pessoa && aprovado) {
+    membros = await carregarMembros(sessao.supabase).catch(() => null);
     await garantirLembretesDeDeposito(pessoa).catch((e) => console.error("[notificacoes] lembretes", e));
     naoLidas = await contarNaoLidas(sessao.supabase).catch(() => 0);
   }
+
+  const eu: Membro | undefined =
+    pessoa && aprovado
+      ? (membros?.find((m) => m.id === pessoa.id) ?? {
+          id: pessoa.id,
+          name: pessoa.name,
+          avatar: pessoa.avatar,
+          avatar_color: pessoa.avatar_color,
+          epithet: pessoa.epithet,
+          papel: papelDe(pessoa, sessao?.tags ?? []),
+        })
+      : undefined;
 
   return (
     <header className="bg-madeira sticky top-0 z-40 border-b border-gold/40 pt-[env(safe-area-inset-top)] text-parchment shadow-[0_8px_24px_-12px_rgb(0_0_0/0.9)]">
@@ -34,17 +52,29 @@ export async function SiteHeader() {
             Taverna <span className="text-[0.8em] italic">O</span> Lobby
           </span>
         </Link>
-        {aprovado && pessoa && <SinoNotificacoes pessoaId={pessoa.id} naoLidas={naoLidas} />}
-        {sessao && (
-          <form action="/auth/sair" method="post" className={aprovado ? undefined : "ml-auto"}>
-            <button
-              type="submit"
-              className="rounded-md px-2 py-1 text-sm text-parchment underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none"
+        <div className="ml-auto flex items-center gap-0.5 sm:gap-1.5">
+          {aprovado && pessoa && membros && <PainelChat eu={eu!} souAdmin={pessoa.is_admin} membros={membros} />}
+          {aprovado && pessoa && <SinoNotificacoes pessoaId={pessoa.id} naoLidas={naoLidas} />}
+          {aprovado && eu && (
+            <Link
+              href="/familia"
+              className="hidden rounded-full focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none sm:block"
+              title="Seu personagem"
             >
-              Sair
-            </button>
-          </form>
-        )}
+              <Avatar nome={eu.name} avatar={eu.avatar} cor={eu.avatar_color} papel={eu.papel} tamanho={36} />
+            </Link>
+          )}
+          {sessao && (
+            <form action="/auth/sair" method="post">
+              <button
+                type="submit"
+                className="rounded-md px-2 py-1 text-sm text-parchment underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none"
+              >
+                Sair
+              </button>
+            </form>
+          )}
+        </div>
       </div>
       {aprovado && (
         <nav aria-label="Principal" className="border-t border-gold/20">

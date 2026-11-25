@@ -32,7 +32,7 @@ export function SinoNotificacoes({ pessoaId, naoLidas }: { pessoaId: string; nao
       href="/notificacoes"
       aria-label={rotulo}
       title={rotulo}
-      className="relative ml-auto rounded-md p-2 text-parchment hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none"
+      className="relative rounded-md p-2 text-parchment hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none"
     >
       <Bell className="size-5" aria-hidden />
       {naoLidas > 0 && (

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { exigirMembro, getSessao } from "@/lib/auth";
 import { type EstadoAcao, mensagemErro } from "@/lib/erros";
+import { lerPersonagem } from "@/lib/personagem";
 
 function texto(dados: FormData, campo: string, max = 80) {
   return String(dados.get(campo) ?? "")
@@ -107,4 +108,26 @@ export async function salvarOrigem(_: EstadoAcao, dados: FormData): Promise<Esta
   if (error) return { erro: mensagemErro(error) };
   revalidatePath("/", "layout");
   return { ok: "Cidade de saída salva." };
+}
+
+/** Salva o personagem (avatar, cor e epíteto) de uma pessoa do próprio núcleo. */
+export async function salvarPersonagem(_: EstadoAcao, dados: FormData): Promise<EstadoAcao> {
+  const { supabase, pessoa } = await exigirMembro();
+  const id = texto(dados, "pessoa", 40) || pessoa.id;
+  const lido = lerPersonagem({
+    avatar: texto(dados, "avatar", 20),
+    cor: texto(dados, "cor", 20),
+    epiteto: String(dados.get("epiteto") ?? ""),
+  });
+  if ("erro" in lido) return { erro: lido.erro };
+  const { data, error } = await supabase
+    .from("people")
+    .update({ avatar: lido.avatar, avatar_color: lido.cor, epithet: lido.epiteto })
+    .eq("id", id)
+    .eq("household_id", pessoa.household_id)
+    .select("id");
+  if (error) return { erro: mensagemErro(error) };
+  if (!data?.length) return { erro: "Você só muda o personagem de quem é da sua família." };
+  revalidatePath("/", "layout");
+  return { ok: "Personagem salvo. A taverna já te reconhece!" };
 }
