@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import type { Fase, Reacao } from "./aventura";
+import { saldoDoBau } from "./finance/bau";
+import type { Lancamento } from "./finance/economia";
 
 export type Evento = {
   id: string;
@@ -120,3 +122,49 @@ export const carregarAventura = cache(async (supabase: SupabaseClient, id: strin
     nomeDaPessoa: (pid: string | null) => (pid ? (nomes.get(pid) ?? "Alguém") : "Alguém"),
   };
 });
+
+export type ResumoDaCarta = { confirmados: number; bauCentavos: number | null; estalagem: string | null };
+
+/** Números da carta de cada aventura (quadro de missões): confirmados, saldo do baú e estalagem escolhida. */
+export async function resumoDasAventuras(
+  supabase: SupabaseClient,
+  eventos: Evento[],
+): Promise<Map<string, ResumoDaCarta>> {
+  const ids = eventos.map((e) => e.id);
+  const resumo = new Map<string, ResumoDaCarta>(
+    ids.map((id) => [id, { confirmados: 0, bauCentavos: null, estalagem: null }]),
+  );
+  if (ids.length === 0) return resumo;
+  const escolhidas = eventos.map((e) => e.chosen_accommodation_id).filter((x): x is string => !!x);
+  const [presencas, fundos, estalagens] = await Promise.all([
+    supabase
+      .from("attendances")
+      .select("event_id")
+      .in("event_id", ids)
+      .eq("status", "vai")
+      .returns<{ event_id: string }[]>(),
+    supabase.from("funds").select("id, event_id").in("event_id", ids).returns<{ id: string; event_id: string }[]>(),
+    escolhidas.length
+      ? supabase
+          .from("accommodations")
+          .select("id, name")
+          .in("id", escolhidas)
+          .returns<{ id: string; name: string }[]>()
+      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+  ]);
+  for (const p of presencas.data ?? []) resumo.get(p.event_id)!.confirmados += 1;
+  const nomeEstalagem = new Map((estalagens.data ?? []).map((a) => [a.id, a.name]));
+  for (const e of eventos)
+    if (e.chosen_accommodation_id) resumo.get(e.id)!.estalagem = nomeEstalagem.get(e.chosen_accommodation_id) ?? null;
+  const fundoDoEvento = new Map((fundos.data ?? []).map((f) => [f.id, f.event_id]));
+  if (fundoDoEvento.size) {
+    const { data: lancs } = await supabase
+      .from("fund_transactions")
+      .select("id, fund_id, kind, household_id, amount_cents, status, reverses_id")
+      .in("fund_id", [...fundoDoEvento.keys()])
+      .returns<(Lancamento & { fund_id: string })[]>();
+    for (const [fundo, evento] of fundoDoEvento)
+      resumo.get(evento)!.bauCentavos = saldoDoBau((lancs ?? []).filter((l) => l.fund_id === fundo)).saldoCentavos;
+  }
+  return resumo;
+}

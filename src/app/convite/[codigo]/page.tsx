@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/components/login-form";
-import { Logo } from "@/components/logo";
+import { LogoBrasao } from "@/components/logo";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSessao } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -20,7 +20,7 @@ export default async function ConvitePage({ params }: { params: Promise<{ codigo
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6 pt-6">
       <div className="flex flex-col items-center gap-2 text-center">
-        <Logo size={72} />
+        <LogoBrasao largura={260} className="drop-shadow-[0_6px_18px_rgb(0_0_0/0.6)]" />
         <h1 className="text-2xl font-bold text-wood">Convite para a taverna</h1>
       </div>
       {valido ? (

@@ -2,10 +2,10 @@ import Link from "next/link";
 
 import { ListaAventuras } from "@/components/aventura/lista-aventuras";
 import { IconeCoroa, IconeD20, IconeEscudo } from "@/components/icones";
-import { Logo } from "@/components/logo";
+import { LogoBrasao } from "@/components/logo";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { exigirMembro, getPermissoes } from "@/lib/auth";
-import { COLUNAS_EVENTO, type Evento } from "@/lib/aventura-dados";
+import { COLUNAS_EVENTO, type Evento, resumoDasAventuras } from "@/lib/aventura-dados";
 import { sortearFrase } from "@/lib/frases";
 import { entraNoSalao } from "@/lib/permissoes";
 
@@ -20,7 +20,7 @@ export default async function TavernaPage() {
     .not("phase", "in", "(concluida,cancelada)")
     .order("created_at", { ascending: false })
     .returns<Evento[]>();
-  const permissoes = await getPermissoes();
+  const [permissoes, resumos] = await Promise.all([getPermissoes(), resumoDasAventuras(supabase, eventos ?? [])]);
   const primeiroNome = pessoa.name.split(" ")[0];
   const frase = sortearFrase();
 
@@ -28,7 +28,7 @@ export default async function TavernaPage() {
     <div className="flex flex-col gap-8">
       <section data-slot="card" className="overflow-hidden p-6 sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-          <Logo size={96} className="drop-shadow-[0_0_24px_rgb(242_165_65/0.45)]" />
+          <LogoBrasao largura={220} className="mx-auto drop-shadow-[0_6px_18px_rgb(0_0_0/0.6)] sm:mx-0" />
           <div className="flex min-w-0 flex-col gap-1">
             <p className="text-sm tracking-wide text-muted-foreground uppercase">Taverna · página inicial</p>
             <h1 className="text-4xl font-bold text-wood sm:text-5xl">Salve, {primeiroNome}!</h1>
@@ -55,7 +55,7 @@ export default async function TavernaPage() {
             <IconeD20 className="size-7 text-gold" /> Aventuras em andamento
           </h2>
         </div>
-        <ListaAventuras eventos={eventos ?? []} />
+        <ListaAventuras eventos={eventos ?? []} resumos={resumos} />
       </section>
 
       <div className="grade-taverna">

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { ListaAventuras } from "@/components/aventura/lista-aventuras";
 import { exigirMembro } from "@/lib/auth";
-import { COLUNAS_EVENTO, type Evento } from "@/lib/aventura-dados";
+import { COLUNAS_EVENTO, type Evento, resumoDasAventuras } from "@/lib/aventura-dados";
 
 export const metadata: Metadata = { title: "Aventuras" };
 
@@ -14,6 +14,7 @@ export default async function AventurasPage() {
     .order("created_at", { ascending: false })
     .returns<Evento[]>();
   const eventos = data ?? [];
+  const resumos = await resumoDasAventuras(supabase, eventos);
 
   return (
     <div className="flex flex-col gap-6">
@@ -23,7 +24,7 @@ export default async function AventurasPage() {
           <h1 className="text-2xl font-bold text-wood">Aventuras</h1>
         </div>
       </section>
-      <ListaAventuras eventos={eventos} />
+      <ListaAventuras eventos={eventos} resumos={resumos} />
     </div>
   );
 }
