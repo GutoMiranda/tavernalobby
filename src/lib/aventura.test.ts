@@ -62,7 +62,7 @@ describe("pendências", () => {
     const lista = pendencias({ ...base, fase: "datas" });
     expect(lista.map((p) => p.texto)).toEqual([
       "Votar em 1 data candidata",
-      "Informar a cidade de saída do seu núcleo",
+      "Informar o ponto de saída do seu núcleo",
     ]);
   });
 

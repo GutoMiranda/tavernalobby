@@ -127,18 +127,19 @@ export default async function FamiliaPage() {
 
         <Card id="origem">
           <CardHeader>
-            <CardTitle>Cidade de saída</CardTitle>
+            <CardTitle>Ponto de saída</CardTitle>
             <CardDescription>
-              De onde o núcleo parte para as aventuras. Aparece no mapa
+              De onde o núcleo parte para as aventuras: a cidade ou o endereço exato (rua e número), para a rota sair
+              do lugar certo. Todos do grupo veem esse ponto no mapa
               {nucleo?.origin_text ? `. Atual: ${nucleo.origin_text}` : ""}.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <AcaoForm action={salvarOrigem} textoBotao="Salvar cidade">
+            <AcaoForm action={salvarOrigem} textoBotao="Salvar ponto de saída">
               <CampoLugar
                 id="origem-cidade"
-                rotulo="Cidade"
-                tipo="cidade"
+                rotulo="Cidade ou endereço"
+                tipo="endereco"
                 valorInicial={nucleo?.origin_text}
                 obrigatorio
               />

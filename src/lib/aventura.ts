@@ -124,7 +124,7 @@ export function pendencias(params: {
     lista.push({ texto: `Fazer o depósito do mês no baú: ${p.depositoAtrasado}`, href: `${base}/bau` });
   }
   if (["datas", "estalagens", "presenca"].includes(p.fase) && !p.nucleoTemOrigem) {
-    lista.push({ texto: "Informar a cidade de saída do seu núcleo", href: "/familia#origem" });
+    lista.push({ texto: "Informar o ponto de saída do seu núcleo", href: "/familia#origem" });
   }
   return lista;
 }

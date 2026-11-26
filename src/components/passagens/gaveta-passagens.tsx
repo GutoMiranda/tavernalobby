@@ -176,7 +176,7 @@ export function GavetaPassagens({
             </h3>
             {!temCoord(meuNucleo) && (
               <p className="rounded-lg border border-gold/40 p-3 text-sm">
-                Cadastre a cidade de saída do seu núcleo em{" "}
+                Cadastre o ponto de saída do seu núcleo em{" "}
                 <Link href="/familia" className="text-bottle underline underline-offset-4">
                   Minha família
                 </Link>{" "}
@@ -261,7 +261,7 @@ export function GavetaPassagens({
                   >
                     <p className="font-medium text-parchment">{n.nome}</p>
                     {!temCoord(n) ? (
-                      <p className="text-muted-foreground">Sem cidade de saída cadastrada.</p>
+                      <p className="text-muted-foreground">Sem ponto de saída cadastrado.</p>
                     ) : (
                       <>
                         <p className="text-muted-foreground">

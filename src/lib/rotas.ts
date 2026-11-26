@@ -2,6 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import { type PassoApi, type PassoTransporte, resumirPassos } from "./transporte";
 import { duracaoDaApi } from "./viagem";
 
 /** Um ponto com coordenadas. */
@@ -115,6 +116,8 @@ export type RotaResumo = {
   metros: number | null;
   /** Traçado da rota (Encoded Polyline), para desenhar no mapa. */
   polyline: string | null;
+  /** Transporte público: linhas e caminhadas, na ordem. */
+  passos?: PassoTransporte[];
   /** Motivo quando o Google respondeu com erro (chave, API desativada, rede); diferente de "não existe rota". */
   erro?: string;
 };
@@ -137,7 +140,10 @@ export async function calcularRotas(origem: Ponto, destino: Ponto, modos: ModoRo
             "Content-Type": "application/json",
             "X-Goog-Api-Key": CHAVE(),
             "X-Goog-FieldMask":
-              "routes.duration,routes.staticDuration,routes.distanceMeters,routes.polyline.encodedPolyline",
+              "routes.duration,routes.staticDuration,routes.distanceMeters,routes.polyline.encodedPolyline" +
+              (modo === "TRANSIT"
+                ? ",routes.legs.steps.travelMode,routes.legs.steps.staticDuration,routes.legs.steps.transitDetails"
+                : ""),
           },
           body: JSON.stringify({
             origin: ponto(origem),
@@ -164,6 +170,7 @@ export async function calcularRotas(origem: Ponto, destino: Ponto, modos: ModoRo
             staticDuration?: string;
             distanceMeters?: number;
             polyline?: { encodedPolyline?: string };
+            legs?: { steps?: PassoApi[] }[];
           }[];
         };
         const r = json.routes?.[0];
@@ -174,6 +181,7 @@ export async function calcularRotas(origem: Ponto, destino: Ponto, modos: ModoRo
           segundosSemTransito: duracaoDaApi(r.staticDuration),
           metros: r.distanceMeters ?? null,
           polyline: r.polyline?.encodedPolyline ?? null,
+          ...(modo === "TRANSIT" ? { passos: resumirPassos((r.legs ?? []).flatMap((l) => l.steps ?? [])) } : {}),
         };
       } catch (e) {
         const motivo = `Routes API falhou: ${e instanceof Error ? e.message : String(e)}`;
@@ -191,7 +199,7 @@ const emCache = unstable_cache(
     if (r.some((x) => x.erro)) throw Object.assign(new Error("rotas com erro"), { resultado: r });
     return r;
   },
-  ["rotas-v3"],
+  ["rotas-v4"],
   { revalidate: 1800 },
 );
 
