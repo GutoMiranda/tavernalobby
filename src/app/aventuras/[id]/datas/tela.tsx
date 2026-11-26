@@ -1,3 +1,4 @@
+import { Ajuda } from "@/components/ajuda";
 import { AcaoForm } from "@/components/acao-form";
 import { ReacaoBotoes } from "@/components/aventura/reacao-botoes";
 import { Badge } from "@/components/ui/badge";
@@ -24,11 +25,15 @@ export async function TelaDatas({ id, gerenciar }: { id: string; gerenciar: bool
       <Card>
         <CardHeader>
           <CardTitle>Votação de datas</CardTitle>
-          <CardDescription>
-            Curta as datas que dão certo para você e descurta as que não dão. O ranking é pelo saldo (curtidas menos
-            descurtidas).
-            {evento.date_vote_deadline && ` Prazo: ${formatarData(evento.date_vote_deadline)}.`}
-          </CardDescription>
+          <Ajuda
+            resumo={
+              evento.date_vote_deadline
+                ? `Curta as que dão certo, descurte as que não dão. Prazo: ${formatarData(evento.date_vote_deadline)}.`
+                : "Curta as que dão certo, descurte as que não dão."
+            }
+          >
+            O ranking é pelo saldo: curtidas menos descurtidas.
+          </Ajuda>
         </CardHeader>
         <CardContent>
           {lista.length === 0 ? (

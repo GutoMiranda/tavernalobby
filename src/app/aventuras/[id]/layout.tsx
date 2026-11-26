@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { type DestinoDaViagem, GavetaPassagens, type LugarDaViagem } from "@/components/passagens/gaveta-passagens";
 import { exigirMembro } from "@/lib/auth";
-import { FASE_INFO, periodoEfetivo, ranking } from "@/lib/aventura";
+import { contagemRegressiva, FASE_INFO, periodoEfetivo, ranking } from "@/lib/aventura";
 import { fotoDaFase } from "@/lib/cenas";
 import { carregarAventura } from "@/lib/aventura-dados";
 import { formatarPeriodo } from "@/lib/format";
@@ -25,6 +25,7 @@ export default async function AventuraLayout({
   const { evento } = dados;
   const meuNucleo = dados.nucleos.find((n) => n.id === pessoa.household_id);
   const periodo = periodoEfetivo(evento, dados.datas, dados.reacoesDatas);
+  const contagem = contagemRegressiva(evento.start_date);
 
   // Destino das passagens: a estalagem definida; sem ela, a mais votada com endereço (prévia); senão, a região.
   const comEndereco = dados.estalagens.filter((e) => e.lat != null && e.lng != null);
@@ -85,9 +86,20 @@ export default async function AventuraLayout({
             <Badge variant={evento.phase === "cancelada" ? "destructive" : "gold"}>
               {FASE_INFO[evento.phase].nome}
             </Badge>
-            {evento.start_date && evento.end_date && <span>{formatarPeriodo(evento.start_date, evento.end_date)}</span>}
-            {evento.region && <span>· {evento.region}</span>}
+            <span>
+              {[
+                evento.start_date && evento.end_date ? formatarPeriodo(evento.start_date, evento.end_date) : null,
+                evento.region,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
           </div>
+          {contagem && evento.phase !== "cancelada" && (
+            <p className="mt-1 rounded-full border border-gold/50 bg-black/40 px-3 py-0.5 font-display text-lg text-gold">
+              {contagem}
+            </p>
+          )}
         </div>
       </Card>
       <div className="flex flex-wrap items-center justify-end gap-2">

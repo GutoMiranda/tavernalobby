@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { Ajuda } from "@/components/ajuda";
 import { ChatConversa } from "@/components/chat/chat-conversa";
 import { ListaOnlinePagina } from "@/components/chat/lista-online-pagina";
 import { IconeCaneca } from "@/components/icones";
@@ -29,10 +30,9 @@ export default async function ChatPage() {
           <CardTitle className="flex items-center gap-2">
             <IconeCaneca className="text-gold" /> Chat da taverna
           </CardTitle>
-          <CardDescription>
-            Conversa geral do grupo. Use @ para chamar alguém e “Marcar como dúvida” para perguntas: quem for mencionado
-            recebe aviso no sino.
-          </CardDescription>
+          <Ajuda resumo="Conversa geral do grupo.">
+            Use @ para chamar alguém e “Marcar como dúvida” para perguntas: quem for mencionado recebe aviso no sino.
+          </Ajuda>
         </CardHeader>
         <CardContent className="flex min-h-[60vh] flex-col px-0">
           <ChatConversa
