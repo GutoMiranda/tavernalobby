@@ -7,7 +7,15 @@ import { AcaoForm } from "@/components/acao-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { EstadoAcao } from "@/lib/erros";
-import { AVATARES, CORES_AVATAR, IDS_AVATARES, IDS_CORES, type Papel, recorteQuadrado } from "@/lib/personagem";
+import {
+  CORES_AVATAR,
+  IDS_AVATARES,
+  IDS_CORES,
+  nomeDoEmblema,
+  type Papel,
+  recorteQuadrado,
+  SEXOS,
+} from "@/lib/personagem";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +32,7 @@ type Props = {
     avatar: string | null;
     cor: string | null;
     epiteto: string | null;
+    sexo: string | null;
     fotoCaminho: string | null;
     fotoUrl: string | null;
   };
@@ -49,6 +58,7 @@ export function EditorPersonagem({ pessoaId, nome, papel, userId, inicial, acao 
   const [avatar, setAvatar] = useState(inicial.avatar ?? "");
   const [cor, setCor] = useState(inicial.cor ?? "");
   const [epiteto, setEpiteto] = useState(inicial.epiteto ?? "");
+  const [sexo, setSexo] = useState(inicial.sexo ?? "");
   const [fotoCaminho, setFotoCaminho] = useState(inicial.fotoCaminho ?? "");
   const [fotoUrl, setFotoUrl] = useState(inicial.fotoUrl);
   const [enviandoFoto, setEnviandoFoto] = useState(false);
@@ -83,6 +93,7 @@ export function EditorPersonagem({ pessoaId, nome, papel, userId, inicial, acao 
       <input type="hidden" name="avatar" value={avatar} />
       <input type="hidden" name="cor" value={cor} />
       <input type="hidden" name="foto" value={fotoCaminho} />
+      <input type="hidden" name="sexo" value={sexo} />
 
       <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-gold/30 bg-black/20 p-4 text-center sm:flex-row sm:text-left">
         <Avatar
@@ -97,6 +108,7 @@ export function EditorPersonagem({ pessoaId, nome, papel, userId, inicial, acao 
           nome={nome}
           epiteto={epiteto.trim() || null}
           papel={papel}
+          sexo={sexo || null}
           mostrarTitulo
           className="text-xl [&_.truncate]:whitespace-normal"
         />
@@ -141,14 +153,42 @@ export function EditorPersonagem({ pessoaId, nome, papel, userId, inicial, acao 
       </div>
 
       <fieldset className="flex flex-col gap-2">
+        <legend className="mb-1 font-medium">Sexo do personagem</legend>
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Sexo do personagem">
+          {(
+            [
+              ["m", SEXOS.m],
+              ["f", SEXOS.f],
+              ["", "Prefiro não dizer"],
+            ] as const
+          ).map(([valor, rotulo]) => (
+            <button
+              key={valor || "nenhum"}
+              type="button"
+              role="radio"
+              aria-checked={sexo === valor}
+              onClick={() => setSexo(valor)}
+              className={cn(
+                "rounded-full border-2 px-3 py-1.5 text-sm transition-colors",
+                sexo === valor ? "border-gold bg-gold/15 text-wood" : "border-border hover:border-gold/40",
+              )}
+            >
+              {rotulo}
+            </button>
+          ))}
+        </div>
+        <p className="text-sm text-muted-foreground">Muda o nome do emblema e do título (ex.: Mago ou Maga).</p>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 font-medium">Emblema</legend>
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-6" role="radiogroup" aria-label="Emblema do personagem">
           <BotaoEscolha ativo={!avatar} onClick={() => setAvatar("")} rotulo="Iniciais">
             <Avatar nome={nome} cor={cor || null} tamanho={44} />
           </BotaoEscolha>
           {IDS_AVATARES.map((a) => (
-            <BotaoEscolha key={a} ativo={avatar === a} onClick={() => setAvatar(a)} rotulo={AVATARES[a]}>
-              <Avatar nome={nome} avatar={a} cor={cor || null} tamanho={44} />
+            <BotaoEscolha key={a} ativo={avatar === a} onClick={() => setAvatar(a)} rotulo={nomeDoEmblema(a, sexo)}>
+              <Avatar nome={nome} avatar={a} cor={cor || null} sexo={sexo || null} tamanho={44} />
             </BotaoEscolha>
           ))}
         </div>

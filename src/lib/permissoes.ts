@@ -45,7 +45,12 @@ export const AREA_INFO: Record<Area, { nome: string; comum: string; editar: stri
     editar: "confirmar ou recusar depósitos e registrar saídas",
     excluir: "estornar lançamentos e cancelar cobranças Pix",
   },
-  membros: { nome: "Membros", comum: "aprovação", editar: "aprovar membros e gerar novo convite", excluir: "—" },
+  membros: {
+    nome: "Membros",
+    comum: "aprovação",
+    editar: "aprovar membros e gerar novo convite",
+    excluir: "banir e excluir cadastros",
+  },
   chat: {
     nome: "Chat",
     comum: "moderação",

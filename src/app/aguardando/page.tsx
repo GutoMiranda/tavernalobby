@@ -12,7 +12,8 @@ export default async function AguardandoPage() {
   if (!sessao) redirect("/entrar");
   if (sessao.pessoa?.status === "approved") redirect("/");
 
-  const recusado = sessao.pessoa?.status === "rejected";
+  const banido = sessao.pessoa?.status === "banned";
+  const recusado = banido || sessao.pessoa?.status === "rejected";
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6 pt-6">
@@ -24,13 +25,17 @@ export default async function AguardandoPage() {
           >
             <Hourglass className="size-6" />
           </span>
-          <CardTitle>{recusado ? "Acesso não aprovado" : "Aguardando aprovação"}</CardTitle>
+          <CardTitle>
+            {banido ? "Acesso bloqueado" : recusado ? "Acesso não aprovado" : "Aguardando aprovação"}
+          </CardTitle>
           <CardDescription>
-            {recusado
-              ? "O Mestre da Taverna (admin) não aprovou este acesso. Se for engano, fale com ele no WhatsApp."
-              : "Você entrou como " +
-                (sessao.pessoa?.name ?? sessao.user.email) +
-                ". Agora o Mestre da Taverna (admin) precisa aprovar seu acesso. Enquanto isso, puxe uma cadeira perto da lareira."}
+            {banido
+              ? "O Mestre da Taverna (admin) bloqueou este acesso. Se for engano, fale com ele no WhatsApp."
+              : recusado
+                ? "O Mestre da Taverna (admin) não aprovou este acesso. Se for engano, fale com ele no WhatsApp."
+                : "Você entrou como " +
+                  (sessao.pessoa?.name ?? sessao.user.email) +
+                  ". Agora o Mestre da Taverna (admin) precisa aprovar seu acesso. Enquanto isso, puxe uma cadeira perto da lareira."}
           </CardDescription>
         </CardHeader>
         <CardContent>

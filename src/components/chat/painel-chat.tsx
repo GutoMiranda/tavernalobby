@@ -285,7 +285,14 @@ export function ListaNaTaverna({
             tamanho={40}
             online={online.has(m.id)}
           />
-          <NomeEnfeitado nome={m.name} epiteto={m.epithet} papel={m.papel} mostrarTitulo className="flex-1" />
+          <NomeEnfeitado
+            nome={m.name}
+            epiteto={m.epithet}
+            papel={m.papel}
+            sexo={m.gender}
+            mostrarTitulo
+            className="flex-1"
+          />
           {m.id !== euId && (
             <button
               type="button"

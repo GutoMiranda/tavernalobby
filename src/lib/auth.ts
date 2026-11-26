@@ -15,15 +15,16 @@ export type Pessoa = {
   relationship: string | null;
   is_child: boolean;
   is_admin: boolean;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "banned";
   avatar: string | null;
   avatar_color: string | null;
   epithet: string | null;
   avatar_path: string | null;
+  gender: string | null;
 };
 
 export const COLUNAS_PESSOA =
-  "id, household_id, user_id, name, email, relationship, is_child, is_admin, status, avatar, avatar_color, epithet, avatar_path";
+  "id, household_id, user_id, name, email, relationship, is_child, is_admin, status, avatar, avatar_color, epithet, avatar_path, gender";
 
 /** Sessão atual: usuário do Supabase, pessoa ligada a ele e suas tags. Cacheada por requisição. */
 export const getSessao = cache(async () => {

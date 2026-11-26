@@ -12,6 +12,7 @@ export type Membro = {
   avatar: string | null;
   avatar_color: string | null;
   epithet: string | null;
+  gender: string | null;
   /** URL assinada (1 dia) da foto do avatar, se a pessoa enviou uma. */
   foto: string | null;
   papel: Papel;
@@ -32,7 +33,7 @@ export const carregarMembros = cache(async (supabase: SupabaseClient): Promise<M
   const [{ data: pessoas }, { data: tags }] = await Promise.all([
     supabase
       .from("people")
-      .select("id, name, avatar, avatar_color, epithet, avatar_path, is_admin")
+      .select("id, name, avatar, avatar_color, epithet, gender, avatar_path, is_admin")
       .eq("status", "approved")
       .not("user_id", "is", null)
       .order("name")

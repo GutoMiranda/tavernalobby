@@ -74,6 +74,7 @@ export default async function FamiliaPage() {
                 avatar: pessoa.avatar,
                 cor: pessoa.avatar_color,
                 epiteto: pessoa.epithet,
+                sexo: pessoa.gender,
                 fotoCaminho: pessoa.avatar_path,
                 fotoUrl:
                   (await urlsDasFotos(supabase, [pessoa.avatar_path ?? ""])).get(pessoa.avatar_path ?? "") ?? null,

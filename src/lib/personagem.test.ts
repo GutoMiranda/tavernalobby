@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { caminhoDeFotoValido, corDoAvatar, iniciais, lerPersonagem, papelDe, recorteQuadrado } from "./personagem";
+import {
+  caminhoDeFotoValido,
+  corDoAvatar,
+  iniciais,
+  lerPersonagem,
+  nomeDoEmblema,
+  papelDe,
+  recorteQuadrado,
+  tituloDoPapel,
+} from "./personagem";
 
 describe("personagem", () => {
   it("papel mais alto decora o nome", () => {
@@ -21,16 +30,29 @@ describe("personagem", () => {
     expect(corDoAvatar("Bia", null)).toBe(corDoAvatar("Bia", "inexistente"));
   });
 
+  it("nome do emblema e título mudam com o sexo", () => {
+    expect(nomeDoEmblema("maga", "m")).toBe("Mago");
+    expect(nomeDoEmblema("maga", "f")).toBe("Maga");
+    expect(nomeDoEmblema("anao", "f")).toBe("Anã");
+    expect(nomeDoEmblema("arqueira", null)).toBe("Arqueira");
+    expect(nomeDoEmblema("guerreiro", "x")).toBe("Guerreiro");
+    expect(tituloDoPapel("tesoureiro", "f")).toBe("Guardiã do Baú");
+    expect(tituloDoPapel("mestre", "m")).toBe("Mestre da Taverna");
+    expect(tituloDoPapel("membro", "f")).toBeNull();
+  });
+
   it("valida o formulário do personagem", () => {
-    expect(lerPersonagem({ avatar: "bardo", cor: "vinho", epiteto: "  a  Bardo " })).toEqual({
+    expect(lerPersonagem({ avatar: "bardo", cor: "vinho", epiteto: "  a  Bardo ", sexo: "f" })).toEqual({
       avatar: "bardo",
       cor: "vinho",
       epiteto: "a Bardo",
+      sexo: "f",
     });
     expect(lerPersonagem({ avatar: "unicornio", cor: "", epiteto: "" })).toEqual({
       avatar: null,
       cor: null,
       epiteto: null,
+      sexo: null,
     });
     expect(lerPersonagem({ epiteto: "x".repeat(41) })).toHaveProperty("erro");
   });

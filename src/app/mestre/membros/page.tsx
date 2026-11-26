@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { exigirPermissao } from "@/lib/auth";
 import { formatarData } from "@/lib/format";
 
-import { atribuirTag, decidirMembro, novoCodigoConvite, removerTag } from "../actions";
+import { atribuirTag, banirMembro, decidirMembro, excluirMembro, novoCodigoConvite, removerTag } from "../actions";
 
 export const metadata: Metadata = { title: "Membros" };
 
@@ -16,7 +16,7 @@ type Membro = {
   id: string;
   name: string;
   email: string | null;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "banned";
   is_admin: boolean;
   created_at: string;
   households: { name: string } | null;
@@ -32,6 +32,8 @@ type Tag = {
 export default async function MembrosPage() {
   const { supabase, pessoa, permissoes } = await exigirPermissao("membros", "ver");
   const aprova = permissoes.membros.editar;
+  const modera = permissoes.membros.excluir;
+  const podeModerar = (m: Membro) => modera && !m.is_admin && m.id !== pessoa.id;
   const mestre = pessoa.is_admin;
 
   const [{ data: grupo }, { data: membros }, { data: tags }] = await Promise.all([
@@ -56,6 +58,7 @@ export default async function MembrosPage() {
   const pendentes = (membros ?? []).filter((m) => m.status === "pending");
   const aprovados = (membros ?? []).filter((m) => m.status === "approved");
   const recusados = (membros ?? []).filter((m) => m.status === "rejected");
+  const banidos = (membros ?? []).filter((m) => m.status === "banned");
   const nomeTag = new Map((tags ?? []).map((t) => [t.id, t]));
 
   return (
@@ -128,6 +131,7 @@ export default async function MembrosPage() {
                         </AcaoForm>
                       </div>
                     )}
+                    {podeModerar(m) && <Moderacao membro={m} />}
                   </li>
                 ))}
               </ul>
@@ -210,6 +214,7 @@ export default async function MembrosPage() {
                         </select>
                       </AcaoForm>
                     )}
+                    {podeModerar(m) && <Moderacao membro={m} />}
                   </li>
                 );
               })}
@@ -221,14 +226,37 @@ export default async function MembrosPage() {
                 </summary>
                 <ul className="mt-2 flex flex-col gap-2">
                   {recusados.map((m) => (
-                    <li key={m.id} className="flex flex-wrap items-center gap-2">
-                      {m.name} · {m.email}
-                      {aprova && (
-                        <AcaoForm action={decidirMembro} textoBotao="Aprovar mesmo assim" variante="link" tamanho="sm">
-                          <input type="hidden" name="id" value={m.id} />
-                          <input type="hidden" name="decisao" value="aprovar" />
-                        </AcaoForm>
-                      )}
+                    <li key={m.id} className="flex flex-col gap-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {m.name} · {m.email}
+                        {aprova && (
+                          <AcaoForm
+                            action={decidirMembro}
+                            textoBotao="Aprovar mesmo assim"
+                            variante="link"
+                            tamanho="sm"
+                          >
+                            <input type="hidden" name="id" value={m.id} />
+                            <input type="hidden" name="decisao" value="aprovar" />
+                          </AcaoForm>
+                        )}
+                      </div>
+                      {podeModerar(m) && <Moderacao membro={m} />}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+            {banidos.length > 0 && (
+              <details className="mt-4 text-sm">
+                <summary className="cursor-pointer text-muted-foreground">Banidos ({banidos.length})</summary>
+                <ul className="mt-2 flex flex-col gap-2">
+                  {banidos.map((m) => (
+                    <li key={m.id} className="flex flex-col gap-1">
+                      <p>
+                        {m.name} · {m.email}
+                      </p>
+                      {podeModerar(m) && <Moderacao membro={m} />}
                     </li>
                   ))}
                 </ul>
@@ -238,5 +266,58 @@ export default async function MembrosPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+/** Banir/desbanir e excluir cadastro, escondidos atrás de um "Moderar" para não clicar sem querer. */
+function Moderacao({ membro }: { membro: Membro }) {
+  const banido = membro.status === "banned";
+  return (
+    <details className="group text-sm">
+      <summary className="cursor-pointer text-muted-foreground select-none hover:text-alert">
+        {banido ? "Desbanir ou excluir…" : "Banir ou excluir…"}
+      </summary>
+      <div className="mt-2 flex flex-col gap-3 rounded-md border border-alert/40 p-3">
+        {banido ? (
+          <AcaoForm
+            action={banirMembro}
+            textoBotao="Desbanir (volta como membro aprovado)"
+            variante="outline"
+            tamanho="sm"
+            textoEnviando="Desbanindo…"
+          >
+            <input type="hidden" name="id" value={membro.id} />
+            <input type="hidden" name="banir" value="nao" />
+          </AcaoForm>
+        ) : (
+          <AcaoForm action={banirMembro} textoBotao="Banir" variante="outline" tamanho="sm" textoEnviando="Banindo…">
+            <p className="text-muted-foreground">
+              <strong className="text-foreground">Banir</strong> bloqueia o acesso de {membro.name} na hora, mesmo com o
+              link de convite. Presenças, Baú e Pix continuam nas contas. Dá para desfazer.
+            </p>
+            <input type="hidden" name="id" value={membro.id} />
+            <input type="hidden" name="banir" value="sim" />
+          </AcaoForm>
+        )}
+        <AcaoForm
+          action={excluirMembro}
+          textoBotao="Excluir cadastro"
+          variante="destructive"
+          tamanho="sm"
+          textoEnviando="Excluindo…"
+        >
+          <p className="text-muted-foreground">
+            <strong className="text-foreground">Excluir</strong> apaga o cadastro e a conta de acesso (ideal para contas
+            de teste ou duplicadas). Se a pessoa já tiver dinheiro ou custos nas contas, o site recusa e sugere banir.
+            Não dá para desfazer; ela só volta por um convite novo.
+          </p>
+          <input type="hidden" name="id" value={membro.id} />
+          <label className="flex items-center gap-2">
+            <input type="checkbox" name="confirmo" required className="size-4 accent-[var(--alert)]" />
+            Entendi, quero excluir {membro.name}
+          </label>
+        </AcaoForm>
+      </div>
+    </details>
   );
 }

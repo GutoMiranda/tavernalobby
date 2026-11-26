@@ -19,6 +19,7 @@ export function BotaoPersonagem({
   avatar,
   cor,
   epiteto,
+  sexo,
   fotoCaminho,
   fotoUrl,
 }: {
@@ -29,6 +30,7 @@ export function BotaoPersonagem({
   avatar: string | null;
   cor: string | null;
   epiteto: string | null;
+  sexo: string | null;
   fotoCaminho: string | null;
   fotoUrl: string | null;
 }) {
@@ -44,7 +46,7 @@ export function BotaoPersonagem({
         aria-controls="gaveta-personagem"
         className="rounded-full focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none"
       >
-        <Avatar nome={nome} avatar={avatar} foto={fotoUrl} cor={cor} papel={papel} tamanho={36} />
+        <Avatar nome={nome} avatar={avatar} foto={fotoUrl} cor={cor} papel={papel} sexo={sexo} tamanho={36} />
       </button>
       <Gaveta id="gaveta-personagem" titulo="Seu personagem" aberta={aberta} onFechar={fechar}>
         <div className="flex flex-col gap-4 p-4">
@@ -54,7 +56,7 @@ export function BotaoPersonagem({
               nome={nome}
               papel={papel}
               userId={userId}
-              inicial={{ avatar, cor, epiteto, fotoCaminho, fotoUrl }}
+              inicial={{ avatar, cor, epiteto, sexo, fotoCaminho, fotoUrl }}
               acao={salvarPersonagem}
             />
           )}

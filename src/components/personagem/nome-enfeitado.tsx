@@ -1,4 +1,4 @@
-import { type Papel, PAPEIS } from "@/lib/personagem";
+import { type Papel, PAPEIS, tituloDoPapel } from "@/lib/personagem";
 import { cn } from "@/lib/utils";
 
 const COR_NOME: Record<Papel, string> = {
@@ -17,15 +17,18 @@ export function NomeEnfeitado({
   epiteto,
   papel = "membro",
   mostrarTitulo = false,
+  sexo,
   className,
 }: {
   nome: string;
   epiteto?: string | null;
   papel?: Papel;
   mostrarTitulo?: boolean;
+  /** "m" ou "f": troca o título (Guardião ou Guardiã do Baú). */
+  sexo?: string | null;
   className?: string;
 }) {
-  const titulo = PAPEIS[papel];
+  const titulo = { ...PAPEIS[papel], titulo: tituloDoPapel(papel, sexo) };
   return (
     <span className={cn("inline-flex min-w-0 flex-col leading-tight", className)}>
       <span className="truncate">
