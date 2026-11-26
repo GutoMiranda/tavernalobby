@@ -2,11 +2,16 @@ import { CalendarClock, CheckCircle2, ListTodo, Map as IconeMapa } from "lucide-
 import Link from "next/link";
 
 import { CopiarBotao } from "@/components/copiar-botao";
-import { type EstalagemPainel, type OrigemPainel, PainelMapa } from "@/components/mapas/painel-mapa";
+import {
+  type EncontroPainel,
+  type EstalagemPainel,
+  type OrigemPainel,
+  PainelMapa,
+} from "@/components/mapas/painel-mapa";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { exigirMembro, getPermissoes } from "@/lib/auth";
 import { FASE_INFO, pendencias, ranking } from "@/lib/aventura";
-import { carregarAventura } from "@/lib/aventura-dados";
+import { carregarAventura, nomeDoPonto } from "@/lib/aventura-dados";
 import { carregarCustos } from "@/lib/custos-dados";
 import { lembreteDoPlano } from "@/lib/finance/bau";
 import { formatarCentavos, formatarData, formatarPeriodo, hojeEmSaoPaulo } from "@/lib/format";
@@ -78,15 +83,9 @@ export default async function PainelAventuraPage({
       lng: n.origin_lng!,
       minha: n.id === pessoa.household_id,
     }));
-  const encontro =
-    evento.meeting_lat != null && evento.meeting_lng != null
-      ? {
-          nome: `Ponto de encontro${evento.meeting_name ? `: ${evento.meeting_name}` : ""}`,
-          detalhe: evento.meeting_address ?? undefined,
-          lat: evento.meeting_lat,
-          lng: evento.meeting_lng,
-        }
-      : null;
+  const encontros: EncontroPainel[] = dados.pontos
+    .filter((p) => p.lat != null && p.lng != null)
+    .map((p) => ({ id: p.id, nome: nomeDoPonto(p), detalhe: p.address ?? undefined, lat: p.lat!, lng: p.lng! }));
   const estalagensPainel: EstalagemPainel[] = estalagensRanking.map((e) => ({
     id: e.id,
     nome: e.name,
@@ -103,11 +102,16 @@ export default async function PainelAventuraPage({
   // A rota só aparece depois que a pessoa toca numa estalagem, e sai de um ponto só (cidade ou encontro).
   const alvo = dados.estalagens.find((e) => e.id === estalagemPedida) ?? null;
   const minhaOrigem = origens.find((o) => o.minha);
-  const saida = origemDaRota(dePedido, !!minhaOrigem, !!encontro);
+  const saida = origemDaRota(
+    dePedido,
+    !!minhaOrigem,
+    encontros.map((e) => e.id),
+  );
+  const pontoDeSaida = saida === "cidade" ? minhaOrigem : encontros.find((e) => `encontro:${e.id}` === saida);
   let rotas: RotaResumo[] | null = null;
-  if (alvo?.lat != null && alvo.lng != null && saida) {
+  if (alvo?.lat != null && alvo.lng != null && pontoDeSaida) {
     const destino = { lat: alvo.lat, lng: alvo.lng };
-    rotas = await rotasEmCache(saida === "cidade" ? minhaOrigem! : encontro!, destino, MODOS).catch(() => []);
+    rotas = await rotasEmCache(pontoDeSaida, destino, MODOS).catch(() => []);
   }
 
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -203,20 +207,27 @@ export default async function PainelAventuraPage({
             </div>
           )}
           <div>
-            <p className="text-sm text-muted-foreground">Ponto de encontro</p>
-            {evento.meeting_address || evento.meeting_name ? (
-              <>
-                <p className="font-medium">{evento.meeting_name ?? evento.meeting_address}</p>
-                {evento.meeting_at && (
-                  <p className="text-sm text-muted-foreground">
-                    {new Intl.DateTimeFormat("pt-BR", {
-                      timeZone: "America/Sao_Paulo",
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    }).format(new Date(evento.meeting_at))}
-                  </p>
-                )}
-              </>
+            <p className="text-sm text-muted-foreground">
+              {dados.pontos.length > 1 ? "Pontos de encontro" : "Ponto de encontro"}
+            </p>
+            {dados.pontos.length > 0 ? (
+              <ul>
+                {dados.pontos.map((p) => (
+                  <li key={p.id}>
+                    <span className="font-medium">{nomeDoPonto(p)}</span>
+                    {p.meet_at && (
+                      <span className="text-sm text-muted-foreground">
+                        {" · "}
+                        {new Intl.DateTimeFormat("pt-BR", {
+                          timeZone: "America/Sao_Paulo",
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        }).format(new Date(p.meet_at))}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
             ) : (
               <p className="text-muted-foreground">
                 Ainda não definido.{" "}
@@ -253,7 +264,7 @@ export default async function PainelAventuraPage({
         <CardContent>
           <PainelMapa
             origens={origens}
-            encontro={encontro}
+            encontros={encontros}
             estalagens={estalagensPainel}
             selecionada={alvo?.id ?? null}
             saida={saida}

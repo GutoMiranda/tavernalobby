@@ -112,7 +112,7 @@ export default async function AventuraLayout({
               fim: evento.end_date,
               local: definida
                 ? [definida.name, definida.address].filter(Boolean).join(", ")
-                : (evento.meeting_address ?? evento.region),
+                : (dados.pontos[0]?.address ?? evento.region),
               descricao: `Aventura da Taverna O Lobby: ${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/aventuras/${id}`,
             }}
           />

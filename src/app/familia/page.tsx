@@ -129,8 +129,8 @@ export default async function FamiliaPage() {
           <CardHeader>
             <CardTitle>Ponto de saída</CardTitle>
             <CardDescription>
-              De onde o núcleo parte para as aventuras: a cidade ou o endereço exato (rua e número), para a rota sair
-              do lugar certo. Todos do grupo veem esse ponto no mapa
+              De onde o núcleo parte para as aventuras: a cidade ou o endereço exato (rua e número), para a rota sair do
+              lugar certo. Todos do grupo veem esse ponto no mapa
               {nucleo?.origin_text ? `. Atual: ${nucleo.origin_text}` : ""}.
             </CardDescription>
           </CardHeader>
