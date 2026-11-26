@@ -92,6 +92,19 @@ export async function editarAventura(_: EstadoAcao, d: FormData): Promise<Estado
   return { ok: "Aventura salva." };
 }
 
+/** Exclui a aventura inteira (confirmando o nome). Bloqueado se o baú já teve dinheiro. */
+export async function excluirAventura(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
+  const { supabase } = await exigirPermissao("aventura", "excluir");
+  const { error } = await supabase.rpc("delete_event", {
+    p_event: txt(d, "id", 40),
+    p_confirm_name: txt(d, "confirmacao", 120),
+  });
+  if (error) return { erro: mensagemErro(error) };
+  revalidatePath("/aventuras");
+  revalidatePath("/", "layout");
+  redirect("/mestre");
+}
+
 // ---------------------------------------------------------------- datas
 
 export async function adicionarData(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
@@ -115,13 +128,47 @@ export async function adicionarData(_: EstadoAcao, d: FormData): Promise<EstadoA
 
 export async function removerData(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
   const { supabase } = await exigirPermissao("datas", "excluir");
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from("date_options")
-    .delete()
+    .delete({ count: "exact" })
     .eq("id", txt(d, "id", 40));
   if (error) return { erro: mensagemErro(error) };
+  if (!count) return { erro: "Você não tem permissão para fazer isso." };
   revalidarAventura(txt(d, "evento", 40));
   return { ok: "Removida." };
+}
+
+export async function editarData(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
+  const { supabase } = await exigirPermissao("datas", "editar");
+  const eventId = txt(d, "evento", 40);
+  const inicio = dataOuNull(d, "inicio");
+  const fim = dataOuNull(d, "fim") ?? inicio;
+  if (!inicio || !fim) return { erro: "Informe a data de início." };
+  if (fim < inicio) return { erro: "A data final precisa ser depois da inicial." };
+  // Se for a data definida, o banco atualiza o período da aventura junto (migração 22).
+  const { error, count } = await supabase
+    .from("date_options")
+    .update({ start_date: inicio, end_date: fim, note: txt(d, "nota", 200) || null }, { count: "exact" })
+    .eq("id", txt(d, "id", 40))
+    .eq("event_id", eventId);
+  if (error) return { erro: mensagemErro(error) };
+  if (!count) return { erro: "Você não tem permissão para fazer isso." };
+  revalidarAventura(eventId);
+  return { ok: "Data atualizada." };
+}
+
+/** Desfaz a data definida: a aventura volta para a votação de datas. */
+export async function reabrirDatas(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
+  const { supabase } = await exigirPermissao("datas", "editar");
+  const eventId = txt(d, "evento", 40);
+  const { error, count } = await supabase
+    .from("events")
+    .update({ chosen_date_option_id: null, start_date: null, end_date: null, phase: "datas" }, { count: "exact" })
+    .eq("id", eventId);
+  if (error) return { erro: mensagemErro(error) };
+  if (!count) return { erro: "Você não tem permissão para fazer isso." };
+  revalidarAventura(eventId);
+  return { ok: "Votação de datas reaberta." };
 }
 
 export async function fecharDatas(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
@@ -134,18 +181,21 @@ export async function fecharDatas(_: EstadoAcao, d: FormData): Promise<EstadoAca
     .eq("event_id", eventId)
     .single<{ id: string; start_date: string; end_date: string }>();
   if (e1 || !opcao) return { erro: "Data não encontrada." };
+  const { data: atual } = await supabase.from("events").select("phase").eq("id", eventId).single<{ phase: Fase }>();
+  // Trocar a data depois de avançar não volta a fase; só a primeira definição leva para as estalagens.
+  const avanca = !atual || atual.phase === "datas";
   const { error } = await supabase
     .from("events")
     .update({
       chosen_date_option_id: opcao.id,
       start_date: opcao.start_date,
       end_date: opcao.end_date,
-      phase: "estalagens",
+      ...(avanca ? { phase: "estalagens" } : {}),
     })
     .eq("id", eventId);
   if (error) return { erro: mensagemErro(error) };
   revalidarAventura(eventId);
-  return { ok: "Data definida! A aventura seguiu para a escolha da estalagem." };
+  return { ok: avanca ? "Data definida! A aventura seguiu para a escolha da estalagem." : "Data trocada." };
 }
 
 // ---------------------------------------------------------------- reações
@@ -262,13 +312,34 @@ export async function removerEstalagem(_: EstadoAcao, d: FormData): Promise<Esta
 export async function escolherEstalagem(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
   const { supabase } = await exigirPermissao("estalagens", "editar");
   const eventId = txt(d, "evento", 40);
+  const { data: atual } = await supabase.from("events").select("phase").eq("id", eventId).single<{ phase: Fase }>();
+  // Trocar a estalagem depois de avançar não volta a fase; só a primeira escolha leva para a presença.
+  const avanca = !atual || atual.phase === "datas" || atual.phase === "estalagens";
   const { error } = await supabase
     .from("events")
-    .update({ chosen_accommodation_id: txt(d, "id", 40), phase: "presenca" })
+    .update({ chosen_accommodation_id: txt(d, "id", 40), ...(avanca ? { phase: "presenca" } : {}) })
     .eq("id", eventId);
   if (error) return { erro: mensagemErro(error) };
   revalidarAventura(eventId);
-  return { ok: "Estalagem escolhida! Agora é confirmar a presença." };
+  return { ok: avanca ? "Estalagem escolhida! Agora é confirmar a presença." : "Estalagem trocada." };
+}
+
+/** Desfaz a estalagem escolhida: volta a votação de estalagens (se ainda estava na presença). */
+export async function desfazerEstalagem(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
+  const { supabase } = await exigirPermissao("estalagens", "editar");
+  const eventId = txt(d, "evento", 40);
+  const { data: atual } = await supabase.from("events").select("phase").eq("id", eventId).single<{ phase: Fase }>();
+  const { error, count } = await supabase
+    .from("events")
+    .update(
+      { chosen_accommodation_id: null, ...(atual?.phase === "presenca" ? { phase: "estalagens" } : {}) },
+      { count: "exact" },
+    )
+    .eq("id", eventId);
+  if (error) return { erro: mensagemErro(error) };
+  if (!count) return { erro: "Você não tem permissão para fazer isso." };
+  revalidarAventura(eventId);
+  return { ok: "Escolha desfeita. A votação de estalagens está aberta de novo." };
 }
 
 // ---------------------------------------------------------------- preencher pelo link

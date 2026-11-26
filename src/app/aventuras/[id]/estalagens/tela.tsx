@@ -15,7 +15,7 @@ import { contextoDaTela } from "@/lib/telas";
 import { temposDeViagem } from "@/lib/tempos-viagem";
 import { formatarDistancia, formatarDuracao, indiceJustica } from "@/lib/viagem";
 
-import { escolherEstalagem, removerEstalagem } from "@/app/aventuras/actions";
+import { desfazerEstalagem, escolherEstalagem, removerEstalagem } from "@/app/aventuras/actions";
 
 export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar: boolean }) {
   const { supabase, pessoa, perm, atalhoSalao } = await contextoDaTela("estalagens", gerenciar);
@@ -121,7 +121,7 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
                       desativado={!!escolhida}
                     />
 
-                    {(possoEditar || possoRemover || (perm.editar && !escolhida)) && (
+                    {(possoEditar || possoRemover || perm.editar) && (
                       <div className="mt-auto flex flex-wrap gap-2 border-t border-border pt-2">
                         {possoEditar && (
                           <Button asChild variant="outline" size="sm">
@@ -130,10 +130,21 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
                             </Link>
                           </Button>
                         )}
-                        {perm.editar && !escolhida && (
+                        {perm.editar && ehEscolhida && (
+                          <AcaoForm
+                            action={desfazerEstalagem}
+                            textoBotao="Desfazer escolha"
+                            variante="outline"
+                            tamanho="sm"
+                            textoEnviando="Desfazendo…"
+                          >
+                            <input type="hidden" name="evento" value={id} />
+                          </AcaoForm>
+                        )}
+                        {perm.editar && !ehEscolhida && (
                           <AcaoForm
                             action={escolherEstalagem}
-                            textoBotao="Escolher esta estalagem"
+                            textoBotao={escolhida ? "Trocar para esta" : "Escolher esta estalagem"}
                             tamanho="sm"
                             textoEnviando="Escolhendo…"
                           >
@@ -141,7 +152,7 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
                             <input type="hidden" name="evento" value={id} />
                           </AcaoForm>
                         )}
-                        {possoRemover && !ehEscolhida && (
+                        {possoRemover && (
                           <AcaoForm
                             action={removerEstalagem}
                             textoBotao="Remover"
@@ -163,7 +174,7 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
         </CardContent>
       </Card>
 
-      {!escolhida && !gerenciar && (
+      {!gerenciar && (
         <Card className="max-w-3xl">
           <CardHeader>
             <CardTitle>Sugerir estalagem</CardTitle>

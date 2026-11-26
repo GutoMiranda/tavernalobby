@@ -6,7 +6,8 @@ import { CamposAventura } from "@/components/aventura/campos-aventura";
 import { FormPontoEncontro } from "@/components/aventura/form-ponto-encontro";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { editarAventura } from "@/app/aventuras/actions";
+import { editarAventura, excluirAventura } from "@/app/aventuras/actions";
+import { Input } from "@/components/ui/input";
 import { exigirPermissao } from "@/lib/auth";
 import { FASE_INFO, FASES } from "@/lib/aventura";
 import { carregarAventura } from "@/lib/aventura-dados";
@@ -25,7 +26,9 @@ export default async function SalaoAventuraDadosPage({ params }: { params: Promi
         <CardHeader>
           <CardTitle>Dados da aventura</CardTitle>
           <CardDescription>
-            {edita ? "Nome, descrição, período candidato, região e fase." : "Você pode ver, mas não alterar."}
+            {edita
+              ? "Nome, descrição, região, prazos e fase. As datas e a estalagem se editam nas abas Datas e Estalagens."
+              : "Você pode ver, mas não alterar."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -83,6 +86,34 @@ export default async function SalaoAventuraDadosPage({ params }: { params: Promi
           )}
         </CardContent>
       </Card>
+
+      {permissoes.aventura.excluir && (
+        <Card moldura="prata">
+          <CardHeader>
+            <CardTitle className="text-alert">Excluir aventura</CardTitle>
+            <CardDescription>
+              Apaga a aventura inteira: datas, estalagens, votos, presença, custos e armazém. Não dá para desfazer. Se o
+              baú já recebeu dinheiro, a exclusão é bloqueada (dinheiro não se apaga): use a fase “Aventura cancelada”.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AcaoForm
+              action={excluirAventura}
+              textoBotao="Excluir para sempre"
+              variante="destructive"
+              textoEnviando="Excluindo…"
+            >
+              <input type="hidden" name="id" value={id} />
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="confirmacao">
+                  Para confirmar, digite o nome: <strong>{evento.name}</strong>
+                </Label>
+                <Input id="confirmacao" name="confirmacao" required autoComplete="off" maxLength={120} />
+              </div>
+            </AcaoForm>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

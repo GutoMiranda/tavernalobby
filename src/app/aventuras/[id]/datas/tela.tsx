@@ -10,7 +10,7 @@ import { LinkSalao } from "@/components/mestre/link-salao";
 import { contextoDaTela } from "@/lib/telas";
 import { diasDoPeriodo, formatarData, formatarPeriodo } from "@/lib/format";
 
-import { adicionarData, fecharDatas, removerData } from "@/app/aventuras/actions";
+import { adicionarData, editarData, fecharDatas, reabrirDatas, removerData } from "@/app/aventuras/actions";
 
 export async function TelaDatas({ id, gerenciar }: { id: string; gerenciar: boolean }) {
   const { supabase, pessoa, perm, atalhoSalao } = await contextoDaTela("datas", gerenciar);
@@ -61,30 +61,88 @@ export async function TelaDatas({ id, gerenciar }: { id: string; gerenciar: bool
                       rotulo={rotulo}
                       desativado={fechada}
                     />
-                    {(perm.editar || perm.excluir) && !fechada && (
-                      <div className="flex flex-wrap gap-2 border-t border-border pt-2">
+                    {(perm.editar || perm.excluir) && (
+                      <div className="flex flex-col gap-2 border-t border-border pt-2">
+                        <div className="flex flex-wrap gap-2">
+                          {perm.editar && !escolhida && (
+                            <AcaoForm
+                              action={fecharDatas}
+                              textoBotao={fechada ? "Trocar para esta data" : "Fechar com esta data"}
+                              tamanho="sm"
+                              textoEnviando="Salvando…"
+                            >
+                              <input type="hidden" name="id" value={d.id} />
+                              <input type="hidden" name="evento" value={id} />
+                            </AcaoForm>
+                          )}
+                          {perm.editar && escolhida && (
+                            <AcaoForm
+                              action={reabrirDatas}
+                              textoBotao="Reabrir votação"
+                              variante="outline"
+                              tamanho="sm"
+                              textoEnviando="Reabrindo…"
+                            >
+                              <input type="hidden" name="evento" value={id} />
+                            </AcaoForm>
+                          )}
+                        </div>
                         {perm.editar && (
-                          <AcaoForm
-                            action={fecharDatas}
-                            textoBotao="Fechar com esta data"
-                            tamanho="sm"
-                            textoEnviando="Fechando…"
-                          >
-                            <input type="hidden" name="id" value={d.id} />
-                            <input type="hidden" name="evento" value={id} />
-                          </AcaoForm>
+                          <details className="rounded-md border border-border p-2">
+                            <summary className="cursor-pointer text-sm font-medium text-wood">Editar esta data</summary>
+                            <AcaoForm action={editarData} textoBotao="Salvar data" tamanho="sm" className="mt-2">
+                              <input type="hidden" name="id" value={d.id} />
+                              <input type="hidden" name="evento" value={id} />
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="flex flex-col gap-1">
+                                  <Label htmlFor={`ini-${d.id}`}>Início</Label>
+                                  <Input
+                                    id={`ini-${d.id}`}
+                                    name="inicio"
+                                    type="date"
+                                    required
+                                    defaultValue={d.start_date}
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <Label htmlFor={`fim-${d.id}`}>Fim</Label>
+                                  <Input id={`fim-${d.id}`} name="fim" type="date" defaultValue={d.end_date} />
+                                </div>
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <Label htmlFor={`nota-${d.id}`}>Motivo (opcional)</Label>
+                                <Input id={`nota-${d.id}`} name="nota" maxLength={200} defaultValue={d.note ?? ""} />
+                              </div>
+                              {escolhida && (
+                                <p className="text-xs text-muted-foreground">
+                                  É a data definida: o período da aventura, custos e presença passam a usar a nova data.
+                                </p>
+                              )}
+                            </AcaoForm>
+                          </details>
                         )}
                         {perm.excluir && (
-                          <AcaoForm
-                            action={removerData}
-                            textoBotao="Remover"
-                            variante="ghost"
-                            tamanho="sm"
-                            textoEnviando="…"
-                          >
-                            <input type="hidden" name="id" value={d.id} />
-                            <input type="hidden" name="evento" value={id} />
-                          </AcaoForm>
+                          <details className="rounded-md border border-alert/40 p-2">
+                            <summary className="cursor-pointer text-sm font-medium text-alert">
+                              Excluir esta data
+                            </summary>
+                            <p className="mt-2 text-sm text-muted-foreground">
+                              {escolhida
+                                ? "É a data definida: a aventura fica sem data até escolherem outra. Os votos desta data somem."
+                                : "Os votos desta data somem."}
+                            </p>
+                            <AcaoForm
+                              action={removerData}
+                              textoBotao="Confirmar exclusão"
+                              variante="destructive"
+                              tamanho="sm"
+                              textoEnviando="Excluindo…"
+                              className="mt-2"
+                            >
+                              <input type="hidden" name="id" value={d.id} />
+                              <input type="hidden" name="evento" value={id} />
+                            </AcaoForm>
+                          </details>
                         )}
                       </div>
                     )}
@@ -96,11 +154,15 @@ export async function TelaDatas({ id, gerenciar }: { id: string; gerenciar: bool
         </CardContent>
       </Card>
 
-      {perm.editar && !fechada && (
+      {perm.editar && (
         <Card className="max-w-3xl">
           <CardHeader>
             <CardTitle>Adicionar data candidata</CardTitle>
-            <CardDescription>A party vota nas datas da aba Datas; aqui você cadastra e fecha.</CardDescription>
+            <CardDescription>
+              {fechada
+                ? "A data já foi definida, mas você pode cadastrar outra opção e trocar."
+                : "A party vota nas datas da aba Datas; aqui você cadastra e fecha."}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <AcaoForm action={adicionarData} textoBotao="Adicionar data" limparAoConcluir>
