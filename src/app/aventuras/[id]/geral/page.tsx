@@ -158,14 +158,14 @@ export default async function GeralPage({
             </p>
           ) : (
             <>
-              <form method="get" className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-                <div className="flex flex-col gap-1.5">
+              <form method="get" className="grid min-w-0 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                <div className="flex min-w-0 flex-col gap-1.5">
                   <Label htmlFor="de">De</Label>
                   <select
                     id="de"
                     name="de"
                     defaultValue={de?.chave}
-                    className="h-10 rounded-md border border-input bg-field px-3 text-base md:text-sm"
+                    className="h-10 w-full min-w-0 rounded-md border border-input bg-field px-3 text-base md:text-sm"
                   >
                     {todos.map((l) => (
                       <option key={l.chave} value={l.chave}>
@@ -174,13 +174,13 @@ export default async function GeralPage({
                     ))}
                   </select>
                 </div>
-                <div className="flex flex-col gap-1.5">
+                <div className="flex min-w-0 flex-col gap-1.5">
                   <Label htmlFor="para">Para</Label>
                   <select
                     id="para"
                     name="para"
                     defaultValue={para?.chave}
-                    className="h-10 rounded-md border border-input bg-field px-3 text-base md:text-sm"
+                    className="h-10 w-full min-w-0 rounded-md border border-input bg-field px-3 text-base md:text-sm"
                   >
                     {todos.map((l) => (
                       <option key={l.chave} value={l.chave}>

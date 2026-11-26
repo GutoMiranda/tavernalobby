@@ -29,28 +29,40 @@ export const COLUNAS_PESSOA =
 /** Sessão atual: usuário do Supabase, pessoa ligada a ele e suas tags. Cacheada por requisição. */
 export const getSessao = cache(async () => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims confere a assinatura do token sem ir ao servidor de login quando o projeto usa
+  // chaves assimétricas (senão, ele mesmo consulta o servidor, como o getUser).
+  // Se não der para ler o token assim, cai no getUser.
+  const { data: dados } = await supabase.auth.getClaims().catch(() => ({ data: null }));
+  const claims = dados?.claims;
+  let user: { id: string; email: string | null } | null = claims?.sub
+    ? { id: claims.sub, email: typeof claims.email === "string" ? claims.email : null }
+    : null;
+  if (!user) {
+    const {
+      data: { user: u },
+    } = await supabase.auth.getUser();
+    if (u) user = { id: u.id, email: u.email ?? null };
+  }
   if (!user) return null;
 
-  const { data: pessoa } = await supabase
+  // Pessoa e tags numa consulta só.
+  const { data: linha } = await supabase
     .from("people")
-    .select(COLUNAS_PESSOA)
+    .select(`${COLUNAS_PESSOA}, person_tags!person_tags_person_id_fkey(tags(name))`)
     .eq("user_id", user.id)
-    .maybeSingle<Pessoa>();
+    .maybeSingle<Pessoa & { person_tags: { tags: { name: string } | null }[] | null }>();
 
+  let pessoa: Pessoa | null = null;
   let tags: string[] = [];
-  if (pessoa?.status === "approved") {
-    const { data } = await supabase
-      .from("person_tags")
-      .select("tags(name)")
-      .eq("person_id", pessoa.id)
-      .returns<{ tags: { name: string } | null }[]>();
-    tags = (data ?? []).map((t) => t.tags?.name).filter((n): n is string => !!n);
+  if (linha) {
+    const { person_tags, ...resto } = linha;
+    pessoa = resto;
+    if (pessoa.status === "approved") {
+      tags = (person_tags ?? []).map((t) => t.tags?.name).filter((n): n is string => !!n);
+    }
   }
 
-  return { supabase, user, pessoa: pessoa ?? null, tags };
+  return { supabase, user, pessoa, tags };
 });
 
 /** Exige login e aprovação; senão manda para /entrar ou /aguardando. */
