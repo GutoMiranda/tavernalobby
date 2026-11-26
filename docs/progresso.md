@@ -63,3 +63,4 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 - 26/11/2026: Etapa 1 das 20 melhorias: servidor em São Paulo (gru1), topo do site com consultas em paralelo e bug de rolagem lateral na aba Geral corrigido. 231 testes Vitest e 10 Playwright passando.
 - 26/11/2026: Etapa 2 das melhorias: abas em grade no celular, menu no rodapé, nome do Mestre legível, pendências na página inicial e agenda (aventura e depósito mensal). 237 testes Vitest e 10 Playwright passando.
 - 26/11/2026: Etapa 3 das melhorias: explicações em "Como funciona?", contagem regressiva na faixa da aventura, Armazém com a lista primeiro e "+ Item" em gaveta, e "Cobrar no WhatsApp" na Presença. 239 testes Vitest e 10 Playwright passando.
+- 26/11/2026: servidor movido para Oregon (pdx1), mesma região do banco (us-west-2); rota de diagnóstico removida.
