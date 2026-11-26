@@ -65,9 +65,10 @@ export function RotaViewer({ origem, destino }: { origem: Ponto; destino: Ponto 
         </p>
       )}
       <div>
-        <Button asChild variant="secondary">
+        <Button asChild variant="secondary" className="h-auto min-h-9 max-w-full py-2 whitespace-normal">
           <a href={linkGoogleMaps(origem, destino, modo)} target="_blank" rel="noopener noreferrer">
-            <ExternalLink aria-hidden /> Abrir no Google Maps (trânsito ao vivo e navegação)
+            <ExternalLink aria-hidden /> Abrir no Google Maps
+            <span className="sr-only">(trânsito ao vivo e navegação, abre em nova aba)</span>
           </a>
         </Button>
       </div>

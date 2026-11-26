@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { after } from "next/server";
 
 import { PainelChat } from "@/components/chat/painel-chat";
 import { Logo } from "@/components/logo";
@@ -18,10 +19,13 @@ export async function SiteHeader() {
   let membros: Membro[] | null = null;
   let permissoes = lerPermissoes(null);
   if (sessao && pessoa && aprovado) {
-    membros = await carregarMembros(sessao.supabase).catch(() => null);
-    permissoes = await getPermissoes().catch(() => lerPermissoes(null));
-    await garantirLembretesDeDeposito(pessoa).catch((e) => console.error("[notificacoes] lembretes", e));
-    naoLidas = await contarNaoLidas(sessao.supabase).catch(() => 0);
+    // Em paralelo; o lembrete do Baú roda depois que a página já foi enviada.
+    [membros, permissoes, naoLidas] = await Promise.all([
+      carregarMembros(sessao.supabase).catch(() => null),
+      getPermissoes().catch(() => lerPermissoes(null)),
+      contarNaoLidas(sessao.supabase).catch(() => 0),
+    ]);
+    after(() => garantirLembretesDeDeposito(pessoa).catch((e) => console.error("[notificacoes] lembretes", e)));
   }
 
   const eu: Membro | undefined =
