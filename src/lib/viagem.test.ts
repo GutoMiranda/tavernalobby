@@ -7,10 +7,9 @@ import {
   modoParaMapa,
   formatarDistancia,
   formatarDuracao,
-  indiceJustica,
   linkGoogleMaps,
+  distanciasDaGalera,
   linkMapaEmbutido,
-  type Tempo,
 } from "./viagem";
 
 describe("formatação", () => {
@@ -26,32 +25,6 @@ describe("formatação", () => {
   it("lê a duração da Routes API", () => {
     expect(duracaoDaApi("12345s")).toBe(12345);
     expect(duracaoDaApi(undefined)).toBeNull();
-  });
-});
-
-describe("índice de justiça", () => {
-  const t = (h: string, a: string, s: number | null): Tempo => ({
-    household_id: h,
-    accommodation_id: a,
-    duration_seconds: s,
-    distance_meters: null,
-  });
-  const tempos = [t("n1", "e1", 3600), t("n2", "e1", 7200), t("n3", "e1", null), t("n1", "e2", 600)];
-
-  it("calcula média e máximo, ignorando quem não tem rota", () => {
-    expect(indiceJustica(tempos, "e1")).toEqual({ mediaSegundos: 5400, maximoSegundos: 7200, nucleos: 2 });
-  });
-
-  it("pode considerar só alguns núcleos", () => {
-    expect(indiceJustica(tempos, "e1", new Set(["n1"]))).toEqual({
-      mediaSegundos: 3600,
-      maximoSegundos: 3600,
-      nucleos: 1,
-    });
-  });
-
-  it("sem tempos, sem índice", () => {
-    expect(indiceJustica(tempos, "e9")).toBeNull();
   });
 });
 
@@ -104,5 +77,34 @@ describe("origem da rota no mapa", () => {
     expect(origemDaRota(undefined, true, true)).toBe("cidade");
     expect(origemDaRota("cidade", false, true)).toBe("encontro");
     expect(origemDaRota(undefined, false, false)).toBeNull();
+  });
+});
+
+describe("distância de onde a galera vem", () => {
+  const nucleos = [
+    { id: "n1", origin_lat: -22.9056, origin_lng: -47.0608 },
+    { id: "n2", origin_lat: -8.0476, origin_lng: -34.877 },
+    { id: "n3", origin_lat: null, origin_lng: null },
+  ];
+  const estalagem = { id: "e1", lat: -22.8625, lng: -46.0386 };
+  const pessoas = [
+    { id: "p1", name: "Gus", household_id: "n1" },
+    { id: "p2", name: "Bia", household_id: "n2" },
+    { id: "p3", name: "Caio", household_id: "n3" },
+    { id: "p4", name: "Ana", household_id: "n1" },
+  ];
+
+  it("usa a distância de carro quando existe e a linha reta quando não; sem cidade vai para o fim", () => {
+    const r = distanciasDaGalera(
+      pessoas,
+      nucleos,
+      [{ household_id: "n1", accommodation_id: "e1", duration_seconds: 7000, distance_meters: 140000 }],
+      estalagem,
+    );
+    expect(r.map((x) => x.nome)).toEqual(["Ana", "Gus", "Bia", "Caio"]);
+    expect(r[0]).toMatchObject({ metros: 140000, emLinhaReta: false });
+    expect(r[2].emLinhaReta).toBe(true);
+    expect(r[2].metros! / 1000).toBeGreaterThan(1800);
+    expect(r[3]).toMatchObject({ metros: null });
   });
 });

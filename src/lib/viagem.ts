@@ -1,4 +1,4 @@
-/** Tempos de viagem: formatação e "índice de justiça" (tempo médio e máximo do grupo por estalagem). */
+/** Tempos de viagem: formatação e distância de cada pessoa até a estalagem. */
 
 export type Tempo = {
   household_id: string;
@@ -20,29 +20,6 @@ export function formatarDuracao(segundos: number): string {
 export function formatarDistancia(metros: number): string {
   if (metros < 1000) return `${metros} m`;
   return `${Math.round(metros / 1000).toLocaleString("pt-BR")} km`;
-}
-
-/**
- * Índice de justiça de uma estalagem: tempo médio e máximo de viagem entre os núcleos considerados.
- * Ignora núcleos sem rota calculada. Retorna null se nenhum tiver tempo.
- */
-export function indiceJustica(
-  tempos: Tempo[],
-  estalagemId: string,
-  nucleos?: Set<string>,
-): { mediaSegundos: number; maximoSegundos: number; nucleos: number } | null {
-  const validos = tempos.filter(
-    (t) =>
-      t.accommodation_id === estalagemId && t.duration_seconds !== null && (!nucleos || nucleos.has(t.household_id)),
-  );
-  if (validos.length === 0) return null;
-  const segundos = validos.map((t) => t.duration_seconds as number);
-  const soma = segundos.reduce((a, b) => a + b, 0);
-  return {
-    mediaSegundos: Math.round(soma / segundos.length),
-    maximoSegundos: Math.max(...segundos),
-    nucleos: validos.length,
-  };
 }
 
 /** Converte "12345s" (formato da Routes API) em segundos. */
@@ -134,4 +111,41 @@ export function origemDaRota(
   if (temCidade) return "cidade";
   if (temEncontro) return "encontro";
   return null;
+}
+
+export type DistanciaDaGalera = { pessoaId: string; nome: string; metros: number | null; emLinhaReta: boolean };
+
+/**
+ * "Distância de onde a galera vem" até uma estalagem: uma linha por pessoa (usuário), pela cidade/endereço
+ * do núcleo dela. Usa a distância de carro já calculada; sem ela, a distância em linha reta.
+ * Quem não tem cidade cadastrada fica no fim, com metros = null. Ordem: do mais perto para o mais longe.
+ */
+export function distanciasDaGalera(
+  pessoas: { id: string; name: string; household_id: string }[],
+  nucleos: { id: string; origin_lat: number | null; origin_lng: number | null }[],
+  tempos: Tempo[],
+  estalagem: { id: string; lat: number | null; lng: number | null },
+): DistanciaDaGalera[] {
+  const nucleo = new Map(nucleos.map((n) => [n.id, n]));
+  return pessoas
+    .map((p): DistanciaDaGalera => {
+      const n = nucleo.get(p.household_id);
+      const carro = tempos.find((t) => t.household_id === p.household_id && t.accommodation_id === estalagem.id);
+      if (carro?.distance_meters != null)
+        return { pessoaId: p.id, nome: p.name, metros: carro.distance_meters, emLinhaReta: false };
+      if (n?.origin_lat != null && n.origin_lng != null && estalagem.lat != null && estalagem.lng != null) {
+        const metros = Math.round(linhaRetaKm(n.origin_lat, n.origin_lng, estalagem.lat, estalagem.lng) * 1000);
+        return { pessoaId: p.id, nome: p.name, metros, emLinhaReta: true };
+      }
+      return { pessoaId: p.id, nome: p.name, metros: null, emLinhaReta: false };
+    })
+    .sort((a, b) => (a.metros ?? Infinity) - (b.metros ?? Infinity) || a.nome.localeCompare(b.nome, "pt-BR"));
+}
+
+function linhaRetaKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const rad = (g: number) => (g * Math.PI) / 180;
+  const h =
+    Math.sin(rad(lat2 - lat1) / 2) ** 2 +
+    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(rad(lng2 - lng1) / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
 }

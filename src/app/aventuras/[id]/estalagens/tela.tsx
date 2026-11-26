@@ -12,8 +12,9 @@ import { ranking } from "@/lib/aventura";
 import { carregarAventura } from "@/lib/aventura-dados";
 import { formatarCentavos, formatarData } from "@/lib/format";
 import { contextoDaTela } from "@/lib/telas";
+import { rotasEmCache } from "@/lib/rotas";
 import { temposDeViagem } from "@/lib/tempos-viagem";
-import { formatarDistancia, formatarDuracao, indiceJustica } from "@/lib/viagem";
+import { distanciasDaGalera, formatarDistancia, formatarDuracao } from "@/lib/viagem";
 
 import { desfazerEstalagem, escolherEstalagem, removerEstalagem } from "@/app/aventuras/actions";
 
@@ -23,7 +24,23 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
   const { evento } = dados;
   const lista = ranking(dados.estalagens, dados.reacoesEstalagens, pessoa.id);
   const tempos = await temposDeViagem(supabase, dados.nucleos, dados.estalagens).catch(() => []);
-  const nomeNucleo = new Map(dados.nucleos.map((n) => [n.id, n.name]));
+  // Carro do ponto de encontro até cada estalagem (cache de 30 min por par de coordenadas).
+  const encontro =
+    evento.meeting_lat != null && evento.meeting_lng != null
+      ? { lat: evento.meeting_lat, lng: evento.meeting_lng }
+      : null;
+  const doEncontro = new Map<string, { segundos: number | null; metros: number | null }>(
+    encontro
+      ? await Promise.all(
+          dados.estalagens
+            .filter((e) => e.lat != null && e.lng != null)
+            .map(async (e) => {
+              const [carro] = await rotasEmCache(encontro, { lat: e.lat!, lng: e.lng! }, ["DRIVE"]);
+              return [e.id, { segundos: carro?.segundos ?? null, metros: carro?.metros ?? null }] as const;
+            }),
+        )
+      : [],
+  );
   const escolhida = evento.chosen_accommodation_id;
 
   return (
@@ -92,11 +109,11 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
                         </>
                       )}
                     </dl>
-                    <TemposDaEstalagem
-                      estalagemId={e.id}
-                      tempos={tempos}
-                      nomeNucleo={nomeNucleo}
-                      meuNucleo={pessoa.household_id}
+                    <ViagemAteEstalagem
+                      estalagem={e}
+                      temEncontro={!!encontro}
+                      doEncontro={doEncontro.get(e.id)}
+                      galera={distanciasDaGalera(dados.usuarios, dados.nucleos, tempos, e)}
                     />
                     {e.notes && <p className="text-sm whitespace-pre-line">{e.notes}</p>}
                     <p className="text-xs text-muted-foreground">Sugerida por {dados.nomeDaPessoa(e.created_by)}</p>
@@ -191,50 +208,47 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
   );
 }
 
-function TemposDaEstalagem({
-  estalagemId,
-  tempos,
-  nomeNucleo,
-  meuNucleo,
+function ViagemAteEstalagem({
+  estalagem,
+  temEncontro,
+  doEncontro,
+  galera,
 }: {
-  estalagemId: string;
-  tempos: Awaited<ReturnType<typeof temposDeViagem>>;
-  nomeNucleo: Map<string, string>;
-  meuNucleo: string;
+  estalagem: { lat: number | null; lng: number | null };
+  temEncontro: boolean;
+  doEncontro?: { segundos: number | null; metros: number | null };
+  galera: ReturnType<typeof distanciasDaGalera>;
 }) {
-  const daqui = tempos
-    .filter((t) => t.accommodation_id === estalagemId)
-    .sort((a, b) => (a.duration_seconds ?? Infinity) - (b.duration_seconds ?? Infinity));
-  const indice = indiceJustica(tempos, estalagemId);
-  if (daqui.length === 0) return null;
-  const meu = daqui.find((t) => t.household_id === meuNucleo);
-
+  if (estalagem.lat == null || estalagem.lng == null) return null;
   return (
     <div className="rounded-md bg-surface p-2 text-sm">
       <p>
-        <span className="font-medium">Viagem de carro</span>
-        {meu?.duration_seconds != null && (
-          <>
-            {" "}
-            · do seu núcleo: <strong>{formatarDuracao(meu.duration_seconds)}</strong>
-          </>
+        <span className="font-medium">Viagem de carro · do ponto de encontro:</span>{" "}
+        {!temEncontro ? (
+          <span className="text-muted-foreground">ponto de encontro ainda não definido</span>
+        ) : doEncontro?.segundos != null ? (
+          <strong>
+            {formatarDuracao(doEncontro.segundos)}
+            {doEncontro.metros != null && ` (${formatarDistancia(doEncontro.metros)})`}
+          </strong>
+        ) : (
+          <span className="text-muted-foreground">sem rota de carro</span>
         )}
       </p>
-      {indice && (
-        <p className="text-muted-foreground">
-          Índice de justiça · média do grupo {formatarDuracao(indice.mediaSegundos)}, mais longe{" "}
-          {formatarDuracao(indice.maximoSegundos)}
-        </p>
-      )}
       <details className="mt-1">
-        <summary className="cursor-pointer text-bottle">Tempo de cada núcleo</summary>
+        <summary className="cursor-pointer text-bottle">Distância de onde a galera vem</summary>
         <ul className="mt-1 flex flex-col gap-0.5">
-          {daqui.map((t) => (
-            <li key={t.household_id}>
-              {nomeNucleo.get(t.household_id) ?? "Núcleo"}:{" "}
-              {t.duration_seconds != null
-                ? `${formatarDuracao(t.duration_seconds)}${t.distance_meters != null ? ` (${formatarDistancia(t.distance_meters)})` : ""}`
-                : "sem rota de carro"}
+          {galera.map((g) => (
+            <li key={g.pessoaId}>
+              {g.nome}:{" "}
+              {g.metros == null ? (
+                <span className="text-muted-foreground">sem cidade cadastrada</span>
+              ) : (
+                <>
+                  {formatarDistancia(g.metros)}
+                  {g.emLinhaReta && <span className="text-muted-foreground"> em linha reta</span>}
+                </>
+              )}
             </li>
           ))}
         </ul>
@@ -242,3 +256,4 @@ function TemposDaEstalagem({
     </div>
   );
 }
+

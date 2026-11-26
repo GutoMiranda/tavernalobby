@@ -83,9 +83,11 @@ export const carregarAventura = cache(async (supabase: SupabaseClient, id: strin
     supabase.from("households").select("id, name, origin_text, origin_lat, origin_lng").returns<Nucleo[]>(),
     supabase
       .from("people")
-      .select("id, name, household_id, is_child, status")
+      .select("id, name, household_id, is_child, status, user_id")
       .eq("status", "approved")
-      .returns<{ id: string; name: string; household_id: string; is_child: boolean; status: string }[]>(),
+      .returns<
+        { id: string; name: string; household_id: string; is_child: boolean; status: string; user_id: string | null }[]
+      >(),
     supabase
       .from("attendances")
       .select("person_id, status")
@@ -115,6 +117,8 @@ export const carregarAventura = cache(async (supabase: SupabaseClient, id: strin
     estalagens,
     reacoesEstalagens,
     nucleos: nucleosR.data ?? [],
+    /** Membros com login (usuários), para listas por pessoa. */
+    usuarios: pessoas.filter((p) => p.user_id),
     adultosConfirmados,
     adultosDoGrupo,
     /** Base do custo por pessoa: adultos confirmados, ou todos os adultos do grupo enquanto ninguém confirmou. */
