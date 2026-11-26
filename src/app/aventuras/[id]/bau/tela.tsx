@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 import { AcaoForm } from "@/components/acao-form";
+import { BotoesAgenda } from "@/components/aventura/botoes-agenda";
 import { BarraDaMeta } from "@/components/bau/barra-da-meta";
 import { BauDoTesouro } from "@/components/bau/bau-do-tesouro";
 import { PilhaDeOuro } from "@/components/bau/pilha-de-ouro";
@@ -24,6 +25,7 @@ import { LinkSalao } from "@/components/mestre/link-salao";
 import { carregarAventura } from "@/lib/aventura-dados";
 import { carregarCustos } from "@/lib/custos-dados";
 import { centavosParaCampo } from "@/lib/dinheiro";
+import { proximoDeposito } from "@/lib/agenda";
 import { avisoPixAtivo, lembreteDoPlano, saldoDoBau } from "@/lib/finance/bau";
 import { depositosDoNucleo, planoDeEconomia, valoresDoDeposito } from "@/lib/finance/economia";
 import { formatarCentavos, formatarData, formatarDataHora, formatarDia, hojeEmSaoPaulo } from "@/lib/format";
@@ -432,6 +434,19 @@ export async function TelaBau({ id, gerenciar, retornoPix }: { id: string; geren
                   ? `Depósito deste mês registrado. Próximo: ${formatarCentavos(lembrete.valorCentavos)} em ${formatarDia(lembrete.data)}.`
                   : `Próximo depósito: ${formatarCentavos(lembrete.valorCentavos)} em ${formatarDia(lembrete.data)}.`}
             </p>
+          )}
+          {meuPlano && (
+            <BotoesAgenda
+              rotulo="Lembrete na agenda"
+              ics={`/aventuras/${id}/agenda?tipo=deposito`}
+              evento={{
+                titulo: `Depósito no baú: ${dados.evento.name} (${formatarCentavos(meuPlano.amount_cents)})`,
+                inicio: proximoDeposito(hoje, meuPlano.day_of_month),
+                fim: proximoDeposito(hoje, meuPlano.day_of_month),
+                mensal: { ate: dados.evento.start_date },
+                descricao: `Depósito do mês do seu núcleo. Registre no Baú: ${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/aventuras/${id}/bau`,
+              }}
+            />
           )}
           <AcaoForm action={salvarPlano} textoBotao={meuPlano ? "Atualizar plano" : "Criar plano"}>
             <input type="hidden" name="evento" value={id} />

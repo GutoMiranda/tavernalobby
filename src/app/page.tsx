@@ -1,12 +1,13 @@
+import { CheckCircle2, ChevronRight, ListTodo } from "lucide-react";
 import Link from "next/link";
 
 import { ListaAventuras } from "@/components/aventura/lista-aventuras";
 import { IconeCoroa, IconeD20, IconeEscudo } from "@/components/icones";
-import { LogoBrasao } from "@/components/logo";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { exigirMembro, getPermissoes } from "@/lib/auth";
 import { COLUNAS_EVENTO, type Evento, resumoDasAventuras } from "@/lib/aventura-dados";
 import { sortearFrase } from "@/lib/frases";
+import { pendenciasDaTaverna } from "@/lib/pendencias-dados";
 import { entraNoSalao } from "@/lib/permissoes";
 
 // Nova frase a cada visita.
@@ -20,23 +21,31 @@ export default async function TavernaPage() {
     .not("phase", "in", "(concluida,cancelada)")
     .order("created_at", { ascending: false })
     .returns<Evento[]>();
-  const [permissoes, resumos] = await Promise.all([getPermissoes(), resumoDasAventuras(supabase, eventos ?? [])]);
+  const permissoes = await getPermissoes();
+  const [resumos, todas] = await Promise.all([
+    resumoDasAventuras(supabase, eventos ?? []),
+    pendenciasDaTaverna(supabase, pessoa, eventos ?? [], permissoes.datas.editar).catch(() => []),
+  ]);
+  // A cidade de saída vale para todas as aventuras: aparece uma vez só.
+  const vistas = new Set<string>();
+  const minhas = todas.filter((p) => {
+    const chave = p.href.startsWith("/familia") ? p.href : `${p.href}|${p.texto}`;
+    if (vistas.has(chave)) return false;
+    vistas.add(chave);
+    return true;
+  });
   const primeiroNome = pessoa.name.split(" ")[0];
   const frase = sortearFrase();
 
   return (
     <div className="flex flex-col gap-8">
-      <section data-slot="card" className="overflow-hidden p-6 sm:p-8">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-          <LogoBrasao largura={220} className="mx-auto drop-shadow-[0_6px_18px_rgb(0_0_0/0.6)] sm:mx-0" />
-          <div className="flex min-w-0 flex-col gap-1">
-            <p className="text-sm tracking-wide text-muted-foreground uppercase">Taverna · página inicial</p>
-            <h1 className="text-4xl font-bold text-wood sm:text-5xl">Salve, {primeiroNome}!</h1>
-            <p className="text-muted-foreground">A party se reúne aqui antes de cada aventura.</p>
-          </div>
+      <section className="flex flex-col gap-3">
+        <div>
+          <p className="text-sm tracking-wide text-muted-foreground uppercase">Taverna · página inicial</p>
+          <h1 className="text-3xl font-bold text-wood sm:text-4xl">Salve, {primeiroNome}!</h1>
         </div>
-        <figure className="mt-6 rounded-2xl border border-gold/25 bg-black/25 p-5">
-          <blockquote className="font-display text-2xl leading-snug text-parchment sm:text-3xl">
+        <figure className="rounded-2xl border border-gold/25 bg-black/25 px-4 py-3">
+          <blockquote className="font-display text-lg leading-snug text-parchment sm:text-xl">
             <span aria-hidden className="mr-1 text-gold">
               “
             </span>
@@ -45,9 +54,47 @@ export default async function TavernaPage() {
               ”
             </span>
           </blockquote>
-          {frase.fonte && <figcaption className="mt-2 text-sm text-muted-foreground">— {frase.fonte}</figcaption>}
+          {frase.fonte && <figcaption className="mt-1 text-xs text-muted-foreground">— {frase.fonte}</figcaption>}
         </figure>
       </section>
+
+      {(eventos ?? []).length > 0 && (
+        <Card moldura={minhas.length ? "ouro" : "verde"}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {minhas.length ? (
+                <ListTodo className="size-5 text-gold" aria-hidden />
+              ) : (
+                <CheckCircle2 className="size-5 text-bottle" aria-hidden />
+              )}
+              {minhas.length ? "O que falta você fazer" : "Tudo em dia!"}
+            </CardTitle>
+            {!minhas.length && <CardDescription>Nenhuma pendência sua nas aventuras em andamento.</CardDescription>}
+          </CardHeader>
+          {minhas.length > 0 && (
+            <CardContent>
+              <ul className="flex flex-col gap-2">
+                {minhas.map((p) => (
+                  <li key={`${p.href}|${p.texto}`}>
+                    <Link
+                      href={p.href}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5 hover:border-gold focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none"
+                    >
+                      <span className="min-w-0">
+                        <span className="block font-medium">{p.texto}</span>
+                        {!p.href.startsWith("/familia") && (
+                          <span className="block text-xs text-muted-foreground">{p.aventura}</span>
+                        )}
+                      </span>
+                      <ChevronRight className="size-5 shrink-0 text-gold" aria-hidden />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          )}
+        </Card>
+      )}
 
       <section aria-labelledby="aventuras" className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">

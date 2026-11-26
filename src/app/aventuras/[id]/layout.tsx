@@ -1,5 +1,6 @@
 import { AoVivo } from "@/components/ao-vivo";
 import { AbasAventura } from "@/components/aventura/abas-aventura";
+import { BotoesAgenda } from "@/components/aventura/botoes-agenda";
 import { CENA_DA_FASE, CenaQuest, MOLDURA_DA_FASE } from "@/components/cena-quest";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -89,14 +90,30 @@ export default async function AventuraLayout({
           </div>
         </div>
       </Card>
-      <GavetaPassagens
-        destino={destino}
-        meuNucleo={meuNucleo ? lugar(meuNucleo) : null}
-        nucleos={dados.nucleos.map(lugar)}
-        idaInicial={periodo?.inicio ?? null}
-        voltaInicial={periodo?.fim ?? null}
-        periodoPrevia={periodo?.fonte === "mais_votada"}
-      />
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {evento.start_date && evento.end_date && (
+          <BotoesAgenda
+            ics={`/aventuras/${id}/agenda`}
+            evento={{
+              titulo: evento.name,
+              inicio: evento.start_date,
+              fim: evento.end_date,
+              local: definida
+                ? [definida.name, definida.address].filter(Boolean).join(", ")
+                : (evento.meeting_address ?? evento.region),
+              descricao: `Aventura da Taverna O Lobby: ${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/aventuras/${id}`,
+            }}
+          />
+        )}
+        <GavetaPassagens
+          destino={destino}
+          meuNucleo={meuNucleo ? lugar(meuNucleo) : null}
+          nucleos={dados.nucleos.map(lugar)}
+          idaInicial={periodo?.inicio ?? null}
+          voltaInicial={periodo?.fim ?? null}
+          periodoPrevia={periodo?.fonte === "mais_votada"}
+        />
+      </div>
       <AbasAventura id={id} />
       {children}
     </div>

@@ -67,7 +67,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <main id="conteudo" className="mx-auto w-full max-w-screen-2xl px-4 pt-5 pb-8 sm:px-6 lg:px-8">
           {children}
         </main>
-        <footer className="mx-auto flex w-full max-w-screen-2xl flex-wrap gap-4 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-xs text-muted-foreground sm:px-6 lg:px-8">
+        <footer className="mx-auto flex w-full max-w-screen-2xl flex-wrap gap-4 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-xs sm:pb-[max(1.5rem,env(safe-area-inset-bottom))] text-muted-foreground sm:px-6 lg:px-8">
           <Link href="/privacidade" className="underline-offset-4 hover:underline">
             Privacidade
           </Link>
