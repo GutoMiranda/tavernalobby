@@ -58,3 +58,4 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 - 26/11/2026: Todos os cards em pergaminho (estilo da carta de aventura) e carregamento animado com d20 e frases de RPG ao abrir páginas. Nome no topo em duas linhas no celular. 218 testes Vitest e 10 Playwright passando.
 - 26/11/2026: Datas, estalagem e aventura sempre editáveis (editar/excluir a data definida, trocar ou reabrir, desfazer estalagem, excluir aventura sem dinheiro no baú), com permissões conferidas no banco. Migração 22. 225 testes Vitest e 10 Playwright passando.
 - 26/11/2026: Estalagens mostram a viagem de carro a partir do ponto de encontro e a distância de cada usuário até a estalagem; índice de justiça removido. 223 testes Vitest e 10 Playwright passando.
+- 26/11/2026: Dono aprovou publicar na Vercel grátis (sem domínio próprio por enquanto). Guia `docs/publicar.md` e pull request #1 para levar tudo à `main`.

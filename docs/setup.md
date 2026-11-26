@@ -60,6 +60,9 @@ O Google Maps exige uma **conta de faturamento com cartão**, mas cada serviço 
 
 ## 6. Vercel
 
+Passo a passo completo da publicação: `docs/publicar.md`.
+
+
 1. **Add New → Project → Import** o repositório `GutoMiranda/tavernalobby`. Tente o nome `tavernalobby` (endereço `tavernalobby.vercel.app`, se estiver livre).
 2. Em **Settings → Environment Variables**, cadastre as mesmas variáveis do `.env.local`.
 3. Depois do primeiro deploy, volte aos passos 3.2, 3.4 e 4.5 e adicione o endereço final da Vercel.
