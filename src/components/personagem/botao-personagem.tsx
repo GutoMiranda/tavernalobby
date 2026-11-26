@@ -61,7 +61,7 @@ export function BotaoPersonagem({
             />
           )}
           <Link href="/familia" onClick={fechar} className="text-sm text-bottle underline underline-offset-4">
-            Ir para Minha família (núcleo, dependentes e cidade de saída)
+            Ir para Minha família (núcleo, dependentes e ponto de saída)
           </Link>
           <form action="/auth/sair" method="post" className="border-t border-border pt-3">
             <button type="submit" className="text-sm text-muted-foreground underline underline-offset-4">

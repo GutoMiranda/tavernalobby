@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ModoRota, RotaResumo } from "@/lib/rotas";
+import { textoDaRota } from "@/lib/transporte";
 import { cn } from "@/lib/utils";
 import {
   decodificarPolyline,
@@ -19,6 +20,8 @@ import {
 } from "@/lib/viagem";
 
 import { CHAVE_MAPS } from "./chave";
+import { CompartilharRota } from "./compartilhar-rota";
+import { PassosTransporte } from "./passos-transporte";
 
 type LatLng = { lat: number; lng: number };
 export type OrigemPainel = LatLng & { id: string; nome: string; detalhe?: string; minha: boolean };
@@ -55,8 +58,8 @@ export function PainelMapa({
   origens,
   encontro,
   estalagens,
-  selecionada,
-  saida,
+  selecionada: selecionadaServidor,
+  saida: saidaServidor,
   rotas,
 }: {
   origens: OrigemPainel[];
@@ -70,15 +73,21 @@ export function PainelMapa({
 }) {
   const [modo, setModo] = useState<ModoRota>("DRIVE");
   const [carregando, iniciar] = useTransition();
+  // Mostra na hora a estalagem e a saída tocadas, enquanto o servidor calcula a rota.
+  const [pedido, setPedido] = useState<{ estalagem: string | null; de: OrigemDaRota | null } | null>(null);
+  const selecionada = carregando && pedido ? pedido.estalagem : selecionadaServidor;
+  const saida = carregando && pedido ? (pedido.de ?? saidaServidor) : saidaServidor;
   const router = useRouter();
   const caminho = usePathname();
-  const ir = (estalagem: string | null, de: OrigemDaRota | null) =>
+  const ir = (estalagem: string | null, de: OrigemDaRota | null) => {
+    setPedido({ estalagem, de });
     iniciar(() =>
       router.replace(
         estalagem ? `${caminho}?estalagem=${encodeURIComponent(estalagem)}${de ? `&de=${de}` : ""}` : caminho,
         { scroll: false },
       ),
     );
+  };
   const setSelecionada = (id: string) => ir(id, saida);
   const minhaOrigem = origens.find((o) => o.minha);
   const est = estalagens.find((e) => e.id === selecionada);
@@ -86,9 +95,9 @@ export function PainelMapa({
 
   const corDaRota = saida === "encontro" ? COR_ENCONTRO : COR_CIDADE;
   const caminhos = useMemo(() => {
-    const r = selecionada ? rotas?.find((x) => x.modo === modo) : undefined;
+    const r = selecionada && !carregando ? rotas?.find((x) => x.modo === modo) : undefined;
     return r?.polyline ? [{ cor: corDaRota, pontos: decodificarPolyline(r.polyline) }] : [];
-  }, [rotas, modo, corDaRota, selecionada]);
+  }, [rotas, modo, corDaRota, selecionada, carregando]);
 
   const comLocal = estalagens.filter((e) => e.lat != null && e.lng != null);
   // Enquadra a sua saída, o ponto de encontro e as estalagens (as saídas dos outros núcleos ficam no mapa, fora do zoom).
@@ -104,7 +113,15 @@ export function PainelMapa({
       <div className="flex min-w-0 flex-col gap-3">
         {CHAVE_MAPS ? (
           <APIProvider apiKey={CHAVE_MAPS} language="pt-BR" region="BR">
-            <div className="h-[26rem] overflow-hidden rounded-lg border border-border lg:h-[36rem]">
+            <div className="relative h-[26rem] overflow-hidden rounded-lg border border-border lg:h-[36rem]">
+              {carregando && (
+                <p
+                  role="status"
+                  className="absolute inset-x-0 top-3 z-10 mx-auto flex w-fit items-center gap-2 rounded-full border border-gold/60 bg-[#2a1f17] px-4 py-2 text-sm text-[#f3e6cf] shadow-lg"
+                >
+                  <Loader2 className="size-4 animate-spin" aria-hidden /> Calculando a rota…
+                </p>
+              )}
               <Map
                 mapId="DEMO_MAP_ID"
                 defaultCenter={enquadrar[0] ?? { lat: -23.55, lng: -46.63 }}
@@ -183,7 +200,7 @@ export function PainelMapa({
                   disabled={!minhaOrigem}
                   onClick={() => ir(est.id, "cidade")}
                 >
-                  <Home aria-hidden /> Minha cidade
+                  <Home aria-hidden /> Minha saída
                 </Button>
                 <Button
                   type="button"
@@ -199,7 +216,7 @@ export function PainelMapa({
               </div>
               {(!minhaOrigem || !encontro) && (
                 <p className="text-xs text-muted-foreground">
-                  {!minhaOrigem && "Informe a cidade de saída do seu núcleo em Minha família. "}
+                  {!minhaOrigem && "Informe o ponto de saída do seu núcleo em Minha família. "}
                   {!encontro && "O ponto de encontro ainda não foi definido."}
                 </p>
               )}
@@ -225,7 +242,7 @@ export function PainelMapa({
               </p>
             ) : (
               <Trecho
-                titulo={saida === "encontro" ? "Do ponto de encontro" : "Da sua cidade"}
+                titulo={saida === "encontro" ? "Do ponto de encontro" : "Da saída do seu núcleo"}
                 cor={corDaRota}
                 origem={saida === "encontro" ? encontro : (minhaOrigem ?? null)}
                 destino={destino}
@@ -233,6 +250,12 @@ export function PainelMapa({
                 modo={modo}
                 carregando={carregando}
                 semOrigem="Escolha de onde sai a rota."
+                nomeOrigem={
+                  saida === "encontro"
+                    ? (encontro?.nome ?? "o ponto de encontro")
+                    : (minhaOrigem?.nome ?? "minha saída")
+                }
+                nomeDestino={est.nome}
               />
             )}
             {modo === "TWO_WHEELER" && (
@@ -317,7 +340,11 @@ function Trecho({
   modo,
   carregando,
   semOrigem,
+  nomeOrigem,
+  nomeDestino,
 }: {
+  nomeOrigem: string;
+  nomeDestino: string;
   titulo: string;
   cor: string;
   origem: LatLng | null;
@@ -365,6 +392,21 @@ function Trecho({
               {rotas.some((x) => x.erro && x.segundos != null) ? " do traçado (tempos pela Distance Matrix)" : ""}:{" "}
               {rotas.find((x) => x.erro)?.erro}
             </p>
+          )}
+          {!carregando && modo === "TRANSIT" && (rotas?.find((x) => x.modo === "TRANSIT")?.passos?.length ?? 0) > 0 && (
+            <PassosTransporte passos={rotas!.find((x) => x.modo === "TRANSIT")!.passos!} />
+          )}
+          {!carregando && (
+            <CompartilharRota
+              texto={textoDaRota({
+                de: nomeOrigem,
+                para: nomeDestino,
+                modo: MODOS.find((m) => m.id === modo)?.rotulo ?? "",
+                segundos: rotas?.find((x) => x.modo === modo)?.segundos ?? null,
+                passos: modo === "TRANSIT" ? rotas?.find((x) => x.modo === "TRANSIT")?.passos : undefined,
+                link: linkGoogleMaps(origem, destino, modoParaMapa(modo)),
+              })}
+            />
           )}
           <a
             href={linkGoogleMaps(origem, destino, modoParaMapa(modo))}

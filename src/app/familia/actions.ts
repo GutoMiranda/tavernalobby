@@ -90,7 +90,7 @@ export async function aceitarConvite(token: string): Promise<EstadoAcao> {
 export async function salvarOrigem(_: EstadoAcao, dados: FormData): Promise<EstadoAcao> {
   const { supabase, pessoa } = await exigirMembro();
   const textoOrigem = texto(dados, "lugar_texto", 300);
-  if (!textoOrigem) return { erro: "Informe a cidade de saída." };
+  if (!textoOrigem) return { erro: "Informe a cidade ou o endereço de saída." };
   const latTexto = String(dados.get("lugar_lat") ?? "");
   const lngTexto = String(dados.get("lugar_lng") ?? "");
   const lat = Number(latTexto);
@@ -107,7 +107,7 @@ export async function salvarOrigem(_: EstadoAcao, dados: FormData): Promise<Esta
     .eq("id", pessoa.household_id);
   if (error) return { erro: mensagemErro(error) };
   revalidatePath("/", "layout");
-  return { ok: "Cidade de saída salva." };
+  return { ok: "Ponto de saída salvo." };
 }
 
 /** Salva o personagem (avatar, cor e epíteto) de uma pessoa do próprio núcleo. */

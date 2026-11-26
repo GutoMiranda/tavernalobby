@@ -2,9 +2,8 @@ import { ArrowRight, Flag, Home, MapPin } from "lucide-react";
 import type { Metadata } from "next";
 
 import { RotaViewer } from "@/components/mapas/rota-viewer";
-import { Button } from "@/components/ui/button";
+import { SeletorRota } from "@/components/mapas/seletor-rota";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { LinkSalao } from "@/components/mestre/link-salao";
 import { exigirMembro, getPermissoes } from "@/lib/auth";
 import { carregarAventura } from "@/lib/aventura-dados";
@@ -153,79 +152,47 @@ export default async function GeralPage({
         <CardContent className="flex flex-col gap-4">
           {todos.length < 2 ? (
             <p className="text-muted-foreground">
-              Para ver rotas, informe a cidade de saída do seu núcleo (em Minha família) e o endereço do ponto de
+              Para ver rotas, informe o ponto de saída do seu núcleo (em Minha família) e o endereço do ponto de
               encontro ou de uma estalagem.
             </p>
           ) : (
             <>
-              <form method="get" className="grid min-w-0 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-                <div className="flex min-w-0 flex-col gap-1.5">
-                  <Label htmlFor="de">De</Label>
-                  <select
-                    id="de"
-                    name="de"
-                    defaultValue={de?.chave}
-                    className="h-10 w-full min-w-0 rounded-md border border-input bg-field px-3 text-base md:text-sm"
-                  >
-                    {todos.map((l) => (
-                      <option key={l.chave} value={l.chave}>
-                        {l.nome}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex min-w-0 flex-col gap-1.5">
-                  <Label htmlFor="para">Para</Label>
-                  <select
-                    id="para"
-                    name="para"
-                    defaultValue={para?.chave}
-                    className="h-10 w-full min-w-0 rounded-md border border-input bg-field px-3 text-base md:text-sm"
-                  >
-                    {todos.map((l) => (
-                      <option key={l.chave} value={l.chave}>
-                        {l.nome}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <Button type="submit">Ver rota</Button>
-              </form>
-
-              {podeRotear ? (
-                <>
-                  {resumo.length > 0 && (
-                    <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4" aria-label="Tempo por modo">
-                      {resumo.map((r) => (
-                        <li key={r.modo} className="rounded-md border border-border bg-surface p-3">
-                          <p className="text-sm text-muted-foreground">{NOME_MODO[r.modo]}</p>
-                          {r.segundos != null ? (
-                            <>
-                              <p className="text-lg font-semibold">{formatarDuracao(r.segundos)}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {r.metros != null && formatarDistancia(r.metros)}
-                                {r.segundosSemTransito != null &&
-                                  r.segundos - r.segundosSemTransito > 300 &&
-                                  ` · +${formatarDuracao(r.segundos - r.segundosSemTransito)} de trânsito`}
-                              </p>
-                            </>
-                          ) : (
-                            <p className="text-sm">Sem rota disponível</p>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {resumo.find((r) => r.erro) && (
-                    <p className="text-sm break-words text-alert">
-                      O Google recusou parte do cálculo: {resumo.find((r) => r.erro)?.erro}
-                    </p>
-                  )}
-                  <RotaViewer key={`${de.chave}-${para.chave}`} origem={de} destino={para} />
-                </>
-              ) : (
-                <p className="text-muted-foreground">Escolha uma origem e um destino diferentes.</p>
-              )}
+              <SeletorRota opcoes={todos} de={de?.chave} para={para?.chave}>
+                {podeRotear ? (
+                  <>
+                    {resumo.length > 0 && (
+                      <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4" aria-label="Tempo por modo">
+                        {resumo.map((r) => (
+                          <li key={r.modo} className="rounded-md border border-border bg-surface p-3">
+                            <p className="text-sm text-muted-foreground">{NOME_MODO[r.modo]}</p>
+                            {r.segundos != null ? (
+                              <>
+                                <p className="text-lg font-semibold">{formatarDuracao(r.segundos)}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {r.metros != null && formatarDistancia(r.metros)}
+                                  {r.segundosSemTransito != null &&
+                                    r.segundos - r.segundosSemTransito > 300 &&
+                                    ` · +${formatarDuracao(r.segundos - r.segundosSemTransito)} de trânsito`}
+                                </p>
+                              </>
+                            ) : (
+                              <p className="text-sm">Sem rota disponível</p>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {resumo.find((r) => r.erro) && (
+                      <p className="text-sm break-words text-alert">
+                        O Google recusou parte do cálculo: {resumo.find((r) => r.erro)?.erro}
+                      </p>
+                    )}
+                    <RotaViewer key={`${de.chave}-${para.chave}`} origem={de} destino={para} resumo={resumo} />
+                  </>
+                ) : (
+                  <p className="text-muted-foreground">Escolha uma origem e um destino diferentes.</p>
+                )}
+              </SeletorRota>
             </>
           )}
         </CardContent>

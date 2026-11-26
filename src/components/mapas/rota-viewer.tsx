@@ -4,10 +4,14 @@ import { Bike, Bus, Car, ExternalLink, Footprints } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import type { ModoRota, RotaResumo } from "@/lib/rotas";
+import { textoDaRota } from "@/lib/transporte";
 import { cn } from "@/lib/utils";
 import { linkGoogleMaps, linkMapaEmbutido, type ModoMapa } from "@/lib/viagem";
 
 import { CHAVE_MAPS } from "./chave";
+import { CompartilharRota } from "./compartilhar-rota";
+import { PassosTransporte } from "./passos-transporte";
 
 const MODOS: { id: ModoMapa; rotulo: string; icone: typeof Car }[] = [
   { id: "carro", rotulo: "Carro", icone: Car },
@@ -16,11 +20,30 @@ const MODOS: { id: ModoMapa; rotulo: string; icone: typeof Car }[] = [
   { id: "a_pe", rotulo: "A pé", icone: Footprints },
 ];
 
-type Ponto = { lat: number; lng: number };
+type Ponto = { lat: number; lng: number; nome?: string };
+const MODO_DA_API: Record<ModoMapa, ModoRota> = {
+  carro: "DRIVE",
+  moto: "TWO_WHEELER",
+  transporte: "TRANSIT",
+  a_pe: "WALK",
+};
 
 /** Rota no Google Maps embutido, com troca de modo e botão para abrir no app do Maps. */
-export function RotaViewer({ origem, destino }: { origem: Ponto; destino: Ponto }) {
+export function RotaViewer({
+  origem,
+  destino,
+  resumo = [],
+}: {
+  origem: Ponto;
+  destino: Ponto;
+  /** Tempos e passos calculados no servidor (para o passo a passo e o compartilhar). */
+  resumo?: RotaResumo[];
+}) {
   const [modo, setModo] = useState<ModoMapa>("carro");
+  const rota = resumo.find((r) => r.modo === MODO_DA_API[modo]);
+  const passos = modo === "transporte" ? (rota?.passos ?? []) : [];
+  const link = linkGoogleMaps(origem, destino, modo);
+  const rotulo = MODOS.find((m) => m.id === modo)?.rotulo ?? "";
 
   return (
     <div className="flex flex-col gap-3">
@@ -49,6 +72,7 @@ export function RotaViewer({ origem, destino }: { origem: Ponto; destino: Ponto 
           rota.
         </p>
       )}
+      {passos.length > 0 && <PassosTransporte passos={passos} />}
       {CHAVE_MAPS ? (
         <iframe
           key={modo}
@@ -64,9 +88,19 @@ export function RotaViewer({ origem, destino }: { origem: Ponto; destino: Ponto 
           O mapa aparece aqui quando a chave do Google Maps for configurada.
         </p>
       )}
-      <div>
+      <div className="flex flex-wrap gap-2">
+        <CompartilharRota
+          texto={textoDaRota({
+            de: origem.nome ?? "a saída",
+            para: destino.nome ?? "o destino",
+            modo: rotulo,
+            segundos: rota?.segundos ?? null,
+            passos,
+            link,
+          })}
+        />
         <Button asChild variant="secondary" className="h-auto min-h-9 max-w-full py-2 whitespace-normal">
-          <a href={linkGoogleMaps(origem, destino, modo)} target="_blank" rel="noopener noreferrer">
+          <a href={link} target="_blank" rel="noopener noreferrer">
             <ExternalLink aria-hidden /> Abrir no Google Maps
             <span className="sr-only">(trânsito ao vivo e navegação, abre em nova aba)</span>
           </a>
