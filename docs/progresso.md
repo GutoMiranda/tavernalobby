@@ -61,3 +61,4 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 - 26/11/2026: Dono aprovou publicar na Vercel grátis (sem domínio próprio por enquanto). Guia `docs/publicar.md` e pull request #1 para levar tudo à `main`.
 - 26/11/2026: Membros podem ser banidos ou ter o cadastro excluído (com permissão e sem apagar dinheiro), emblemas redesenhados no mesmo padrão (machado duplo, grimório…) e sexo do personagem trocando nomes e títulos. Migração 23. 231 testes Vitest e 10 Playwright passando.
 - 26/11/2026: Etapa 1 das 20 melhorias: servidor em São Paulo (gru1), topo do site com consultas em paralelo e bug de rolagem lateral na aba Geral corrigido. 231 testes Vitest e 10 Playwright passando.
+- 26/11/2026: Etapa 2 das melhorias: abas em grade no celular, menu no rodapé, nome do Mestre legível, pendências na página inicial e agenda (aventura e depósito mensal). 237 testes Vitest e 10 Playwright passando.

@@ -336,6 +336,14 @@
   padding-block: 0.1em;
 }
 
+/* Sobre o pergaminho dos cards, o ouro claro some: ouro escuro gravado. */
+[data-slot="card"]:not([data-tom="escuro"]) .titulo-marca {
+  background: linear-gradient(180deg, #c27a1c 0%, #8f4a0b 55%, #5e2f06 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 1px 0 rgb(255 244 220 / 0.7));
+}
+
 /* Fase 2: efeitos do baú. */
 @keyframes moeda-cai {
   from {
