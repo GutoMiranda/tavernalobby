@@ -4,11 +4,21 @@ import { AcaoForm } from "@/components/acao-form";
 import { CopiarBotao } from "@/components/copiar-botao";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { exigirPermissao } from "@/lib/auth";
 import { formatarData } from "@/lib/format";
 
-import { atribuirTag, banirMembro, decidirMembro, excluirMembro, novoCodigoConvite, removerTag } from "../actions";
+import {
+  atribuirTag,
+  banirMembro,
+  criarFamiliaTeste,
+  decidirMembro,
+  excluirFamiliaTeste,
+  excluirMembro,
+  novoCodigoConvite,
+  removerTag,
+} from "../actions";
 
 export const metadata: Metadata = { title: "Membros" };
 
@@ -36,7 +46,7 @@ export default async function MembrosPage() {
   const podeModerar = (m: Membro) => modera && !m.is_admin && m.id !== pessoa.id;
   const mestre = pessoa.is_admin;
 
-  const [{ data: grupo }, { data: membros }, { data: tags }] = await Promise.all([
+  const [{ data: grupo }, { data: membros }, { data: tags }, { data: familiasTeste }] = await Promise.all([
     supabase.from("groups").select("invite_code").single<{ invite_code: string }>(),
     supabase
       .from("people")
@@ -47,6 +57,12 @@ export default async function MembrosPage() {
       .order("created_at")
       .returns<Membro[]>(),
     supabase.from("tags").select("id, name, label, description").order("name").returns<Tag[]>(),
+    supabase
+      .from("households")
+      .select("id, name, people!people_household_id_fkey(id, is_child)")
+      .eq("is_test", true)
+      .order("created_at")
+      .returns<{ id: string; name: string; people: { id: string; is_child: boolean }[] }[]>(),
   ]);
 
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -265,6 +281,68 @@ export default async function MembrosPage() {
           </CardContent>
         </Card>
       </div>
+      {aprova && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Famílias de teste</CardTitle>
+            <CardDescription>
+              Núcleos de mentira, sem login, para simular presença, custos, divisão e Baú antes de usar com o grupo.
+              Aparecem com “[Teste]” no nome. Marque a presença deles na aba Presença (no Salão do Mestre). Ao apagar,
+              sai tudo o que foi lançado para eles, inclusive no Baú.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            {(familiasTeste ?? []).length > 0 && (
+              <ul className="flex flex-col gap-2">
+                {(familiasTeste ?? []).map((f) => {
+                  const criancas = f.people.filter((p) => p.is_child).length;
+                  return (
+                    <li
+                      key={f.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface p-3"
+                    >
+                      <span>
+                        <span className="font-medium">{f.name}</span>{" "}
+                        <span className="text-sm text-muted-foreground">
+                          · {f.people.length - criancas} {f.people.length - criancas === 1 ? "adulto" : "adultos"}
+                          {criancas ? `, ${criancas} ${criancas === 1 ? "criança" : "crianças"}` : ""}
+                        </span>
+                      </span>
+                      {modera && (
+                        <AcaoForm
+                          action={excluirFamiliaTeste}
+                          textoBotao="Apagar"
+                          textoEnviando="Apagando…"
+                          variante="ghost"
+                          tamanho="sm"
+                        >
+                          <input type="hidden" name="id" value={f.id} />
+                        </AcaoForm>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <AcaoForm action={criarFamiliaTeste} textoBotao="Criar família de teste" limparAoConcluir>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="teste-nome">Nome</Label>
+                  <Input id="teste-nome" name="nome" maxLength={60} placeholder="Ex.: Silva" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="teste-adultos">Adultos</Label>
+                  <Input id="teste-adultos" name="adultos" type="number" min={1} max={10} defaultValue={2} required />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="teste-criancas">Crianças</Label>
+                  <Input id="teste-criancas" name="criancas" type="number" min={0} max={10} defaultValue={0} required />
+                </div>
+              </div>
+            </AcaoForm>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

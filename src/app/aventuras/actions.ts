@@ -401,23 +401,50 @@ export async function lerAnuncio(link: string, nomeDigitado: string): Promise<Da
 
 // ---------------------------------------------------------------- ponto de encontro
 
+/** Cria (sem "ponto") ou altera um ponto de encontro. Qualquer membro cria; altera quem criou ou quem edita a Aventura. */
 export async function salvarPontoEncontro(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
-  const { supabase } = await exigirPermissao("aventura", "editar");
+  const { supabase, pessoa } = await exigirMembro();
   const eventId = txt(d, "evento", 40);
+  const pontoId = txt(d, "ponto", 40);
   const quando = txt(d, "quando", 16); // datetime-local: AAAA-MM-DDTHH:MM (horário de São Paulo)
-  const { error } = await supabase
-    .from("events")
-    .update({
-      meeting_name: txt(d, "nome", 120) || null,
-      meeting_address: txt(d, "lugar_texto", 300) || null,
-      meeting_lat: numeroOuNull(d, "lugar_lat"),
-      meeting_lng: numeroOuNull(d, "lugar_lng"),
-      meeting_place_id: txt(d, "lugar_id", 300) || null,
-      meeting_at: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(quando) ? `${quando}:00-03:00` : null,
-      meeting_notes: txt(d, "notas", 1000) || null,
-    })
-    .eq("id", eventId);
-  if (error) return { erro: mensagemErro(error) };
+  const campos = {
+    name: txt(d, "nome", 120) || null,
+    address: txt(d, "lugar_texto", 300) || null,
+    lat: numeroOuNull(d, "lugar_lat"),
+    lng: numeroOuNull(d, "lugar_lng"),
+    place_id: txt(d, "lugar_id", 300) || null,
+    meet_at: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(quando) ? `${quando}:00-03:00` : null,
+    notes: txt(d, "notas", 1000) || null,
+  };
+  if (!campos.name && !campos.address) return { erro: "Informe o nome ou o endereço do ponto de encontro." };
+  if (pontoId) {
+    const { error, count } = await supabase
+      .from("meeting_points")
+      .update(campos, { count: "exact" })
+      .eq("id", pontoId)
+      .eq("event_id", eventId);
+    if (error) return { erro: mensagemErro(error) };
+    if (!count) return { erro: "Só quem cadastrou o ponto (ou quem edita a Aventura) pode alterar." };
+  } else {
+    const { error } = await supabase
+      .from("meeting_points")
+      .insert({ ...campos, event_id: eventId, created_by: pessoa.id });
+    if (error) return { erro: mensagemErro(error) };
+  }
   revalidarAventura(eventId);
   return { ok: "Ponto de encontro salvo." };
+}
+
+export async function excluirPontoEncontro(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
+  const { supabase } = await exigirMembro();
+  const eventId = txt(d, "evento", 40);
+  const { error, count } = await supabase
+    .from("meeting_points")
+    .delete({ count: "exact" })
+    .eq("id", txt(d, "ponto", 40))
+    .eq("event_id", eventId);
+  if (error) return { erro: mensagemErro(error) };
+  if (!count) return { erro: "Só quem cadastrou o ponto (ou quem exclui na Aventura) pode remover." };
+  revalidarAventura(eventId);
+  return { ok: "Ponto de encontro removido." };
 }

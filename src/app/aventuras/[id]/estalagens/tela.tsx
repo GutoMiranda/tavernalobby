@@ -27,8 +27,8 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
   const tempos = await temposDeViagem(supabase, dados.nucleos, dados.estalagens).catch(() => []);
   // Carro do ponto de encontro até cada estalagem (cache de 30 min por par de coordenadas).
   const encontro =
-    evento.meeting_lat != null && evento.meeting_lng != null
-      ? { lat: evento.meeting_lat, lng: evento.meeting_lng }
+    dados.pontos[0]?.lat != null && dados.pontos[0]?.lng != null
+      ? { lat: dados.pontos[0].lat, lng: dados.pontos[0].lng }
       : null;
   const doEncontro = new Map<string, { segundos: number | null; metros: number | null }>(
     encontro

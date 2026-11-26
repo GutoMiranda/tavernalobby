@@ -59,13 +59,30 @@ export type Nucleo = {
 export const COLUNAS_EVENTO =
   "id, name, description, region, phase, candidate_start, candidate_end, start_date, end_date, chosen_date_option_id, chosen_accommodation_id, date_vote_deadline, accommodation_vote_deadline, meeting_name, meeting_address, meeting_lat, meeting_lng, meeting_at, meeting_notes, created_at";
 
+export type PontoEncontro = {
+  id: string;
+  name: string | null;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+  place_id: string | null;
+  meet_at: string | null;
+  notes: string | null;
+  created_by: string | null;
+};
+
+/** Nome curto do ponto de encontro (o nome dado, senão o endereço). */
+export function nomeDoPonto(p: Pick<PontoEncontro, "name" | "address">): string {
+  return p.name ?? p.address ?? "Ponto de encontro";
+}
+
 /** Carrega a aventura e o que o painel, datas e estalagens precisam. Cacheado por requisição. */
 export const carregarAventura = cache(async (supabase: SupabaseClient, id: string) => {
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const { data: evento } = await supabase.from("events").select(COLUNAS_EVENTO).eq("id", id).maybeSingle<Evento>();
   if (!evento) notFound();
 
-  const [datasR, estalagensR, nucleosR, pessoasR, presencasR] = await Promise.all([
+  const [datasR, estalagensR, nucleosR, pessoasR, presencasR, pontosR] = await Promise.all([
     supabase
       .from("date_options")
       .select("id, start_date, end_date, note, date_reactions(person_id, value)")
@@ -93,6 +110,12 @@ export const carregarAventura = cache(async (supabase: SupabaseClient, id: strin
       .select("person_id, status")
       .eq("event_id", id)
       .returns<{ person_id: string; status: string }[]>(),
+    supabase
+      .from("meeting_points")
+      .select("id, name, address, lat, lng, place_id, meet_at, notes, created_by")
+      .eq("event_id", id)
+      .order("created_at")
+      .returns<PontoEncontro[]>(),
   ]);
 
   const datas = (datasR.data ?? []).map(({ date_reactions: _r, ...d }) => d);
@@ -117,6 +140,8 @@ export const carregarAventura = cache(async (supabase: SupabaseClient, id: strin
     estalagens,
     reacoesEstalagens,
     nucleos: nucleosR.data ?? [],
+    /** Pontos de encontro, na ordem em que foram cadastrados. */
+    pontos: pontosR.data ?? [],
     /** Membros com login (usuários), para listas por pessoa. */
     usuarios: pessoas.filter((p) => p.user_id),
     adultosConfirmados,

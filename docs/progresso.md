@@ -65,3 +65,4 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 - 26/11/2026: Etapa 3 das melhorias: explicações em "Como funciona?", contagem regressiva na faixa da aventura, Armazém com a lista primeiro e "+ Item" em gaveta, e "Cobrar no WhatsApp" na Presença. 239 testes Vitest e 10 Playwright passando.
 - 26/11/2026: servidor movido para Oregon (pdx1), mesma região do banco (us-west-2); rota de diagnóstico removida.
 - 26/11/2026: rotas com aviso de carregamento, passo a passo do transporte público, "Compartilhar rota completa" e ponto de saída por endereço. 241 testes Vitest e 10 Playwright passando.
+- 26/11/2026: vários pontos de encontro e famílias de teste (migração 24). 244 testes Vitest e 10 Playwright passando.

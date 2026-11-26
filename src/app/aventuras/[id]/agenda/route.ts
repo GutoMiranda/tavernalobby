@@ -11,7 +11,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { supabase, pessoa } = await exigirMembro();
   const { data: evento } = await supabase
     .from("events")
-    .select("id, name, start_date, end_date, region, meeting_address, chosen_accommodation_id")
+    .select("id, name, start_date, end_date, region, chosen_accommodation_id")
     .eq("id", id)
     .maybeSingle<{
       id: string;
@@ -19,7 +19,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       start_date: string | null;
       end_date: string | null;
       region: string | null;
-      meeting_address: string | null;
       chosen_accommodation_id: string | null;
     }>();
   if (!evento) return new NextResponse("Aventura não encontrada.", { status: 404 });
@@ -49,7 +48,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!evento.start_date || !evento.end_date) {
       return new NextResponse("A aventura ainda não tem data definida.", { status: 404 });
     }
-    let local = evento.meeting_address ?? evento.region;
+    const { data: ponto } = await supabase
+      .from("meeting_points")
+      .select("address")
+      .eq("event_id", id)
+      .not("address", "is", null)
+      .order("created_at")
+      .limit(1)
+      .maybeSingle<{ address: string }>();
+    let local = ponto?.address ?? evento.region;
     if (evento.chosen_accommodation_id) {
       const { data: est } = await supabase
         .from("accommodations")

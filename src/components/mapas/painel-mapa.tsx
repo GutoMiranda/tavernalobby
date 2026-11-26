@@ -25,7 +25,7 @@ import { PassosTransporte } from "./passos-transporte";
 
 type LatLng = { lat: number; lng: number };
 export type OrigemPainel = LatLng & { id: string; nome: string; detalhe?: string; minha: boolean };
-export type EncontroPainel = LatLng & { nome: string; detalhe?: string };
+export type EncontroPainel = LatLng & { id: string; nome: string; detalhe?: string };
 export type EstalagemPainel = {
   id: string;
   nome: string;
@@ -56,14 +56,14 @@ const MODOS: { id: ModoRota; rotulo: string; icone: typeof Car }[] = [
  */
 export function PainelMapa({
   origens,
-  encontro,
+  encontros,
   estalagens,
   selecionada: selecionadaServidor,
   saida: saidaServidor,
   rotas,
 }: {
   origens: OrigemPainel[];
-  encontro: EncontroPainel | null;
+  encontros: EncontroPainel[];
   estalagens: EstalagemPainel[];
   selecionada: string | null;
   /** De onde sai a rota (escolha da pessoa, ou a cidade quando houver). */
@@ -93,7 +93,8 @@ export function PainelMapa({
   const est = estalagens.find((e) => e.id === selecionada);
   const destino = est?.lat != null && est?.lng != null ? { lat: est.lat, lng: est.lng } : null;
 
-  const corDaRota = saida === "encontro" ? COR_ENCONTRO : COR_CIDADE;
+  const encontro = encontros.find((e) => `encontro:${e.id}` === saida) ?? null;
+  const corDaRota = encontro ? COR_ENCONTRO : COR_CIDADE;
   const caminhos = useMemo(() => {
     const r = selecionada && !carregando ? rotas?.find((x) => x.modo === modo) : undefined;
     return r?.polyline ? [{ cor: corDaRota, pontos: decodificarPolyline(r.polyline) }] : [];
@@ -103,7 +104,7 @@ export function PainelMapa({
   // Enquadra a sua saída, o ponto de encontro e as estalagens (as saídas dos outros núcleos ficam no mapa, fora do zoom).
   const enquadrar: LatLng[] = [
     ...comLocal.map((e) => ({ lat: e.lat!, lng: e.lng! })),
-    ...(encontro ? [encontro] : []),
+    ...encontros,
     ...(minhaOrigem ? [minhaOrigem] : []),
   ];
   if (enquadrar.length === 0) enquadrar.push(...origens);
@@ -133,7 +134,7 @@ export function PainelMapa({
               >
                 <Marcadores
                   origens={origens}
-                  encontro={encontro}
+                  encontros={encontros}
                   estalagens={comLocal}
                   selecionada={selecionada}
                   aoSelecionar={setSelecionada}
@@ -202,22 +203,25 @@ export function PainelMapa({
                 >
                   <Home aria-hidden /> Minha saída
                 </Button>
-                <Button
-                  type="button"
-                  role="radio"
-                  aria-checked={saida === "encontro"}
-                  size="sm"
-                  variant={saida === "encontro" ? "default" : "outline"}
-                  disabled={!encontro}
-                  onClick={() => ir(est.id, "encontro")}
-                >
-                  <Flag aria-hidden /> Ponto de encontro
-                </Button>
+                {encontros.map((e) => (
+                  <Button
+                    key={e.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={saida === `encontro:${e.id}`}
+                    size="sm"
+                    variant={saida === `encontro:${e.id}` ? "default" : "outline"}
+                    onClick={() => ir(est.id, `encontro:${e.id}`)}
+                    className="h-auto min-h-8 max-w-full whitespace-normal"
+                  >
+                    <Flag aria-hidden /> {e.nome}
+                  </Button>
+                ))}
               </div>
-              {(!minhaOrigem || !encontro) && (
+              {(!minhaOrigem || encontros.length === 0) && (
                 <p className="text-xs text-muted-foreground">
                   {!minhaOrigem && "Informe o ponto de saída do seu núcleo em Minha família. "}
-                  {!encontro && "O ponto de encontro ainda não foi definido."}
+                  {encontros.length === 0 && "Nenhum ponto de encontro com endereço ainda (aba Mapa)."}
                 </p>
               )}
             </div>
@@ -242,19 +246,15 @@ export function PainelMapa({
               </p>
             ) : (
               <Trecho
-                titulo={saida === "encontro" ? "Do ponto de encontro" : "Da saída do seu núcleo"}
+                titulo={encontro ? `Do ponto de encontro: ${encontro.nome}` : "Da saída do seu núcleo"}
                 cor={corDaRota}
-                origem={saida === "encontro" ? encontro : (minhaOrigem ?? null)}
+                origem={encontro ?? (saida === "cidade" ? (minhaOrigem ?? null) : null)}
                 destino={destino}
                 rotas={rotas}
                 modo={modo}
                 carregando={carregando}
                 semOrigem="Escolha de onde sai a rota."
-                nomeOrigem={
-                  saida === "encontro"
-                    ? (encontro?.nome ?? "o ponto de encontro")
-                    : (minhaOrigem?.nome ?? "minha saída")
-                }
+                nomeOrigem={encontro?.nome ?? minhaOrigem?.nome ?? "minha saída"}
                 nomeDestino={est.nome}
               />
             )}
@@ -425,13 +425,13 @@ function Trecho({
 
 function Marcadores({
   origens,
-  encontro,
+  encontros,
   estalagens,
   selecionada,
   aoSelecionar,
 }: {
   origens: OrigemPainel[];
-  encontro: EncontroPainel | null;
+  encontros: EncontroPainel[];
   estalagens: EstalagemPainel[];
   selecionada: string | null;
   aoSelecionar: (id: string) => void;
@@ -450,15 +450,16 @@ function Marcadores({
           <Pin background="#1F4D3A" borderColor="#F3E7CF" glyphColor="#F3E7CF" scale={o.minha ? 1.2 : 0.9} />
         </AdvancedMarker>
       ))}
-      {encontro && (
+      {encontros.map((encontro) => (
         <AdvancedMarker
+          key={encontro.id}
           position={encontro}
           title={encontro.nome}
           onClick={() => setAberto({ nome: encontro.nome, detalhe: encontro.detalhe, pos: encontro })}
         >
           <Pin background={COR_ENCONTRO} borderColor="#3B2A1E" glyphColor="#FFFFFF" scale={1.2} />
         </AdvancedMarker>
-      )}
+      ))}
       {estalagens.map((e) => (
         <AdvancedMarker
           key={e.id}

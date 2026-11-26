@@ -112,3 +112,25 @@ export async function salvarPermissoesDaPessoa(_: EstadoAcao, dados: FormData): 
   revalidatePath("/", "layout");
   return { ok: "Permissões salvas." };
 }
+
+// ---------------------------------------------------------------- famílias de teste
+
+export async function criarFamiliaTeste(_: EstadoAcao, dados: FormData): Promise<EstadoAcao> {
+  const { supabase } = await exigirPermissao("membros", "editar");
+  const { error } = await supabase.rpc("create_test_household", {
+    p_name: valor(dados, "nome", 60),
+    p_adults: Number(valor(dados, "adultos", 3)) || 0,
+    p_children: Number(valor(dados, "criancas", 3)) || 0,
+  });
+  if (error) return { erro: mensagemErro(error) };
+  revalidatePath("/", "layout");
+  return { ok: "Família de teste criada. Marque a presença dela na aba Presença de uma aventura." };
+}
+
+export async function excluirFamiliaTeste(_: EstadoAcao, dados: FormData): Promise<EstadoAcao> {
+  const { supabase } = await exigirPermissao("membros", "excluir");
+  const { error } = await supabase.rpc("delete_test_household", { p_household_id: valor(dados, "id", 40) });
+  if (error) return { erro: mensagemErro(error) };
+  revalidatePath("/", "layout");
+  return { ok: "Família de teste apagada, com tudo o que foi lançado para ela." };
+}

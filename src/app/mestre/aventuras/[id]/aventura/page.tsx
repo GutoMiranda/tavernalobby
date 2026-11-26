@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 import { AcaoForm } from "@/components/acao-form";
 import { CamposAventura } from "@/components/aventura/campos-aventura";
-import { FormPontoEncontro } from "@/components/aventura/form-ponto-encontro";
+import { PontosEncontro } from "@/components/aventura/form-ponto-encontro";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { editarAventura, excluirAventura } from "@/app/aventuras/actions";
@@ -16,8 +16,9 @@ export const metadata: Metadata = { title: "Aventura" };
 
 export default async function SalaoAventuraDadosPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { supabase, permissoes } = await exigirPermissao("aventura", "ver");
-  const { evento } = await carregarAventura(supabase, id);
+  const { supabase, permissoes, pessoa } = await exigirPermissao("aventura", "ver");
+  const dados = await carregarAventura(supabase, id);
+  const { evento } = dados;
   const edita = permissoes.aventura.editar;
 
   return (
@@ -73,17 +74,17 @@ export default async function SalaoAventuraDadosPage({ params }: { params: Promi
             <Flag className="size-5 text-bottle" aria-hidden /> Ponto de encontro
           </CardTitle>
           <CardDescription>
-            Onde a party se reúne antes de seguir para a estalagem. Aparece na aba Mapa.
+            Onde a party se reúne antes de seguir para a estalagem; pode haver vários. Aparecem na aba Mapa.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {edita ? (
-            <FormPontoEncontro id={id} evento={evento} />
-          ) : (
-            <p className="text-muted-foreground">
-              {evento.meeting_name ?? evento.meeting_address ?? "Ainda não definido."}
-            </p>
-          )}
+          <PontosEncontro
+            eventoId={id}
+            pontos={dados.pontos}
+            pessoaId={pessoa.id}
+            podeEditarTodos={permissoes.aventura.editar}
+            podeExcluirTodos={permissoes.aventura.excluir}
+          />
         </CardContent>
       </Card>
 

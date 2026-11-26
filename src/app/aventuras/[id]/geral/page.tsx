@@ -1,18 +1,19 @@
 import { ArrowRight, Flag, Home, MapPin } from "lucide-react";
 import type { Metadata } from "next";
 
+import { PontosEncontro } from "@/components/aventura/form-ponto-encontro";
 import { RotaViewer } from "@/components/mapas/rota-viewer";
 import { SeletorRota } from "@/components/mapas/seletor-rota";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LinkSalao } from "@/components/mestre/link-salao";
 import { exigirMembro, getPermissoes } from "@/lib/auth";
-import { carregarAventura } from "@/lib/aventura-dados";
+import { carregarAventura, nomeDoPonto } from "@/lib/aventura-dados";
 import { type ModoRota, type RotaResumo, rotasEmCache } from "@/lib/rotas";
 import { formatarDistancia, formatarDuracao } from "@/lib/viagem";
 
 export const metadata: Metadata = { title: "Geral" };
 
 type Local = { chave: string; nome: string; detalhe?: string; lat: number; lng: number };
+const nomeDoPontoLocal = (l: Local) => l.nome.replace(/^Ponto de encontro: /, "");
 
 const NOME_MODO: Record<ModoRota, string> = {
   DRIVE: "Carro",
@@ -20,14 +21,6 @@ const NOME_MODO: Record<ModoRota, string> = {
   TRANSIT: "Ônibus / metrô",
   WALK: "A pé",
 };
-
-function horarioSP(iso: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    timeZone: "America/Sao_Paulo",
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date(iso));
-}
 
 export default async function GeralPage({
   params,
@@ -52,16 +45,16 @@ export default async function GeralPage({
       lat: n.origin_lat!,
       lng: n.origin_lng!,
     }));
-  const encontro: Local | null =
-    evento.meeting_lat != null && evento.meeting_lng != null
-      ? {
-          chave: "encontro",
-          nome: `Ponto de encontro${evento.meeting_name ? `: ${evento.meeting_name}` : ""}`,
-          detalhe: evento.meeting_address ?? undefined,
-          lat: evento.meeting_lat,
-          lng: evento.meeting_lng,
-        }
-      : null;
+  const encontros: Local[] = dados.pontos
+    .filter((p) => p.lat != null && p.lng != null)
+    .map((p) => ({
+      chave: `p:${p.id}`,
+      nome: `Ponto de encontro: ${nomeDoPonto(p)}`,
+      detalhe: p.address ?? undefined,
+      lat: p.lat!,
+      lng: p.lng!,
+    }));
+  const encontro = encontros[0];
   const estalagens: Local[] = dados.estalagens
     .filter((e) => e.lat != null && e.lng != null)
     .map((e) => ({
@@ -72,7 +65,7 @@ export default async function GeralPage({
       lng: e.lng!,
     }));
   const escolhida = estalagens.find((e) => e.chave === `e:${evento.chosen_accommodation_id}`);
-  const todos = [...origens, ...(encontro ? [encontro] : []), ...estalagens];
+  const todos = [...origens, ...encontros, ...estalagens];
   const minhaOrigem = origens.find((o) => o.chave === `n:${pessoa.household_id}`);
 
   const de = todos.find((l) => l.chave === filtros.de) ?? minhaOrigem ?? origens[0];
@@ -88,7 +81,7 @@ export default async function GeralPage({
       ]).catch(() => [])
     : [];
 
-  // Roteiro do meu núcleo: origem → ponto de encontro → estalagem (de carro).
+  // Roteiro do meu núcleo: origem → primeiro ponto de encontro → estalagem (de carro).
   const roteiro =
     minhaOrigem && encontro && escolhida
       ? await Promise.all([
@@ -102,25 +95,22 @@ export default async function GeralPage({
       <Card className="lg:col-span-1">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Flag className="size-5 text-bottle" aria-hidden /> Ponto de encontro
+            <Flag className="size-5 text-bottle" aria-hidden /> Pontos de encontro
           </CardTitle>
-          <CardDescription>Onde a party se reúne antes de seguir para a estalagem.</CardDescription>
+          <CardDescription>Onde a party se reúne antes de seguir para a estalagem. Pode haver vários.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
-          {evento.meeting_address || evento.meeting_name ? (
-            <div className="flex flex-col gap-1">
-              {evento.meeting_name && <p className="font-medium">{evento.meeting_name}</p>}
-              {evento.meeting_address && <p className="text-sm text-muted-foreground">{evento.meeting_address}</p>}
-              {evento.meeting_at && <p className="text-sm">Quando: {horarioSP(evento.meeting_at)}</p>}
-              {evento.meeting_notes && <p className="text-sm whitespace-pre-line">{evento.meeting_notes}</p>}
-            </div>
-          ) : (
-            <p className="text-muted-foreground">Ainda não definido. Quem organiza vai marcar.</p>
-          )}
+          <PontosEncontro
+            eventoId={id}
+            pontos={dados.pontos}
+            pessoaId={pessoa.id}
+            podeEditarTodos={permissoes.aventura.editar}
+            podeExcluirTodos={permissoes.aventura.excluir}
+          />
 
           {roteiro && (
             <div className="rounded-md bg-surface p-3 text-sm">
-              <p className="mb-1 font-medium">Seu roteiro de carro</p>
+              <p className="mb-1 font-medium">Seu roteiro de carro (via {nomeDoPontoLocal(encontro!)})</p>
               <ol className="flex flex-col gap-1">
                 <li className="flex items-center gap-1.5">
                   <Home className="size-4" aria-hidden /> Saída → encontro:{" "}
@@ -132,10 +122,6 @@ export default async function GeralPage({
                 </li>
               </ol>
             </div>
-          )}
-
-          {permissoes.aventura.ver && (
-            <LinkSalao href={`/mestre/aventuras/${id}/aventura`} texto="Definir no Salão do Mestre" />
           )}
         </CardContent>
       </Card>

@@ -95,21 +95,20 @@ export function modoParaMapa(modo: "DRIVE" | "TWO_WHEELER" | "TRANSIT" | "WALK")
   return modo === "TWO_WHEELER" ? "moto" : modo === "TRANSIT" ? "transporte" : modo === "WALK" ? "a_pe" : "carro";
 }
 
-export type OrigemDaRota = "cidade" | "encontro";
+/** "cidade" (saída do núcleo) ou "encontro:<id do ponto de encontro>". */
+export type OrigemDaRota = "cidade" | `encontro:${string}`;
 
 /**
- * De onde sai a rota desenhada no mapa: o que a pessoa escolheu, se existir; senão a cidade do núcleo;
- * senão o ponto de encontro. Sem nenhum dos dois, não há rota.
+ * De onde sai a rota desenhada no mapa: o que a pessoa escolheu, se existir; senão a saída do núcleo;
+ * senão o primeiro ponto de encontro. Sem nenhum dos dois, não há rota.
+ * "encontro" sem id (endereço antigo) vale o primeiro ponto.
  */
-export function origemDaRota(
-  pedida: string | undefined,
-  temCidade: boolean,
-  temEncontro: boolean,
-): OrigemDaRota | null {
-  if (pedida === "encontro" && temEncontro) return "encontro";
+export function origemDaRota(pedida: string | undefined, temCidade: boolean, encontros: string[]): OrigemDaRota | null {
+  if (pedida?.startsWith("encontro:") && encontros.includes(pedida.slice(9))) return pedida as OrigemDaRota;
+  if (pedida === "encontro" && encontros.length) return `encontro:${encontros[0]}`;
   if (pedida === "cidade" && temCidade) return "cidade";
   if (temCidade) return "cidade";
-  if (temEncontro) return "encontro";
+  if (encontros.length) return `encontro:${encontros[0]}`;
   return null;
 }
 

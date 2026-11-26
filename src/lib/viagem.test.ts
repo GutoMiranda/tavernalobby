@@ -72,11 +72,13 @@ describe("modoParaMapa", () => {
 
 describe("origem da rota no mapa", () => {
   it("respeita a escolha quando existe e cai para a cidade, depois para o encontro", () => {
-    expect(origemDaRota("encontro", true, true)).toBe("encontro");
-    expect(origemDaRota("encontro", true, false)).toBe("cidade");
-    expect(origemDaRota(undefined, true, true)).toBe("cidade");
-    expect(origemDaRota("cidade", false, true)).toBe("encontro");
-    expect(origemDaRota(undefined, false, false)).toBeNull();
+    expect(origemDaRota("encontro:b", true, ["a", "b"])).toBe("encontro:b");
+    expect(origemDaRota("encontro:x", true, ["a"])).toBe("cidade");
+    expect(origemDaRota("encontro", false, ["a", "b"])).toBe("encontro:a");
+    expect(origemDaRota("encontro", true, [])).toBe("cidade");
+    expect(origemDaRota(undefined, true, ["a"])).toBe("cidade");
+    expect(origemDaRota("cidade", false, ["a"])).toBe("encontro:a");
+    expect(origemDaRota(undefined, false, [])).toBeNull();
   });
 });
 
