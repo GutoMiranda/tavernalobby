@@ -52,8 +52,11 @@ export async function SiteHeader() {
             <Logo size={52} className="relative drop-shadow-[0_0_12px_rgb(242_165_65/0.7)] sm:hidden" />
             <Logo size={62} className="relative hidden drop-shadow-[0_0_12px_rgb(242_165_65/0.7)] sm:block" />
           </span>
-          <span className="titulo-marca truncate font-display text-[1.7rem] leading-none font-bold tracking-wide sm:text-4xl">
-            Taverna <span className="text-[0.8em] italic">O</span> Lobby
+          <span className="titulo-marca flex min-w-0 flex-col font-display text-[1.35rem] leading-[0.95] font-bold tracking-wide min-[430px]:block min-[430px]:text-[1.7rem] min-[430px]:leading-none sm:text-4xl">
+            <span>Taverna</span>{" "}
+            <span className="whitespace-nowrap">
+              <span className="text-[0.8em] italic">O</span> Lobby
+            </span>
           </span>
         </Link>
         <div className="ml-auto flex items-center gap-0.5 sm:gap-1.5">

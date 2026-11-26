@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Grenze, Nunito } from "next/font/google";
 
 import { FundoTaverna } from "@/components/fundo-taverna";
+import { IndicadorNavegacao } from "@/components/indicador-navegacao";
 import { RegistrarServiceWorker } from "@/components/registrar-sw";
 import { SiteHeader } from "@/components/site-header";
 
@@ -75,6 +76,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </Link>
         </footer>
         <RegistrarServiceWorker />
+        <IndicadorNavegacao />
       </body>
     </html>
   );

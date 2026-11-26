@@ -147,27 +147,67 @@
   isolation: isolate;
   border: 3px solid transparent;
   border-radius: 0.85rem;
+  /* Pedido do dono em 26/11/2026: todos os cards no estilo carta (moldura escura, miolo de pergaminho). */
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.5 0 0 0 0 0.45 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.32 0 0 0 0 0.18 0 0 0 0.2 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")
       padding-box,
-    radial-gradient(120% 80% at 50% 0%, rgb(255 230 180 / 0.06), transparent 60%) padding-box,
+    radial-gradient(130% 110% at 50% 40%, transparent 55%, rgb(120 72 28 / 0.38)) padding-box,
+    linear-gradient(180deg, #f0dfba, #e4cb9b) padding-box,
+    linear-gradient(#110c08, #110c08) border-box;
+  border-width: 7px;
+  box-shadow:
+    inset 0 0 0 1px rgb(90 55 20 / 0.35),
+    0 0 0 1px color-mix(in srgb, var(--metal-liso) 55%, transparent),
+    0 14px 30px -14px rgb(0 0 0 / 0.9),
+    0 0 36px -24px var(--metal-liso);
+  color-scheme: light;
+  /* Paleta para ler no pergaminho (os utilitários usam estas variáveis). */
+  --parchment: #2e1d0e;
+  --foreground: #2e1d0e;
+  --card-foreground: #2e1d0e;
+  --wood: #5a2f0c;
+  --gold: #8f4a0b;
+  --on-gold: #fff4e0;
+  --bottle: #2f6b28;
+  --alert: #a3311b;
+  --muted-foreground: #5f4630;
+  --border: #bf9f6c;
+  --input: #8f7350;
+  --surface: #f6e9cc;
+  --field: #fcf5e6;
+  --muted: #e6d2a9;
+  --card: #f3e4c4;
+  --secondary: #dfc79a;
+  --secondary-foreground: #2e1d0e;
+  --accent: #e6d2a9;
+  --accent-foreground: #2e1d0e;
+}
+[data-slot="card"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none;
+}
+/* Card escuro (faixa com cena de fundo e texto claro por cima). */
+[data-slot="card"][data-tom="escuro"] {
+  background:
     radial-gradient(140% 120% at 50% 50%, transparent 55%, rgb(0 0 0 / 0.45)) padding-box,
     linear-gradient(180deg, #2a211a, #1b1511) padding-box,
-    var(--metal) border-box;
-  box-shadow:
-    inset 0 0 0 1px rgb(0 0 0 / 0.7),
-    inset 0 0 0 4px color-mix(in srgb, var(--metal-liso) 30%, transparent),
-    0 12px 30px -14px rgb(0 0 0 / 0.85),
-    0 0 36px -22px var(--metal-liso);
+    linear-gradient(#110c08, #110c08) border-box;
+  color-scheme: dark;
+  --parchment: #f3e6cf;
+  --foreground: #f3e6cf;
+  --card-foreground: #f3e6cf;
+  --wood: #f6c879;
+  --gold: #f2a541;
+  --on-gold: #1d1611;
+  --muted-foreground: #cdb999;
 }
 [data-slot="card"]::after {
   content: "";
   position: absolute;
-  inset: 2px;
+  inset: -5px;
   z-index: 1;
   pointer-events: none;
   background: var(--metal);
-  --canto: 22px;
+  --canto: 20px;
   mask:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Cg transform=''%3E%3Cpath d='M1 1h17v3.2H4.2V18H1z'/%3E%3Cpath d='M7 7h9v9H7z M9.4 9.4v4.2h4.2V9.4z' fill-rule='evenodd'/%3E%3Cpath d='M18 1h8v1.6h-8z M1 18v8h1.6v-8z'/%3E%3C/g%3E%3C/svg%3E")
       top left / var(--canto) var(--canto) no-repeat,
@@ -585,4 +625,90 @@
 }
 .carta[data-encerrada] .carta-miolo {
   filter: grayscale(0.75) brightness(0.92);
+}
+
+/* Carregamento: d20 rolando, sombra que acompanha, frase que entra e barra que corre. */
+@keyframes dado-rola {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  30% {
+    transform: translateY(-18px) rotate(160deg);
+  }
+  55% {
+    transform: translateY(0) rotate(300deg);
+  }
+  70% {
+    transform: translateY(-6px) rotate(340deg);
+  }
+  85%,
+  100% {
+    transform: translateY(0) rotate(360deg);
+  }
+}
+@keyframes dado-sombra {
+  0%,
+  55%,
+  85%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.6;
+  }
+  30% {
+    transform: scaleX(0.55);
+    opacity: 0.25;
+  }
+  70% {
+    transform: scaleX(0.85);
+    opacity: 0.45;
+  }
+}
+@keyframes frase-entra {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes barra-corre {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(310%);
+  }
+}
+.dado-rolando {
+  animation: dado-rola 1.3s cubic-bezier(0.3, 0.7, 0.4, 1) infinite;
+  transform-origin: 50% 50%;
+}
+.dado-sombra {
+  animation: dado-sombra 1.3s ease-in-out infinite;
+}
+.frase-carregando {
+  animation: frase-entra 0.35s ease-out both;
+}
+.barra-carregando > span {
+  animation: barra-corre 1.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dado-rolando,
+  .dado-sombra,
+  .frase-carregando,
+  .barra-carregando > span {
+    animation: none;
+  }
+}
+.barra-navegacao > span {
+  animation: barra-corre 1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .barra-navegacao > span {
+    animation: none;
+    width: 100%;
+    opacity: 0.6;
+  }
 }

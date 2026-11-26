@@ -70,7 +70,7 @@ export default async function AventuraLayout({
           "pantry_items",
         ]}
       />
-      <Card moldura={MOLDURA_DA_FASE[evento.phase]} className="overflow-hidden py-0">
+      <Card moldura={MOLDURA_DA_FASE[evento.phase]} tom="escuro" className="overflow-hidden py-0">
         <div className="relative isolate flex min-h-40 flex-col items-center justify-center gap-1.5 px-6 py-6 text-center">
           <div className="absolute inset-0 -z-10 opacity-95">
             <CenaQuest cena={CENA_DA_FASE[evento.phase]} idBase={`banner-${id}`} foto={fotoDaFase(evento.phase)} />

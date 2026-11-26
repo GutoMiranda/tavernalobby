@@ -9,12 +9,14 @@ import { cn } from "@/lib/utils";
 function Card({
   className,
   moldura,
+  tom,
   ...props
-}: React.ComponentProps<"div"> & { moldura?: "ouro" | "verde" | "prata" }) {
+}: React.ComponentProps<"div"> & { moldura?: "ouro" | "verde" | "prata"; tom?: "escuro" }) {
   return (
     <div
       data-slot="card"
       data-moldura={moldura && moldura !== "ouro" ? moldura : undefined}
+      data-tom={tom}
       className={cn("text-card-foreground flex min-w-0 flex-col gap-5 py-6", className)}
       {...props}
     />
