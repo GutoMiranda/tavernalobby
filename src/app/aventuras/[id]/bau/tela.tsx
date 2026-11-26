@@ -8,6 +8,7 @@ import {
   Undo2,
 } from "lucide-react";
 
+import { Ajuda } from "@/components/ajuda";
 import { AcaoForm } from "@/components/acao-form";
 import { BotoesAgenda } from "@/components/aventura/botoes-agenda";
 import { BarraDaMeta } from "@/components/bau/barra-da-meta";
@@ -276,9 +277,10 @@ export async function TelaBau({ id, gerenciar, retornoPix }: { id: string; geren
           <CardTitle className="flex items-center gap-2">
             <IconeMoedas className="text-gold" /> Pilha de tesouro
           </CardTitle>
-          <CardDescription>
-            Saldo confirmado = entradas confirmadas − saídas (estornos já considerados).
-          </CardDescription>
+          <Ajuda rotulo="Como o saldo é calculado?">
+            Saldo confirmado = depósitos confirmados menos saídas. Estornos já entram na conta; depósitos aguardando
+            confirmação ainda não contam.
+          </Ajuda>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           <div className="grid items-end justify-items-center gap-4 sm:grid-cols-3">
@@ -417,11 +419,14 @@ export async function TelaBau({ id, gerenciar, retornoPix }: { id: string; geren
       <Card>
         <CardHeader>
           <CardTitle>Plano de depósitos do seu núcleo</CardTitle>
-          <CardDescription>
+          <Ajuda
+            resumo={`Sugestão: ${formatarCentavos(plano.porMesCentavos)} por mês${
+              plano.meses ? ` por ${plano.meses} ${plano.meses === 1 ? "mês" : "meses"}` : ""
+            }.`}
+          >
             Combine um valor e um dia do mês. O site lembra seu núcleo a partir desse dia, até o depósito do mês ser
-            registrado. Sugestão para cobrir sua parte: {formatarCentavos(plano.porMesCentavos)} por mês
-            {plano.meses ? ` por ${plano.meses} ${plano.meses === 1 ? "mês" : "meses"}` : ""}.
-          </CardDescription>
+            registrado.
+          </Ajuda>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {lembrete && (

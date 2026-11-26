@@ -1,13 +1,17 @@
-import { CheckCircle2, CircleHelp, XCircle } from "lucide-react";
+import { CheckCircle2, CircleHelp, MessageCircle, XCircle } from "lucide-react";
 
+import { Ajuda } from "@/components/ajuda";
 import { AcaoForm } from "@/components/acao-form";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { LinkSalao } from "@/components/mestre/link-salao";
 import { carregarAventura } from "@/lib/aventura-dados";
+import { linkWhatsApp, mensagemCobrancaPresenca } from "@/lib/cobranca";
 import { carregarCustos, type PessoaGrupo, type Presenca } from "@/lib/custos-dados";
 import { contextoDaTela } from "@/lib/telas";
+import { cn } from "@/lib/utils";
 
 import { salvarPresenca } from "@/app/aventuras/custos-actions";
 
@@ -31,6 +35,19 @@ export async function TelaPresenca({ id, gerenciar }: { id: string; gerenciar: b
   const criancasVao = vao.length - adultosVao;
   const naoVao = pessoas.filter((p) => st(p) === "nao_vai").length;
   const pendentes = pessoas.length - vao.length - naoVao;
+  const cobranca =
+    pendentes > 0
+      ? linkWhatsApp(
+          mensagemCobrancaPresenca(
+            dados.evento.name,
+            nucleos.map((n) => ({
+              nucleo: n.name,
+              pessoas: n.membros.filter((m) => st(m) === "pendente").map((m) => m.name),
+            })),
+            `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/aventuras/${id}/presenca`,
+          ),
+        )
+      : null;
   const alcool = vao.filter((p) => !p.is_child && presencas.get(p.id)?.alcohol_opt_in).length;
 
   return (
@@ -43,15 +60,20 @@ export async function TelaPresenca({ id, gerenciar }: { id: string; gerenciar: b
       <Card className="lg:col-span-3">
         <CardHeader>
           <CardTitle>Presença · quem vai</CardTitle>
-          <CardDescription>
+          <Ajuda
+            resumo={
+              totalDias
+                ? `O período tem ${totalDias} ${totalDias === 1 ? "dia" : "dias"}${
+                    periodo?.fonte === "mais_votada"
+                      ? " (prévia pela data mais votada; vale a data que for fechada)"
+                      : ""
+                  }.`
+                : "As datas ainda não foram fechadas; os dias ficam para depois."
+            }
+          >
             Um adulto de cada núcleo confirma por todos da família: se vai, quantos dias fica e se entra no rateio das
-            bebidas alcoólicas.{" "}
-            {totalDias
-              ? `O período tem ${totalDias} ${totalDias === 1 ? "dia" : "dias"}${
-                  periodo?.fonte === "mais_votada" ? " (prévia pela data mais votada; vale a data que for fechada)" : ""
-                }.`
-              : "As datas ainda não foram fechadas; os dias ficam para depois."}
-          </CardDescription>
+            bebidas alcoólicas.
+          </Ajuda>
         </CardHeader>
         <CardContent>
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Resumo da presença">
@@ -63,6 +85,16 @@ export async function TelaPresenca({ id, gerenciar }: { id: string; gerenciar: b
           <p className="mt-2 text-sm text-muted-foreground">
             {alcool} {alcool === 1 ? "adulto entrou" : "adultos entraram"} no rateio de bebidas alcoólicas.
           </p>
+          {cobranca && (
+            <a
+              href={cobranca}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(buttonVariants(), "mt-3 h-auto min-h-10 whitespace-normal")}
+            >
+              <MessageCircle className="size-4" aria-hidden /> Cobrar no WhatsApp quem não respondeu
+            </a>
+          )}
         </CardContent>
       </Card>
 

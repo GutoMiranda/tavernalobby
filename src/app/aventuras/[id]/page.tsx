@@ -5,7 +5,7 @@ import { CopiarBotao } from "@/components/copiar-botao";
 import { type EstalagemPainel, type OrigemPainel, PainelMapa } from "@/components/mapas/painel-mapa";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { exigirMembro, getPermissoes } from "@/lib/auth";
-import { contagemRegressiva, FASE_INFO, pendencias, ranking } from "@/lib/aventura";
+import { FASE_INFO, pendencias, ranking } from "@/lib/aventura";
 import { carregarAventura } from "@/lib/aventura-dados";
 import { carregarCustos } from "@/lib/custos-dados";
 import { lembreteDoPlano } from "@/lib/finance/bau";
@@ -57,7 +57,6 @@ export default async function PainelAventuraPage({
     })(),
   });
 
-  const contagem = contagemRegressiva(evento.start_date);
   const datasRanking = ranking(dados.datas, dados.reacoesDatas);
   const estalagensRanking = ranking(dados.estalagens, dados.reacoesEstalagens);
   const escolhida = dados.estalagens.find((e) => e.id === evento.chosen_accommodation_id);
@@ -132,10 +131,10 @@ export default async function PainelAventuraPage({
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <p>{FASE_INFO[evento.phase].proximoPasso}</p>
-          {(contagem || prazo) && (
+          {!evento.start_date && prazo && (
             <p className="flex items-center gap-2 font-medium text-wood">
               <CalendarClock className="size-5 text-bottle" aria-hidden />
-              {contagem ?? `Prazo da votação: ${formatarData(prazo!)}`}
+              Prazo da votação: {formatarData(prazo)}
             </p>
           )}
           {evento.description && (
@@ -249,10 +248,7 @@ export default async function PainelAventuraPage({
           <CardTitle className="flex items-center gap-2">
             <IconeMapa className="size-5 text-bottle" aria-hidden /> Mapa e rotas
           </CardTitle>
-          <CardDescription>
-            Toque numa estalagem (na lista ou no mapa) para ver a rota. Escolha se a rota sai da sua cidade ou do ponto
-            de encontro e veja o tempo de cada jeito de ir.
-          </CardDescription>
+          <CardDescription>Toque numa estalagem para ver a rota.</CardDescription>
         </CardHeader>
         <CardContent>
           <PainelMapa

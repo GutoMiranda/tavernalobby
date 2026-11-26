@@ -1,6 +1,7 @@
 import { ExternalLink, Pencil } from "lucide-react";
 import Link from "next/link";
 
+import { Ajuda } from "@/components/ajuda";
 import { AcaoForm } from "@/components/acao-form";
 import { FormEstalagem } from "@/components/aventura/form-estalagem";
 import { ReacaoBotoes } from "@/components/aventura/reacao-botoes";
@@ -49,11 +50,16 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
       <Card>
         <CardHeader>
           <CardTitle>Estalagens · hospedagens</CardTitle>
-          <CardDescription>
-            Qualquer membro sugere. Curta ou descurta; quem organiza escolhe a final. A parte de cada um aparece depois,
-            em Custos, conforme a presença confirmada.
-            {evento.accommodation_vote_deadline && ` Prazo: ${formatarData(evento.accommodation_vote_deadline)}.`}
-          </CardDescription>
+          <Ajuda
+            resumo={
+              evento.accommodation_vote_deadline
+                ? `Curta ou descurta. Prazo: ${formatarData(evento.accommodation_vote_deadline)}.`
+                : "Curta ou descurta as sugestões."
+            }
+          >
+            Qualquer membro sugere. Quem organiza escolhe a final. A parte de cada um aparece depois, em Custos,
+            conforme a presença confirmada.
+          </Ajuda>
         </CardHeader>
         <CardContent>
           {lista.length === 0 ? (

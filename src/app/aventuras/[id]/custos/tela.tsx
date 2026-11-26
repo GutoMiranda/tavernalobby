@@ -1,6 +1,7 @@
 import { AlertTriangle, CalendarClock, FileText, PiggyBank, Receipt } from "lucide-react";
 import Link from "next/link";
 
+import { Ajuda } from "@/components/ajuda";
 import { AcaoForm } from "@/components/acao-form";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -409,10 +410,10 @@ export async function TelaCustos({ id, gerenciar }: { id: string; gerenciar: boo
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Adicionar custo</CardTitle>
-            <CardDescription>
-              A divisão segue a regra da categoria: acomodação proporcional aos dias, comida igual entre presentes,
-              álcool só para quem marcou opt-in, e extras para todos ou só quem aderir.
-            </CardDescription>
+            <Ajuda rotulo="Como cada categoria é dividida?">
+              Acomodação proporcional aos dias, comida igual entre presentes, álcool só para quem marcou na Presença, e
+              extras para todos ou só para quem aderir.
+            </Ajuda>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <FormItem eventoId={id} acao="criar" />
