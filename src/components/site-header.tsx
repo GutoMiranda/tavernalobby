@@ -32,6 +32,7 @@ export async function SiteHeader() {
           avatar: pessoa.avatar,
           avatar_color: pessoa.avatar_color,
           epithet: pessoa.epithet,
+          gender: pessoa.gender,
           foto: null,
           papel: papelDe(pessoa, sessao?.tags ?? []),
         })
@@ -77,6 +78,7 @@ export async function SiteHeader() {
               avatar={eu.avatar}
               cor={eu.avatar_color}
               epiteto={eu.epithet}
+              sexo={eu.gender}
               fotoCaminho={pessoa.avatar_path}
               fotoUrl={eu.foto}
             />

@@ -29,6 +29,7 @@ export type MembroChat = {
   avatar: string | null;
   avatar_color: string | null;
   epithet: string | null;
+  gender?: string | null;
   foto?: string | null;
   papel: Papel;
 };
@@ -334,6 +335,7 @@ export function ChatConversa({ eu, moderacao, membros, compacto, destacarHash }:
                           nome={autor.name}
                           epiteto={compacto ? null : autor.epithet}
                           papel={autor.papel}
+                          sexo={autor.gender}
                         />
                         <time dateTime={m.created_at} className="text-xs text-muted-foreground">
                           {horaDaMensagem(m.created_at)}
@@ -466,7 +468,7 @@ export function ChatConversa({ eu, moderacao, membros, compacto, destacarHash }:
                     papel={m.papel}
                     tamanho={28}
                   />
-                  <NomeEnfeitado nome={m.name} epiteto={m.epithet} papel={m.papel} />
+                  <NomeEnfeitado nome={m.name} epiteto={m.epithet} papel={m.papel} sexo={m.gender} />
                 </button>
               </li>
             ))}

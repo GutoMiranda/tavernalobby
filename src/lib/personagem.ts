@@ -18,6 +18,35 @@ export const AVATARES = {
   feiticeiro: "Feiticeiro",
 } as const;
 export type Avatar = keyof typeof AVATARES;
+
+/** Sexo do personagem (opcional): troca o nome do emblema e o título da função. */
+export type Sexo = "m" | "f";
+export const SEXOS: Record<Sexo, string> = { m: "Masculino", f: "Feminino" };
+
+const NOMES_EMBLEMA: Record<Avatar, Record<Sexo, string>> = {
+  guerreiro: { m: "Guerreiro", f: "Guerreira" },
+  maga: { m: "Mago", f: "Maga" },
+  ladino: { m: "Ladino", f: "Ladina" },
+  bardo: { m: "Bardo", f: "Barda" },
+  clerigo: { m: "Clérigo", f: "Clériga" },
+  druida: { m: "Druida", f: "Druidesa" },
+  anao: { m: "Anão", f: "Anã" },
+  arqueira: { m: "Arqueiro", f: "Arqueira" },
+  taverneiro: { m: "Taverneiro", f: "Taverneira" },
+  dragao: { m: "Dragão", f: "Dragoa" },
+  cavaleiro: { m: "Cavaleiro", f: "Cavaleira" },
+  feiticeiro: { m: "Feiticeiro", f: "Feiticeira" },
+};
+
+export function lerSexo(valor: string | null | undefined): Sexo | null {
+  return valor === "m" || valor === "f" ? valor : null;
+}
+
+/** Nome do emblema conforme o sexo ("maga" → Mago ou Maga). Sem sexo, o nome padrão. */
+export function nomeDoEmblema(avatar: Avatar, sexo?: string | null): string {
+  const s = lerSexo(sexo);
+  return s ? NOMES_EMBLEMA[avatar][s] : AVATARES[avatar];
+}
 export const IDS_AVATARES = Object.keys(AVATARES) as Avatar[];
 
 export const CORES_AVATAR = {
@@ -41,6 +70,17 @@ export const PAPEIS: Record<Papel, { titulo: string | null; comum: string | null
   despensa: { titulo: "Guardião do Armazém", comum: "despensa" },
   membro: { titulo: null, comum: null },
 };
+
+const TITULOS_FEMININOS: Partial<Record<Papel, string>> = {
+  mestre: "Mestra da Taverna",
+  tesoureiro: "Guardiã do Baú",
+  despensa: "Guardiã do Armazém",
+};
+
+/** Título da função conforme o sexo (Guardião ou Guardiã do Baú). */
+export function tituloDoPapel(papel: Papel, sexo?: string | null): string | null {
+  return (lerSexo(sexo) === "f" ? TITULOS_FEMININOS[papel] : null) ?? PAPEIS[papel].titulo;
+}
 
 /** Papel que decora o nome: o mais alto entre admin, Tesoureiro e Despensa. */
 export function papelDe(pessoa: { is_admin: boolean }, tags: readonly string[]): Papel {
@@ -68,12 +108,12 @@ export function corDoAvatar(nome: string, cor: string | null | undefined): strin
 }
 
 /** Valida o formulário do personagem. Campos vazios voltam a null (sem avatar, cor ou epíteto). */
-export function lerPersonagem(dados: { avatar?: string; cor?: string; epiteto?: string }) {
+export function lerPersonagem(dados: { avatar?: string; cor?: string; epiteto?: string; sexo?: string }) {
   const avatar = dados.avatar && (IDS_AVATARES as string[]).includes(dados.avatar) ? (dados.avatar as Avatar) : null;
   const cor = dados.cor && (IDS_CORES as string[]).includes(dados.cor) ? (dados.cor as CorAvatar) : null;
   const epiteto = (dados.epiteto ?? "").trim().replace(/\s+/g, " ");
   if (epiteto.length > 40) return { erro: "O epíteto pode ter até 40 caracteres." } as const;
-  return { avatar, cor, epiteto: epiteto || null } as const;
+  return { avatar, cor, epiteto: epiteto || null, sexo: lerSexo(dados.sexo) } as const;
 }
 
 const CAMINHO_FOTO = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.webp$/;

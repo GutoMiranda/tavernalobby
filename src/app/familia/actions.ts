@@ -118,6 +118,7 @@ export async function salvarPersonagem(_: EstadoAcao, dados: FormData): Promise<
     avatar: texto(dados, "avatar", 20),
     cor: texto(dados, "cor", 20),
     epiteto: String(dados.get("epiteto") ?? ""),
+    sexo: texto(dados, "sexo", 2),
   });
   if ("erro" in lido) return { erro: lido.erro };
   const { data: alvo } = await supabase
@@ -129,7 +130,13 @@ export async function salvarPersonagem(_: EstadoAcao, dados: FormData): Promise<
   if (foto === false) return { erro: "Foto inválida. Envie de novo." };
   const { data, error } = await supabase
     .from("people")
-    .update({ avatar: lido.avatar, avatar_color: lido.cor, epithet: lido.epiteto, avatar_path: foto })
+    .update({
+      avatar: lido.avatar,
+      avatar_color: lido.cor,
+      epithet: lido.epiteto,
+      gender: lido.sexo,
+      avatar_path: foto,
+    })
     .eq("id", id)
     .eq("household_id", pessoa.household_id)
     .select("id");
