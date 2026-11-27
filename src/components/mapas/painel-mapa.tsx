@@ -71,7 +71,12 @@ export function PainelMapa({
   /** Rota até a estalagem selecionada, calculada no servidor. */
   rotas: RotaResumo[] | null;
 }) {
-  const [modo, setModo] = useState<ModoRota>("DRIVE");
+  const [modoEscolhido, setModo] = useState<ModoRota>("DRIVE");
+  // Se o meio escolhido não tem rota (ex.: carro sem rota numa ilha), usa o primeiro que tiver.
+  const modo =
+    rotas?.find((x) => x.modo === modoEscolhido)?.segundos != null || !rotas?.some((x) => x.segundos != null)
+      ? modoEscolhido
+      : (rotas.find((x) => x.segundos != null)?.modo ?? modoEscolhido);
   const [carregando, iniciar] = useTransition();
   // Mostra na hora a estalagem e a saída tocadas, enquanto o servidor calcula a rota.
   const [pedido, setPedido] = useState<{ estalagem: string | null; de: OrigemDaRota | null } | null>(null);
