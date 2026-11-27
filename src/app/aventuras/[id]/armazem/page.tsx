@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { Dica } from "@/components/dica";
 import { Ajuda } from "@/components/ajuda";
 import { IconeMantimentos } from "@/components/icones";
 import { GavetaNovoItem } from "@/components/armazem/gaveta-novo-item";
@@ -46,6 +47,10 @@ export default async function ArmazemPage({ params }: { params: Promise<{ id: st
           <div className="flex flex-wrap items-start justify-between gap-3">
             <CardTitle className="flex items-center gap-2">
               <IconeMantimentos className="text-gold" /> Armazém · lista de compras
+              <Dica>
+                Lista única do que o grupo vai comprar. Toque em “+ Item” para adicionar (nome, quantidade e preço). O
+                valor total entra em Custos e é dividido entre quem vai; bebida alcoólica só entre quem bebe.
+              </Dica>
             </CardTitle>
             <GavetaNovoItem eventoId={id} />
           </div>

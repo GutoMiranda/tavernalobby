@@ -8,6 +8,7 @@ import {
   Undo2,
 } from "lucide-react";
 
+import { Dica } from "@/components/dica";
 import { Ajuda } from "@/components/ajuda";
 import { AcaoForm } from "@/components/acao-form";
 import { BotoesAgenda } from "@/components/aventura/botoes-agenda";
@@ -276,6 +277,10 @@ export async function TelaBau({ id, gerenciar, retornoPix }: { id: string; geren
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconeMoedas className="text-gold" /> Pilha de tesouro
+            <Dica>
+              Quanto o grupo já guardou para a aventura, comparado com o total que precisa. A pilha cresce a cada
+              depósito confirmado.
+            </Dica>
           </CardTitle>
           <Ajuda rotulo="Como o saldo é calculado?">
             Saldo confirmado = depósitos confirmados menos saídas. Estornos já entram na conta; depósitos aguardando
@@ -338,6 +343,10 @@ export async function TelaBau({ id, gerenciar, retornoPix }: { id: string; geren
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconeMoedas className="text-gold" /> Depositar no baú
+            <Dica>
+              1. Digite o valor (sugerimos o da sua meta mensal). 2. Gere o Pix e pague no app do seu banco. 3. O
+              depósito aparece no histórico e conta para a sua meta assim que for confirmado.
+            </Dica>
           </CardTitle>
           <CardDescription>
             Escolha quanto vai guardar e pague por Pix. Confira o titular antes de confirmar no app do banco.
@@ -684,6 +693,10 @@ export async function TelaBau({ id, gerenciar, retornoPix }: { id: string; geren
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <History className="size-5 text-bottle" aria-hidden /> Histórico do baú
+            <Dica>
+              Todo dinheiro que entrou e saiu. “Aguardando” é depósito que o Tesoureiro ainda não conferiu. Um erro
+              nunca é apagado: ele é corrigido com um estorno, que aparece aqui também.
+            </Dica>
           </CardTitle>
           <CardDescription>Todos os lançamentos, visíveis a todos. Nada é apagado.</CardDescription>
         </CardHeader>

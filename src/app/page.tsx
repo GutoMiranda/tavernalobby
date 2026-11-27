@@ -1,6 +1,8 @@
 import { CheckCircle2, ChevronRight, ListTodo } from "lucide-react";
 import Link from "next/link";
 
+import { Ajuda } from "@/components/ajuda";
+import { Dica } from "@/components/dica";
 import { ListaAventuras } from "@/components/aventura/lista-aventuras";
 import { IconeCoroa, IconeD20, IconeEscudo } from "@/components/icones";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,8 +63,35 @@ export default async function TavernaPage() {
                 <CheckCircle2 className="size-5 text-bottle" aria-hidden />
               )}
               {minhas.length ? "O que falta você fazer" : "Tudo em dia!"}
+              <Dica>
+                Cada item é algo que só você (ou seu núcleo) pode fazer: votar numa data, confirmar presença, depositar
+                no Baú. Toque no item para ir direto à tela certa. Ele some daqui quando estiver feito.
+              </Dica>
             </CardTitle>
             {!minhas.length && <CardDescription>Nenhuma pendência sua nas aventuras em andamento.</CardDescription>}
+            <Ajuda rotulo="Primeira vez aqui? Veja o passo a passo">
+              <ol className="flex list-decimal flex-col gap-1 pl-4">
+                <li>
+                  Em <strong>Minha família</strong>, cadastre quem vai com você e o seu ponto de saída.
+                </li>
+                <li>
+                  Abra a aventura e, em <strong>Datas</strong>, curta as datas em que pode ir.
+                </li>
+                <li>
+                  Em <strong>Estalagens</strong>, curta as hospedagens de que gostou (ou sugira uma).
+                </li>
+                <li>
+                  Com a data fechada, confirme quem vai em <strong>Presença</strong>.
+                </li>
+                <li>
+                  Veja a sua parte em <strong>Custos</strong> e guarde o dinheiro no <strong>Baú</strong> por Pix.
+                </li>
+              </ol>
+              <p className="mt-2">
+                Os ícones <span aria-hidden>?</span> ao lado dos títulos explicam cada tela: passe o mouse ou toque
+                neles.
+              </p>
+            </Ajuda>
           </CardHeader>
           {minhas.length > 0 && (
             <CardContent>

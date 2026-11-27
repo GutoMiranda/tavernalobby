@@ -1,6 +1,7 @@
 import { ArrowRight, Flag, Home, MapPin } from "lucide-react";
 import type { Metadata } from "next";
 
+import { Dica } from "@/components/dica";
 import { PontosEncontro } from "@/components/aventura/form-ponto-encontro";
 import { RotaViewer } from "@/components/mapas/rota-viewer";
 import { SeletorRota } from "@/components/mapas/seletor-rota";
@@ -89,6 +90,10 @@ export default async function GeralPage({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Flag className="size-5 text-bottle" aria-hidden /> Pontos de encontro
+            <Dica>
+              Vai sair junto com outras famílias? Cadastre o lugar e o horário em que vocês se encontram. Cada grupo
+              pode ter o seu ponto, e ele aparece no mapa como opção de saída.
+            </Dica>
           </CardTitle>
           <CardDescription>Onde a party se reúne antes de seguir para a estalagem. Pode haver vários.</CardDescription>
         </CardHeader>
@@ -123,6 +128,10 @@ export default async function GeralPage({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MapPin className="size-5 text-bottle" aria-hidden /> Rotas
+            <Dica>
+              Escolha a saída e o destino e toque em “Ver rota”. Depois escolha o meio de transporte. Em ônibus/metrô dá
+              para escolher o horário de saída. “Compartilhar rota completa” manda tudo pelo WhatsApp.
+            </Dica>
           </CardTitle>
           <CardDescription>
             Escolha de onde e para onde. O tempo de carro e moto considera o trânsito de agora.

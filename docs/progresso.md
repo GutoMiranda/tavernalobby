@@ -68,3 +68,4 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 - 26/11/2026: vários pontos de encontro e famílias de teste (migração 24). 244 testes Vitest e 10 Playwright passando.
 - 27/11/2026: Etapa 4 das melhorias (abas sem tela cheia, seletor único de rotas, prévia em Custos, cartas compactas, família sem personagem, pendências no sino). 244 testes Vitest e 10 Playwright passando.
 - 27/11/2026: ônibus e metrô consultados na hora (sem cache), com campo "Sair em" e horários de saída e chegada de cada linha (decisão 110). 244 testes Vitest e 10 Playwright passando.
+- 27/11/2026: dicas "?" nas telas principais (abrem ao passar o mouse ou tocar), "Como funciona?" abrindo no hover e passo a passo na página inicial (decisão 111). 244 testes Vitest e 10 Playwright passando.

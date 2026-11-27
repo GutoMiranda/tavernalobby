@@ -1,6 +1,7 @@
 import { AlertTriangle, CalendarClock, FileText, PiggyBank, Receipt } from "lucide-react";
 import Link from "next/link";
 
+import { Dica } from "@/components/dica";
 import { Ajuda } from "@/components/ajuda";
 import { AcaoForm } from "@/components/acao-form";
 import { Badge } from "@/components/ui/badge";
@@ -83,6 +84,10 @@ export async function TelaCustos({ id, gerenciar }: { id: string; gerenciar: boo
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <PiggyBank className="size-5 text-bottle" aria-hidden /> Sua meta até a aventura
+            <Dica>
+              Quanto o seu núcleo precisa guardar no Baú até a data da aventura, e quanto isso dá por mês. Para pagar,
+              vá na aba Baú e deposite por Pix.
+            </Dica>
           </CardTitle>
           <CardDescription className="flex items-center gap-2">
             <CalendarClock className="size-4" aria-hidden />
@@ -247,6 +252,10 @@ export async function TelaCustos({ id, gerenciar }: { id: string; gerenciar: boo
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Receipt className="size-5 text-bottle" aria-hidden /> Total da aventura
+            <Dica>
+              Soma de tudo: estalagem, comida e bebida do Armazém e outros custos. Cada item é dividido entre os adultos
+              que vão; crianças não pagam. Em “Memória de cálculo” você vê a conta da sua parte.
+            </Dica>
           </CardTitle>
           <CardDescription>
             {formatarCentavos(rateio.totalCentavos)} em {itens.length} {itens.length === 1 ? "item" : "itens"}

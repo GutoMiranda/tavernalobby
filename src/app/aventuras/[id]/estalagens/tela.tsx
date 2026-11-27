@@ -1,6 +1,7 @@
 import { ExternalLink, Pencil } from "lucide-react";
 import Link from "next/link";
 
+import { Dica } from "@/components/dica";
 import { Ajuda } from "@/components/ajuda";
 import { AcaoForm } from "@/components/acao-form";
 import { FormEstalagem } from "@/components/aventura/form-estalagem";
@@ -49,7 +50,13 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
       {atalhoSalao && <LinkSalao href={`/mestre/aventuras/${id}/estalagens`} />}
       <Card>
         <CardHeader>
-          <CardTitle>Estalagens · hospedagens</CardTitle>
+          <CardTitle>
+            Estalagens · hospedagens{" "}
+            <Dica>
+              Veja as hospedagens sugeridas, abra o anúncio e curta as que gostou. Achou uma boa? Sugira em “Sugerir
+              estalagem” com o link e o preço total. Quem organiza escolhe a final.
+            </Dica>
+          </CardTitle>
           <Ajuda
             resumo={
               evento.accommodation_vote_deadline

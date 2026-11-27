@@ -1,6 +1,7 @@
 import { CalendarClock, CheckCircle2, ListTodo, Map as IconeMapa } from "lucide-react";
 import Link from "next/link";
 
+import { Dica } from "@/components/dica";
 import { CopiarBotao } from "@/components/copiar-botao";
 import {
   type EncontroPainel,
@@ -131,7 +132,13 @@ export default async function PainelAventuraPage({
       <Card className="border-gold/60">
         <CardHeader>
           <CardDescription>Fase atual · {FASE_INFO[evento.phase].nome}</CardDescription>
-          <CardTitle>Próximo passo</CardTitle>
+          <CardTitle>
+            Próximo passo{" "}
+            <Dica>
+              A aventura anda em fases: votar a data, escolher a estalagem, confirmar presença, juntar o dinheiro no Baú
+              e ir. Este quadro diz o que o grupo precisa fazer agora. As abas acima levam a cada parte.
+            </Dica>
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <p>{FASE_INFO[evento.phase].proximoPasso}</p>
@@ -154,6 +161,7 @@ export default async function PainelAventuraPage({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ListTodo className="size-5 text-bottle" aria-hidden /> Minhas pendências
+            <Dica>O que falta você fazer nesta aventura. Toque num item para resolver.</Dica>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -258,6 +266,11 @@ export default async function PainelAventuraPage({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconeMapa className="size-5 text-bottle" aria-hidden /> Mapa e rotas
+            <Dica>
+              Toque numa estalagem (no mapa ou na lista) para ver a rota. Em “Sair de”, escolha de onde parte: a sua
+              saída (cadastrada em Minha família) ou um ponto de encontro. Depois escolha o meio: carro, moto,
+              ônibus/metrô ou a pé.
+            </Dica>
           </CardTitle>
           <CardDescription>Toque numa estalagem para ver a rota.</CardDescription>
         </CardHeader>

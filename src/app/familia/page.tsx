@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { Dica } from "@/components/dica";
 import { AcaoForm } from "@/components/acao-form";
 import { CampoLugar } from "@/components/mapas/campo-lugar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,7 +57,13 @@ export default async function FamiliaPage() {
       <div className="grade-taverna grade-2">
         <Card className="lg:row-span-3">
           <CardHeader>
-            <CardTitle>Quem é da família</CardTitle>
+            <CardTitle>
+              Quem é da família{" "}
+              <Dica>
+                Seu núcleo é quem você confirma presença e paga junto (cônjuge, filhos…). Cadastre todos: crianças
+                contam para comida e camas, mas não pagam.
+              </Dica>
+            </CardTitle>
             <CardDescription>Crianças contam para comida e camas, mas não entram no rateio dos custos.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -97,7 +104,13 @@ export default async function FamiliaPage() {
 
         <Card id="origem">
           <CardHeader>
-            <CardTitle>Ponto de saída</CardTitle>
+            <CardTitle>
+              Ponto de saída{" "}
+              <Dica>
+                Digite sua cidade ou, melhor, o endereço com número, e escolha na lista. É daqui que o mapa calcula a
+                sua rota até a estalagem.
+              </Dica>
+            </CardTitle>
             <CardDescription>
               De onde o núcleo parte para as aventuras: a cidade ou o endereço exato (rua e número), para a rota sair do
               lugar certo. Todos do grupo veem esse ponto no mapa
