@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { Dica } from "@/components/dica";
 import { Ajuda } from "@/components/ajuda";
 import { ChatConversa } from "@/components/chat/chat-conversa";
 import { ListaOnlinePagina } from "@/components/chat/lista-online-pagina";
@@ -29,6 +30,10 @@ export default async function ChatPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconeCaneca className="text-gold" /> Chat da taverna
+            <Dica>
+              Escreva @ e o nome para chamar alguém: a pessoa recebe aviso no sino. Tem uma pergunta? Toque em “Marcar
+              como dúvida” antes de enviar: ela aparece em “Dúvidas abertas” até ser resolvida.
+            </Dica>
           </CardTitle>
           <Ajuda resumo="Conversa geral do grupo.">
             Use @ para chamar alguém e “Marcar como dúvida” para perguntas: quem for mencionado recebe aviso no sino.

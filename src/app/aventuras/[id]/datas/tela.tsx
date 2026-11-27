@@ -1,3 +1,4 @@
+import { Dica } from "@/components/dica";
 import { Ajuda } from "@/components/ajuda";
 import { AcaoForm } from "@/components/acao-form";
 import { ReacaoBotoes } from "@/components/aventura/reacao-botoes";
@@ -24,7 +25,13 @@ export async function TelaDatas({ id, gerenciar }: { id: string; gerenciar: bool
       {atalhoSalao && <LinkSalao href={`/mestre/aventuras/${id}/datas`} />}
       <Card>
         <CardHeader>
-          <CardTitle>Votação de datas</CardTitle>
+          <CardTitle>
+            Votação de datas{" "}
+            <Dica>
+              Curta (polegar para cima) todas as datas em que você pode ir e descurta as que não dá. Pode votar em
+              várias. Ganha a que tiver mais curtidas menos descurtidas; quem organiza fecha a data.
+            </Dica>
+          </CardTitle>
           <Ajuda
             resumo={
               evento.date_vote_deadline

@@ -1,5 +1,6 @@
 import { CheckCircle2, CircleHelp, MessageCircle, XCircle } from "lucide-react";
 
+import { Dica } from "@/components/dica";
 import { Ajuda } from "@/components/ajuda";
 import { AcaoForm } from "@/components/acao-form";
 import { Badge } from "@/components/ui/badge";
@@ -59,7 +60,13 @@ export async function TelaPresenca({ id, gerenciar }: { id: string; gerenciar: b
       )}
       <Card className="lg:col-span-3">
         <CardHeader>
-          <CardTitle>Presença · quem vai</CardTitle>
+          <CardTitle>
+            Presença · quem vai{" "}
+            <Dica>
+              Marque “Vai” ou “Não vai” para cada pessoa do seu núcleo, inclusive crianças. Se alguém vai só parte do
+              tempo, escolha quantos dias fica: a hospedagem fica proporcional. Depois toque em “Salvar presença”.
+            </Dica>
+          </CardTitle>
           <Ajuda
             resumo={
               totalDias
