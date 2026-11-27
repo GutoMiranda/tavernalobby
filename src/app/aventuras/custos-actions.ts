@@ -2,7 +2,7 @@
 
 import { exigirMembro, exigirPermissao } from "@/lib/auth";
 import { revalidarAventura } from "@/lib/revalidar";
-import { periodoEfetivo } from "@/lib/aventura";
+import { lerDiasPresenca, periodoEfetivo } from "@/lib/aventura";
 import { reaisParaCentavos } from "@/lib/dinheiro";
 import { type EstadoAcao, mensagemErro } from "@/lib/erros";
 import { diasDoPeriodo } from "@/lib/format";
@@ -56,14 +56,10 @@ export async function salvarPresenca(_: EstadoAcao, d: FormData): Promise<Estado
   for (const id of ids) {
     const status = txt(d, `status_${id}`, 10);
     if (!["pendente", "vai", "nao_vai"].includes(status)) return { erro: "Escolha se vai ou não." };
-    const diasTxt = txt(d, `dias_${id}`, 3);
-    let days: number | null = null;
-    if (diasTxt && diasTxt !== "todo") {
-      const n = Number(diasTxt);
-      if (!Number.isInteger(n) || n < 1) return { erro: "Os dias precisam ser um número a partir de 1." };
-      if (maximo && n > maximo) return { erro: `O período tem ${maximo} dias; escolha até ${maximo}.` };
-      days = maximo && n === maximo ? null : n;
-    }
+    // Antes o texto era cortado em 3 letras e "todo" virava "tod", dando erro no "Período todo".
+    const leitura = lerDiasPresenca(txt(d, `dias_${id}`, 10), maximo);
+    if (leitura.erro !== undefined) return { erro: leitura.erro };
+    const days = leitura.dias;
     const valores = {
       status,
       days: status === "vai" ? days : null,

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   contagemRegressiva,
+  lerDiasPresenca,
   custoPorAdulto,
   pendencias,
   periodoEfetivo,
@@ -158,5 +159,21 @@ describe("período efetivo para as contas", () => {
 
   it("sem datas candidatas: sem período", () => {
     expect(periodoEfetivo({ start_date: null, end_date: null }, [], [])).toBeNull();
+  });
+});
+
+describe("Dias da presença", () => {
+  it('"Período todo" vale como o período inteiro (null)', () => {
+    expect(lerDiasPresenca("todo", 4)).toEqual({ dias: null });
+    expect(lerDiasPresenca("", null)).toEqual({ dias: null });
+  });
+  it("aceita de 1 ao período e trata o número igual ao período como período todo", () => {
+    expect(lerDiasPresenca("2", 4)).toEqual({ dias: 2 });
+    expect(lerDiasPresenca("4", 4)).toEqual({ dias: null });
+  });
+  it("recusa zero, texto e mais dias que o período", () => {
+    expect(lerDiasPresenca("0", 4).erro).toBeTruthy();
+    expect(lerDiasPresenca("tod", 4).erro).toBeTruthy();
+    expect(lerDiasPresenca("5", 4).erro).toMatch(/até 4/);
   });
 });
