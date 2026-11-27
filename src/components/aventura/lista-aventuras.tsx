@@ -17,13 +17,32 @@ export function ListaAventuras({ eventos, resumos }: { eventos: Evento[]; resumo
       </Card>
     );
   }
+  const encerrada = (e: Evento) => e.phase === "concluida" || e.phase === "cancelada";
+  const ativas = eventos.filter((e) => !encerrada(e));
+  const jaForam = eventos.filter(encerrada);
+  // No celular, só a primeira aventura em andamento mostra a cena; as outras ficam compactas.
+  const carta = (e: Evento, i: number) => (
+    <li key={e.id}>
+      <CartaAventura
+        evento={e}
+        resumo={resumos.get(e.id) ?? VAZIO}
+        foto={fotos[e.phase]}
+        hoje={hoje}
+        compacta={i > 0 || encerrada(e)}
+      />
+    </li>
+  );
   return (
-    <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-      {eventos.map((e) => (
-        <li key={e.id}>
-          <CartaAventura evento={e} resumo={resumos.get(e.id) ?? VAZIO} foto={fotos[e.phase]} hoje={hoje} />
-        </li>
-      ))}
-    </ul>
+    <div className="flex flex-col gap-6">
+      {ativas.length > 0 && <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">{ativas.map(carta)}</ul>}
+      {jaForam.length > 0 && (
+        <details open={ativas.length === 0} className="group">
+          <summary className="cursor-pointer font-display text-lg font-semibold text-wood">
+            Já foram ({jaForam.length})
+          </summary>
+          <ul className="mt-4 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">{jaForam.map(carta)}</ul>
+        </details>
+      )}
+    </div>
   );
 }

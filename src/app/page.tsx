@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { exigirMembro, getPermissoes } from "@/lib/auth";
 import { COLUNAS_EVENTO, type Evento, resumoDasAventuras } from "@/lib/aventura-dados";
 import { sortearFrase } from "@/lib/frases";
-import { pendenciasDaTaverna } from "@/lib/pendencias-dados";
+import { pendenciasDaTaverna, semRepetir } from "@/lib/pendencias-dados";
 import { entraNoSalao } from "@/lib/permissoes";
 
 // Nova frase a cada visita.
@@ -26,14 +26,7 @@ export default async function TavernaPage() {
     resumoDasAventuras(supabase, eventos ?? []),
     pendenciasDaTaverna(supabase, pessoa, eventos ?? [], permissoes.datas.editar).catch(() => []),
   ]);
-  // A cidade de saída vale para todas as aventuras: aparece uma vez só.
-  const vistas = new Set<string>();
-  const minhas = todas.filter((p) => {
-    const chave = p.href.startsWith("/familia") ? p.href : `${p.href}|${p.texto}`;
-    if (vistas.has(chave)) return false;
-    vistas.add(chave);
-    return true;
-  });
+  const minhas = semRepetir(todas);
   const primeiroNome = pessoa.name.split(" ")[0];
   const frase = sortearFrase();
 

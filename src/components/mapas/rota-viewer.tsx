@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import type { ModoRota, RotaResumo } from "@/lib/rotas";
 import { textoDaRota } from "@/lib/transporte";
 import { cn } from "@/lib/utils";
-import { linkGoogleMaps, linkMapaEmbutido, type ModoMapa } from "@/lib/viagem";
+import { formatarDistancia, formatarDuracao, linkGoogleMaps, linkMapaEmbutido, type ModoMapa } from "@/lib/viagem";
 
 import { CHAVE_MAPS } from "./chave";
 import { CompartilharRota } from "./compartilhar-rota";
@@ -39,37 +39,63 @@ export function RotaViewer({
   /** Tempos e passos calculados no servidor (para o passo a passo e o compartilhar). */
   resumo?: RotaResumo[];
 }) {
-  const [modo, setModo] = useState<ModoMapa>("carro");
+  // Só os meios com rota; sem nenhum tempo calculado (ex.: sem chave do Google), mostra todos.
+  const comRota = MODOS.filter((m) => resumo.find((r) => r.modo === MODO_DA_API[m.id])?.segundos != null);
+  const visiveis = comRota.length > 0 ? comRota : MODOS;
+  const [modo, setModo] = useState<ModoMapa>(visiveis[0].id);
   const rota = resumo.find((r) => r.modo === MODO_DA_API[modo]);
   const passos = modo === "transporte" ? (rota?.passos ?? []) : [];
   const link = linkGoogleMaps(origem, destino, modo);
   const rotulo = MODOS.find((m) => m.id === modo)?.rotulo ?? "";
+  const semRota = MODOS.filter((m) => !visiveis.includes(m)).map((m) => m.rotulo.toLowerCase());
 
   return (
     <div className="flex flex-col gap-3">
-      <div role="radiogroup" aria-label="Como ir" className="flex flex-wrap gap-2">
-        {MODOS.map(({ id, rotulo, icone: Icone }) => (
-          <Button
-            key={id}
-            type="button"
-            role="radio"
-            aria-checked={modo === id}
-            variant="outline"
-            size="sm"
-            onClick={() => setModo(id)}
-            className={cn(
-              modo === id &&
-                "border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
-            )}
-          >
-            <Icone aria-hidden /> {rotulo}
-          </Button>
-        ))}
+      <div role="radiogroup" aria-label="Como ir" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {visiveis.map(({ id, rotulo, icone: Icone }) => {
+          const r = resumo.find((x) => x.modo === MODO_DA_API[id]);
+          const ativo = modo === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              role="radio"
+              aria-checked={ativo}
+              onClick={() => setModo(id)}
+              className={cn(
+                "flex flex-col items-start gap-0.5 rounded-md border p-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none",
+                ativo ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface hover:bg-muted",
+              )}
+            >
+              <span className="flex items-center gap-1.5 text-sm">
+                <Icone className="size-4" aria-hidden /> {rotulo}
+              </span>
+              {r?.segundos != null && (
+                <>
+                  <span className="text-lg font-semibold">{formatarDuracao(r.segundos)}</span>
+                  <span className={cn("text-xs", ativo ? "opacity-85" : "text-muted-foreground")}>
+                    {r.metros != null && formatarDistancia(r.metros)}
+                    {r.segundosSemTransito != null &&
+                      r.segundos - r.segundosSemTransito > 300 &&
+                      ` · +${formatarDuracao(r.segundos - r.segundosSemTransito)} de trânsito`}
+                  </span>
+                </>
+              )}
+            </button>
+          );
+        })}
       </div>
+      {comRota.length > 0 && semRota.length > 0 && (
+        <p className="text-xs text-muted-foreground">Sem rota do Google para: {semRota.join(", ")}.</p>
+      )}
+      {resumo.find((r) => r.erro) && (
+        <p className="text-sm break-words text-alert">
+          O Google recusou parte do cálculo: {resumo.find((r) => r.erro)?.erro}
+        </p>
+      )}
       {modo === "moto" && (
         <p className="text-sm text-muted-foreground">
-          O mapa embutido mostra a rota de carro; o tempo de moto aparece no resumo acima, quando o Google tem essa
-          rota.
+          O mapa embutido mostra a rota de carro; o tempo acima é o de moto.
         </p>
       )}
       {passos.length > 0 && <PassosTransporte passos={passos} />}

@@ -29,11 +29,14 @@ export function CartaAventura({
   resumo,
   foto,
   hoje = hojeEmSaoPaulo(),
+  compacta = false,
 }: {
   evento: Evento;
   resumo: ResumoDaCarta;
   foto?: string | null;
   hoje?: string;
+  /** No celular, esconde a cena (a carta fica com metade da altura). */
+  compacta?: boolean;
 }) {
   const dias = e.start_date ? diasEntre(hoje, e.start_date) : null;
   const encerrada = e.phase === "concluida" || e.phase === "cancelada";
@@ -88,7 +91,7 @@ export function CartaAventura({
             <p className="text-sm leading-snug text-[#3a2a1a]">{onde}</p>
           </div>
 
-          <div className="carta-ilustracao">
+          <div className={compacta ? "carta-ilustracao max-sm:hidden" : "carta-ilustracao"}>
             <span className="absolute inset-0 block">
               <CenaQuest cena={CENA_DA_FASE[e.phase]} idBase={`carta-${e.id}`} foto={foto} />
             </span>

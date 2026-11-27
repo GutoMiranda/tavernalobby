@@ -100,3 +100,14 @@ export async function pendenciasDaTaverna(
     }).map((p) => ({ ...p, aventura: evento.name }));
   });
 }
+
+/** Tira repetições: o ponto de saída vale para todas as aventuras, então aparece uma vez só. */
+export function semRepetir(lista: PendenciaDaTaverna[]): PendenciaDaTaverna[] {
+  const vistas = new Set<string>();
+  return lista.filter((p) => {
+    const chave = p.href.startsWith("/familia") ? p.href : `${p.href}|${p.texto}`;
+    if (vistas.has(chave)) return false;
+    vistas.add(chave);
+    return true;
+  });
+}

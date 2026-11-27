@@ -225,21 +225,6 @@ export function PainelMapa({
                 </p>
               )}
             </div>
-            <div role="radiogroup" aria-label="Como ir" className="flex flex-wrap gap-2">
-              {MODOS.map(({ id, rotulo, icone: Icone }) => (
-                <Button
-                  key={id}
-                  type="button"
-                  role="radio"
-                  aria-checked={modo === id}
-                  size="sm"
-                  variant={modo === id ? "default" : "outline"}
-                  onClick={() => setModo(id)}
-                >
-                  <Icone aria-hidden /> {rotulo}
-                </Button>
-              ))}
-            </div>
             {!destino ? (
               <p className="text-sm text-muted-foreground">
                 Esta estalagem ainda não tem endereço. Edite para incluir.
@@ -252,6 +237,7 @@ export function PainelMapa({
                 destino={destino}
                 rotas={rotas}
                 modo={modo}
+                setModo={setModo}
                 carregando={carregando}
                 semOrigem="Escolha de onde sai a rota."
                 nomeOrigem={encontro?.nome ?? minhaOrigem?.nome ?? "minha saída"}
@@ -338,6 +324,7 @@ function Trecho({
   destino,
   rotas,
   modo,
+  setModo,
   carregando,
   semOrigem,
   nomeOrigem,
@@ -351,6 +338,7 @@ function Trecho({
   destino: LatLng;
   rotas: RotaResumo[] | null | undefined;
   modo: ModoRota;
+  setModo: (m: ModoRota) => void;
   carregando: boolean;
   semOrigem: string;
 }) {
@@ -361,12 +349,27 @@ function Trecho({
         <p className="text-sm text-muted-foreground">{semOrigem}</p>
       ) : (
         <>
-          <ul className="grid grid-cols-2 gap-1 text-sm">
-            {MODOS.map(({ id, rotulo }) => {
+          <div role="radiogroup" aria-label="Como ir" className="grid grid-cols-2 gap-1.5 text-sm">
+            {(carregando || !rotas?.some((x) => x.segundos != null)
+              ? MODOS
+              : MODOS.filter(({ id }) => rotas.find((x) => x.modo === id)?.segundos != null)
+            ).map(({ id, rotulo, icone: Icone }) => {
               const r = rotas?.find((x) => x.modo === id);
               return (
-                <li key={id} className={cn("rounded px-1.5 py-1", id === modo && "bg-gold/20 font-medium")}>
-                  <span className="block text-xs text-muted-foreground">{rotulo}</span>
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={id === modo}
+                  onClick={() => setModo(id)}
+                  className={cn(
+                    "rounded-md border px-2 py-1.5 text-left focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none",
+                    id === modo ? "border-gold bg-gold/25 font-medium" : "border-border hover:bg-muted",
+                  )}
+                >
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Icone className="size-3.5" aria-hidden /> {rotulo}
+                  </span>
                   {carregando
                     ? "…"
                     : r?.segundos != null
@@ -382,10 +385,10 @@ function Trecho({
                       +{formatarDuracao(r.segundos - r.segundosSemTransito)} de trânsito
                     </span>
                   )}
-                </li>
+                </button>
               );
             })}
-          </ul>
+          </div>
           {rotas?.find((x) => x.erro) && (
             <p className="text-xs break-words text-alert">
               O Google recusou o cálculo

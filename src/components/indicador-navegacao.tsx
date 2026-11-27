@@ -9,11 +9,13 @@ import { FRASES_CARREGANDO } from "@/lib/frases-carregando";
  * Resposta imediata ao clicar num link interno: barra dourada correndo no topo e, se a página demorar,
  * um aviso com o dado rolando e uma frase de RPG. Some quando a nova página chega (ou em 15 s).
  * Escuta na captura, antes do Link do Next cancelar o clique padrão.
+ * Links com data-navegacao="leve" (ex.: abas da aventura) só mostram a barra: a página fica à vista.
  */
 export function IndicadorNavegacao() {
   const caminho = usePathname();
   const [indo, setIndo] = useState(false);
   const [demorando, setDemorando] = useState(false);
+  const [leve, setLeve] = useState(false);
   const [frase, setFrase] = useState(0);
 
   useEffect(() => {
@@ -29,6 +31,7 @@ export function IndicadorNavegacao() {
       const url = new URL(a.href, location.href);
       if (url.origin !== location.origin || url.pathname === location.pathname) return;
       setFrase(Math.floor(Math.random() * FRASES_CARREGANDO.length));
+      setLeve(a.dataset.navegacao === "leve");
       setIndo(true);
     }
     document.addEventListener("click", aoClicar, true);
@@ -51,7 +54,7 @@ export function IndicadorNavegacao() {
       <div aria-hidden className="barra-navegacao fixed inset-x-0 top-0 z-[60] h-1 overflow-hidden bg-gold/20">
         <span className="block h-full w-1/3 bg-gold shadow-[0_0_10px_var(--gold)]" />
       </div>
-      {demorando && (
+      {demorando && !leve && (
         <div className="fixed inset-0 z-[55] grid place-items-center bg-black/45 p-4 backdrop-blur-[2px]">
           <div
             role="status"

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import {
   IconeBalanca,
@@ -21,6 +22,9 @@ import { cn } from "@/lib/utils";
  */
 export function AbasAventura({ id }: { id: string }) {
   const caminho = usePathname();
+  // A aba tocada acende na hora; o conteúdo carrega embaixo com banner e abas parados.
+  const [tocada, setTocada] = useState<string | null>(null);
+  useEffect(() => setTocada(null), [caminho]);
   const base = `/aventuras/${id}`;
   const abas = [
     { href: base, rotulo: "Painel", comum: "resumo", Icone: IconeEstandarte },
@@ -37,7 +41,7 @@ export function AbasAventura({ id }: { id: string }) {
     <nav aria-label="Seções da aventura" className="pb-1">
       <ul className="grid grid-cols-4 gap-x-1.5 gap-y-4 pt-3 sm:grid-cols-8 sm:gap-2">
         {abas.map(({ href, rotulo, comum, Icone }) => {
-          const ativa = href === base ? caminho === base : caminho.startsWith(href);
+          const ativa = tocada ? tocada === href : href === base ? caminho === base : caminho.startsWith(href);
           return (
             <li key={href} className="relative">
               {/* Correntinhas da placa */}
@@ -51,6 +55,8 @@ export function AbasAventura({ id }: { id: string }) {
               />
               <Link
                 href={href}
+                data-navegacao="leve"
+                onClick={() => setTocada(href)}
                 aria-current={ativa ? "page" : undefined}
                 className={cn(
                   "group flex h-full min-w-0 flex-col items-center gap-1 rounded-xl border px-1 py-2 text-center transition-all duration-200 focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none sm:px-2 sm:py-2.5",
