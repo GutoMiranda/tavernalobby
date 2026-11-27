@@ -126,7 +126,13 @@ export type RotaResumo = {
  * Uma rota (Routes API, Compute Routes) para cada modo pedido. Carro e moto consideram o trânsito do momento.
  * Modos sem rota disponível (ex.: moto ou transporte público fora das áreas cobertas pelo Google) voltam com null.
  */
-export async function calcularRotas(origem: Ponto, destino: Ponto, modos: ModoRota[]): Promise<RotaResumo[]> {
+export async function calcularRotas(
+  origem: Ponto,
+  destino: Ponto,
+  modos: ModoRota[],
+  /** Horário de saída do transporte público (padrão: agora). */
+  saida?: Date,
+): Promise<RotaResumo[]> {
   const ponto = (p: Ponto) => ({ location: { latLng: { latitude: p.lat, longitude: p.lng } } });
   return Promise.all(
     modos.map(async (modo): Promise<RotaResumo> => {
@@ -150,6 +156,7 @@ export async function calcularRotas(origem: Ponto, destino: Ponto, modos: ModoRo
             destination: ponto(destino),
             travelMode: modo,
             ...(comTransito ? { routingPreference: "TRAFFIC_AWARE" } : {}),
+            ...(modo === "TRANSIT" && saida ? { departureTime: saida.toISOString() } : {}),
             languageCode: "pt-BR",
             regionCode: "BR",
           }),
@@ -225,6 +232,21 @@ export async function rotasEmCache(
       erro: motivo,
     }));
   }
+}
+
+/**
+ * Ônibus e metrô consultados na hora, sem cache: as linhas e os horários dependem de quando a pessoa sai.
+ * Saída no passado vira "agora".
+ */
+export async function transporteNaHora(
+  o: { lat: number; lng: number },
+  d: { lat: number; lng: number },
+  saida?: Date,
+): Promise<RotaResumo & { saida: string }> {
+  const agora = new Date();
+  const quando = saida && saida.getTime() > agora.getTime() ? saida : agora;
+  const [r] = await calcularRotas({ id: "o", ...o }, { id: "d", ...d }, ["TRANSIT"], quando);
+  return { ...r, saida: quando.toISOString() };
 }
 
 /**

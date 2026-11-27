@@ -9,7 +9,7 @@ const linha = (tipo: string, curto: string, nome: string, de: string, para: stri
     stopDetails: { departureStop: { name: de }, arrivalStop: { name: para } },
     headsign: nome,
     stopCount: paradas,
-    localizedValues: { departureTime: { time: { text: "15:49" } } },
+    localizedValues: { departureTime: { time: { text: "15:49" } }, arrivalTime: { time: { text: "16:40" } } },
     transitLine: { nameShort: curto, color: "#0455A1", vehicle: { type: tipo } },
   },
 });
@@ -34,9 +34,18 @@ describe("Passo a passo do transporte público", () => {
 
   it("monta o texto para compartilhar com as linhas e o link", () => {
     const passos = resumirPassos([linha("BUS", "381", "Vila Fátima", "Centro", "Ikeda", 44)]);
-    const t = textoDaRota({ de: "Tietê", para: "Chácara", modo: "Ônibus / metrô", segundos: 6540, passos, link: "L" });
-    expect(t).toContain("cerca de 1h49");
-    expect(t).toContain("1. Ônibus 381 (sentido Vila Fátima): de Centro até Ikeda, 44 paradas");
+    expect(passos[0]).toMatchObject({ partida: "15:49", chegada: "16:40" });
+    const t = textoDaRota({
+      de: "Tietê",
+      para: "Chácara",
+      modo: "Ônibus / metrô",
+      segundos: 6540,
+      passos,
+      quando: "saindo em 27/11/2026, 15:40",
+      link: "L",
+    });
+    expect(t).toContain("cerca de 1h49, saindo em 27/11/2026, 15:40");
+    expect(t).toContain("1. 15:49 · Ônibus 381 (sentido Vila Fátima): de Centro até Ikeda, 44 paradas");
     expect(t.endsWith("Abrir no Google Maps: L")).toBe(true);
   });
 });

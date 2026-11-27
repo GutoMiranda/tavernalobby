@@ -21,7 +21,7 @@ import {
 
 import { CHAVE_MAPS } from "./chave";
 import { CompartilharRota } from "./compartilhar-rota";
-import { PassosTransporte } from "./passos-transporte";
+import { TransporteNaHora } from "./transporte-na-hora";
 
 type LatLng = { lat: number; lng: number };
 export type OrigemPainel = LatLng & { id: string; nome: string; detalhe?: string; minha: boolean };
@@ -401,17 +401,23 @@ function Trecho({
               {rotas.find((x) => x.erro)?.erro}
             </p>
           )}
-          {!carregando && modo === "TRANSIT" && (rotas?.find((x) => x.modo === "TRANSIT")?.passos?.length ?? 0) > 0 && (
-            <PassosTransporte passos={rotas!.find((x) => x.modo === "TRANSIT")!.passos!} />
+          {!carregando && modo === "TRANSIT" && (
+            <TransporteNaHora
+              key={`${origem.lat},${origem.lng}>${destino.lat},${destino.lng}`}
+              origem={origem}
+              destino={destino}
+              nomeDe={nomeOrigem}
+              nomePara={nomeDestino}
+              link={linkGoogleMaps(origem, destino, "transporte")}
+            />
           )}
-          {!carregando && (
+          {!carregando && modo !== "TRANSIT" && (
             <CompartilharRota
               texto={textoDaRota({
                 de: nomeOrigem,
                 para: nomeDestino,
                 modo: MODOS.find((m) => m.id === modo)?.rotulo ?? "",
                 segundos: rotas?.find((x) => x.modo === modo)?.segundos ?? null,
-                passos: modo === "TRANSIT" ? rotas?.find((x) => x.modo === "TRANSIT")?.passos : undefined,
                 link: linkGoogleMaps(origem, destino, modoParaMapa(modo)),
               })}
             />
