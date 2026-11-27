@@ -153,3 +153,19 @@ export function periodoEfetivo(
   const lider = ranking(ordenadas, reacoesDatas)[0];
   return lider ? { inicio: lider.start_date, fim: lider.end_date, fonte: "mais_votada" } : null;
 }
+
+/**
+ * Lê o "Quantos dias fica" da tela de Presença. "todo" (ou vazio) = período todo, gravado como null;
+ * escolher o número igual ao período também vira null.
+ */
+export function lerDiasPresenca(
+  texto: string,
+  maximo: number | null,
+): { dias: number | null; erro?: undefined } | { erro: string } {
+  const t = texto.trim();
+  if (!t || t === "todo") return { dias: null };
+  const n = Number(t);
+  if (!Number.isInteger(n) || n < 1) return { erro: "Os dias precisam ser um número a partir de 1." };
+  if (maximo && n > maximo) return { erro: `O período tem ${maximo} dias; escolha até ${maximo}.` };
+  return { dias: maximo && n === maximo ? null : n };
+}
