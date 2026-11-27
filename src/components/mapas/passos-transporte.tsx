@@ -28,8 +28,9 @@ export function PassosTransporte({ passos }: { passos: PassoTransporte[] }) {
               {p.sentido && <span className="font-medium">sentido {p.sentido}</span>}
             </span>
             <span className="text-muted-foreground">
-              {p.partida && `${p.partida} · `}
-              {p.de ?? "?"} → {p.para ?? "?"}
+              {p.de ?? "?"}
+              {p.partida && ` (${p.partida})`} → {p.para ?? "?"}
+              {p.chegada && ` (${p.chegada})`}
               {p.paradas ? ` · ${p.paradas} ${p.paradas === 1 ? "parada" : "paradas"}` : ""}
             </span>
           </li>

@@ -11,7 +11,7 @@ import { formatarDistancia, formatarDuracao, linkGoogleMaps, linkMapaEmbutido, t
 
 import { CHAVE_MAPS } from "./chave";
 import { CompartilharRota } from "./compartilhar-rota";
-import { PassosTransporte } from "./passos-transporte";
+import { TransporteNaHora } from "./transporte-na-hora";
 
 const MODOS: { id: ModoMapa; rotulo: string; icone: typeof Car }[] = [
   { id: "carro", rotulo: "Carro", icone: Car },
@@ -44,7 +44,6 @@ export function RotaViewer({
   const visiveis = comRota.length > 0 ? comRota : MODOS;
   const [modo, setModo] = useState<ModoMapa>(visiveis[0].id);
   const rota = resumo.find((r) => r.modo === MODO_DA_API[modo]);
-  const passos = modo === "transporte" ? (rota?.passos ?? []) : [];
   const link = linkGoogleMaps(origem, destino, modo);
   const rotulo = MODOS.find((m) => m.id === modo)?.rotulo ?? "";
   const semRota = MODOS.filter((m) => !visiveis.includes(m)).map((m) => m.rotulo.toLowerCase());
@@ -98,7 +97,16 @@ export function RotaViewer({
           O mapa embutido mostra a rota de carro; o tempo acima é o de moto.
         </p>
       )}
-      {passos.length > 0 && <PassosTransporte passos={passos} />}
+      {modo === "transporte" && (
+        <TransporteNaHora
+          key={`${origem.lat},${origem.lng}>${destino.lat},${destino.lng}`}
+          origem={origem}
+          destino={destino}
+          nomeDe={origem.nome ?? "a saída"}
+          nomePara={destino.nome ?? "o destino"}
+          link={link}
+        />
+      )}
       {CHAVE_MAPS ? (
         <iframe
           key={modo}
@@ -115,16 +123,17 @@ export function RotaViewer({
         </p>
       )}
       <div className="flex flex-wrap gap-2">
-        <CompartilharRota
-          texto={textoDaRota({
-            de: origem.nome ?? "a saída",
-            para: destino.nome ?? "o destino",
-            modo: rotulo,
-            segundos: rota?.segundos ?? null,
-            passos,
-            link,
-          })}
-        />
+        {modo !== "transporte" && (
+          <CompartilharRota
+            texto={textoDaRota({
+              de: origem.nome ?? "a saída",
+              para: destino.nome ?? "o destino",
+              modo: rotulo,
+              segundos: rota?.segundos ?? null,
+              link,
+            })}
+          />
+        )}
         <Button asChild variant="secondary" className="h-auto min-h-9 max-w-full py-2 whitespace-normal">
           <a href={link} target="_blank" rel="noopener noreferrer">
             <ExternalLink aria-hidden /> Abrir no Google Maps

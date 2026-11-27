@@ -18,6 +18,7 @@ export type PassoTransporte =
       para: string | null;
       paradas: number | null;
       partida: string | null;
+      chegada: string | null;
       cor: string | null;
       corTexto: string | null;
     };
@@ -28,7 +29,7 @@ export type PassoApi = {
   staticDuration?: string;
   transitDetails?: {
     stopDetails?: { departureStop?: { name?: string }; arrivalStop?: { name?: string } };
-    localizedValues?: { departureTime?: { time?: { text?: string } } };
+    localizedValues?: { departureTime?: { time?: { text?: string } }; arrivalTime?: { time?: { text?: string } } };
     headsign?: string;
     stopCount?: number;
     transitLine?: {
@@ -74,6 +75,7 @@ export function resumirPassos(passos: PassoApi[]): PassoTransporte[] {
         para: t.stopDetails?.arrivalStop?.name ?? null,
         paradas: t.stopCount ?? null,
         partida: t.localizedValues?.departureTime?.time?.text ?? null,
+        chegada: t.localizedValues?.arrivalTime?.time?.text ?? null,
         cor: linha?.color ?? null,
         corTexto: linha?.textColor ?? null,
       });
@@ -95,11 +97,15 @@ export function textoDaRota(opcoes: {
   modo: string;
   segundos: number | null;
   passos?: PassoTransporte[];
+  /** Ex.: "saindo em 27/11/2026, 08:30" (horários do transporte público). */
+  quando?: string;
   link: string;
 }): string {
   const linhas = [
     `🗺️ Rota de ${opcoes.de} até ${opcoes.para}`,
-    `${opcoes.modo}${opcoes.segundos != null ? `: cerca de ${formatarDuracao(opcoes.segundos)}` : ""}`,
+    `${opcoes.modo}${opcoes.segundos != null ? `: cerca de ${formatarDuracao(opcoes.segundos)}` : ""}${
+      opcoes.quando ? `, ${opcoes.quando}` : ""
+    }`,
   ];
   if (opcoes.passos?.length) {
     linhas.push("");
@@ -107,7 +113,7 @@ export function textoDaRota(opcoes: {
       linhas.push(
         p.tipo === "a_pe"
           ? `${i + 1}. A pé, ${formatarDuracao(p.segundos)}`
-          : `${i + 1}. ${p.veiculo} ${p.linha}${p.sentido ? ` (sentido ${p.sentido})` : ""}${
+          : `${i + 1}. ${p.partida ? `${p.partida} · ` : ""}${p.veiculo} ${p.linha}${p.sentido ? ` (sentido ${p.sentido})` : ""}${
               p.de ? `: de ${p.de}` : ""
             }${p.para ? ` até ${p.para}` : ""}${p.paradas ? `, ${p.paradas} paradas` : ""}`,
       );
