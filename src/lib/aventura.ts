@@ -113,7 +113,8 @@ export function pendencias(params: {
     if (p.estalagens.length === 0)
       lista.push({ texto: "Sugerir uma estalagem (hospedagem)", href: `${base}/estalagens` });
   }
-  if (["presenca", "preparativos"].includes(p.fase) && (p.presencasPendentes ?? 0) > 0) {
+  // Desde o início da aventura (a pedido do dono): dá para responder antes de a data fechar.
+  if (!["concluida", "cancelada"].includes(p.fase) && (p.presencasPendentes ?? 0) > 0) {
     const n = p.presencasPendentes!;
     lista.push({
       texto: `Confirmar a presença de ${n} ${n === 1 ? "pessoa" : "pessoas"} do seu núcleo`,

@@ -80,6 +80,14 @@ describe("pendências", () => {
     ]);
   });
 
+  it("pede a presença desde a votação de datas, e não depois de concluída", () => {
+    const naVotacao = pendencias({ ...base, fase: "datas", datas: [], nucleoTemOrigem: true, presencasPendentes: 1 });
+    expect(naVotacao).toEqual([
+      { texto: "Confirmar a presença de 1 pessoa do seu núcleo", href: "/aventuras/e1/presenca" },
+    ]);
+    expect(pendencias({ ...base, fase: "concluida", nucleoTemOrigem: true, presencasPendentes: 1 })).toEqual([]);
+  });
+
   it("lembra o depósito do mês atrasado do plano", () => {
     const lista = pendencias({ ...base, fase: "preparativos", nucleoTemOrigem: true, depositoAtrasado: "R$ 150,00" });
     expect(lista).toEqual([{ texto: "Fazer o depósito do mês no baú: R$ 150,00", href: "/aventuras/e1/bau" }]);
