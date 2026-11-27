@@ -199,6 +199,15 @@ export const carregarCustos = cache(
       pessoaId: admin?.id ?? null,
       nucleoId: admin?.household_id ?? null,
     });
+    // Enquanto ninguém confirmou, uma prévia: todos vão o período todo (bebida alcoólica fica de fora até as adesões).
+    const estimativa = pessoasRateio.some((p) => p.vai)
+      ? null
+      : ratearTudo(
+          itensRateio,
+          pessoasRateio.map((p) => ({ ...p, vai: true, dias: null })),
+          totalDias ?? 1,
+          { pessoaId: admin?.id ?? null, nucleoId: admin?.household_id ?? null },
+        );
 
     // Baú da aventura (lançamentos ficam visíveis a todos os membros aprovados).
     const { data: fundo } = await supabase.from("funds").select("id").eq("event_id", evento.id).maybeSingle();
@@ -224,6 +233,7 @@ export const carregarCustos = cache(
       planos: planos ?? [],
       pessoas,
       pessoasRateio,
+      estimativa,
       presencas,
       itens,
       itensRateio,

@@ -2,21 +2,18 @@ import type { Metadata } from "next";
 
 import { AcaoForm } from "@/components/acao-form";
 import { CampoLugar } from "@/components/mapas/campo-lugar";
-import { EditorPersonagem } from "@/components/personagem/editor-personagem";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { COLUNAS_PESSOA, exigirMembro, type Pessoa } from "@/lib/auth";
-import { urlsDasFotos } from "@/lib/membros-dados";
-import { papelDe } from "@/lib/personagem";
 
-import { adicionarDependente, renomearNucleo, salvarOrigem, salvarPersonagem } from "./actions";
+import { adicionarDependente, renomearNucleo, salvarOrigem } from "./actions";
 import { PessoaItem } from "./pessoa-item";
 
 export const metadata: Metadata = { title: "Minha família" };
 
 export default async function FamiliaPage() {
-  const { supabase, pessoa, tags, user } = await exigirMembro();
+  const { supabase, pessoa } = await exigirMembro();
 
   const [{ data: nucleo }, { data: membros }] = await Promise.all([
     supabase
@@ -51,39 +48,12 @@ export default async function FamiliaPage() {
         <p className="text-muted-foreground">
           {adultos} {adultos === 1 ? "adulto" : "adultos"}
           {criancas > 0 && ` e ${criancas} ${criancas === 1 ? "criança" : "crianças"}`}. Você confirma presença e opções
-          por todos daqui, e os valores do núcleo aparecem somados para quem paga.
+          por todos daqui, e os valores do núcleo aparecem somados para quem paga. Seu personagem (emblema, cor e
+          epíteto) se edita tocando no seu avatar, no topo.
         </p>
       </section>
 
       <div className="grade-taverna grade-2">
-        <Card className="lg:col-span-2" moldura="verde">
-          <CardHeader>
-            <CardTitle>Seu personagem</CardTitle>
-            <CardDescription>
-              Como a taverna te mostra no chat e na lista de quem está online: emblema, cor e um epíteto. A moldura do
-              nome vem da sua função no grupo.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <EditorPersonagem
-              pessoaId={pessoa.id}
-              nome={pessoa.name}
-              papel={papelDe(pessoa, tags)}
-              userId={user.id}
-              inicial={{
-                avatar: pessoa.avatar,
-                cor: pessoa.avatar_color,
-                epiteto: pessoa.epithet,
-                sexo: pessoa.gender,
-                fotoCaminho: pessoa.avatar_path,
-                fotoUrl:
-                  (await urlsDasFotos(supabase, [pessoa.avatar_path ?? ""])).get(pessoa.avatar_path ?? "") ?? null,
-              }}
-              acao={salvarPersonagem}
-            />
-          </CardContent>
-        </Card>
-
         <Card className="lg:row-span-3">
           <CardHeader>
             <CardTitle>Quem é da família</CardTitle>

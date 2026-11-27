@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell, CheckCheck, ListTodo } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -32,6 +32,7 @@ export function SinoNotificacoes({ pessoaId, naoLidas }: { pessoaId: string; nao
   const supabase = useMemo(() => createClient(), []);
   const [aberta, setAberta] = useState(false);
   const [avisos, setAvisos] = useState<Aviso[] | null>(null);
+  const [pendencias, setPendencias] = useState<{ texto: string; href: string; aventura: string }[] | null>(null);
 
   const carregar = useCallback(async () => {
     const { data } = await supabase
@@ -42,6 +43,21 @@ export function SinoNotificacoes({ pessoaId, naoLidas }: { pessoaId: string; nao
       .returns<Aviso[]>();
     setAvisos(data ?? []);
   }, [supabase]);
+
+  // "O que falta você fazer" em todas as aventuras: busca só quando a gaveta abre.
+  useEffect(() => {
+    if (!aberta) return;
+    let vivo = true;
+    fetch("/api/pendencias", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { pendencias: [] }))
+      .then((j: { pendencias?: { texto: string; href: string; aventura: string }[] }) => {
+        if (vivo) setPendencias(j.pendencias ?? []);
+      })
+      .catch(() => vivo && setPendencias([]));
+    return () => {
+      vivo = false;
+    };
+  }, [aberta]);
 
   useEffect(() => {
     const ch = supabase
@@ -122,6 +138,29 @@ export function SinoNotificacoes({ pessoaId, naoLidas }: { pessoaId: string; nao
           </div>
         }
       >
+        {pendencias && pendencias.length > 0 && (
+          <section aria-label="O que falta você fazer" className="border-b border-border p-3">
+            <p className="mb-2 flex items-center gap-2 font-display font-semibold text-wood">
+              <ListTodo className="size-4 text-gold" aria-hidden /> O que falta você fazer ({pendencias.length})
+            </p>
+            <ul className="flex flex-col gap-1.5">
+              {pendencias.map((p) => (
+                <li key={`${p.href}|${p.texto}`}>
+                  <Link
+                    href={p.href}
+                    onClick={fechar}
+                    className="block rounded-md border border-gold/40 bg-gold/10 px-3 py-2 text-sm hover:bg-gold/20 focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none"
+                  >
+                    {p.texto}
+                    {!p.href.startsWith("/familia") && (
+                      <span className="block text-xs text-muted-foreground">{p.aventura}</span>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         {avisos === null ? (
           <p className="p-4 text-muted-foreground">Buscando avisos…</p>
         ) : avisos.length === 0 ? (

@@ -38,11 +38,14 @@ export async function TelaCustos({ id, gerenciar }: { id: string; gerenciar: boo
   const nome = new Map(pessoas.map((p) => [p.id, p.name]));
   const doMeuNucleo = pessoas.filter((p) => p.household_id === pessoa.household_id);
   const minhaParteNucleo = rateio.porNucleo.get(pessoa.household_id) ?? 0;
+  // Sem confirmações, a meta usa a prévia "se todos forem" (senão a parte seria zero e o plano diria "coberta").
+  const previa = custos.estimativa?.porNucleo.get(pessoa.household_id) ?? null;
+  const meta = custos.estimativa ? (previa ?? 0) : minhaParteNucleo;
   const hoje = hojeEmSaoPaulo();
   const inicio = periodo?.inicio ?? null;
   const contagem = contagemRegressiva(inicio, hoje);
   const deposito = depositosDoNucleo(custos.lancamentos, pessoa.household_id);
-  const plano = planoDeEconomia(minhaParteNucleo, deposito.confirmadoCentavos, hoje, inicio);
+  const plano = planoDeEconomia(meta, deposito.confirmadoCentavos, hoje, inicio);
   const porAdulto = doMeuNucleo
     .map((p) => ({ id: p.id, nome: p.name, parte: rateio.porPessoa.get(p.id) ?? 0 }))
     .filter((a) => a.parte > 0)
@@ -92,7 +95,11 @@ export async function TelaCustos({ id, gerenciar }: { id: string; gerenciar: boo
         </CardHeader>
         <CardContent>
           <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" aria-label="Resumo da sua meta">
-            <Indicador rotulo="Minha parte (núcleo)" valor={formatarCentavos(minhaParteNucleo)} />
+            <Indicador
+              rotulo={custos.estimativa ? "Minha parte (prévia)" : "Minha parte (núcleo)"}
+              valor={formatarCentavos(meta)}
+              detalhe={custos.estimativa ? "se todos forem; ninguém confirmou ainda" : undefined}
+            />
             <Indicador
               rotulo="Já enviei ao baú"
               valor={formatarCentavos(deposito.confirmadoCentavos)}
@@ -116,7 +123,7 @@ export async function TelaCustos({ id, gerenciar }: { id: string; gerenciar: boo
             />
             <Indicador
               rotulo="Progresso"
-              valor={`${minhaParteNucleo ? Math.min(100, Math.floor((deposito.confirmadoCentavos * 100) / minhaParteNucleo)) : 0}%`}
+              valor={`${meta ? Math.min(100, Math.floor((deposito.confirmadoCentavos * 100) / meta)) : 0}%`}
               detalhe="da sua parte"
             />
           </ul>
@@ -207,18 +214,26 @@ export async function TelaCustos({ id, gerenciar }: { id: string; gerenciar: boo
       <Card className="border-gold/60 lg:col-span-2">
         <CardHeader>
           <CardDescription>Minha parte · {doMeuNucleo.length > 1 ? "seu núcleo inteiro" : "você"}</CardDescription>
-          <CardTitle className="text-3xl">{formatarCentavos(minhaParteNucleo)}</CardTitle>
+          <CardTitle className={ninguemConfirmou ? "text-3xl text-muted-foreground" : "text-3xl"}>
+            {formatarCentavos(minhaParteNucleo)}
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {ninguemConfirmou && (
-            <p className="flex items-center gap-2 text-sm text-alert">
-              <AlertTriangle className="size-4" aria-hidden /> Ninguém confirmou presença ainda. A divisão só aparece
-              depois das confirmações, em{" "}
-              <Link href={`/aventuras/${id}/presenca`} className="underline underline-offset-4">
-                Presença
-              </Link>
-              .
-            </p>
+            <div className="rounded-md border border-gold/50 bg-gold/10 p-3 text-sm">
+              <p className="font-medium">
+                Prévia se todos forem: {formatarCentavos(custos.estimativa?.porNucleo.get(pessoa.household_id) ?? 0)}{" "}
+                para o seu núcleo
+              </p>
+              <p className="text-muted-foreground">
+                Ninguém confirmou presença ainda, então a conta considera todo o grupo no período inteiro, sem as
+                bebidas alcoólicas. O valor real aparece com as confirmações em{" "}
+                <Link href={`/aventuras/${id}/presenca`} className="text-bottle underline underline-offset-4">
+                  Presença
+                </Link>
+                .
+              </p>
+            </div>
           )}
           <MemoriaDeCalculo
             pessoas={doMeuNucleo.map((p) => ({ id: p.id, nome: p.name }))}

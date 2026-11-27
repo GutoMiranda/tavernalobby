@@ -7,20 +7,13 @@ import { SeletorRota } from "@/components/mapas/seletor-rota";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { exigirMembro, getPermissoes } from "@/lib/auth";
 import { carregarAventura, nomeDoPonto } from "@/lib/aventura-dados";
-import { type ModoRota, type RotaResumo, rotasEmCache } from "@/lib/rotas";
-import { formatarDistancia, formatarDuracao } from "@/lib/viagem";
+import { type RotaResumo, rotasEmCache } from "@/lib/rotas";
+import { formatarDuracao } from "@/lib/viagem";
 
 export const metadata: Metadata = { title: "Geral" };
 
 type Local = { chave: string; nome: string; detalhe?: string; lat: number; lng: number };
 const nomeDoPontoLocal = (l: Local) => l.nome.replace(/^Ponto de encontro: /, "");
-
-const NOME_MODO: Record<ModoRota, string> = {
-  DRIVE: "Carro",
-  TWO_WHEELER: "Moto",
-  TRANSIT: "Ônibus / metrô",
-  WALK: "A pé",
-};
 
 export default async function GeralPage({
   params,
@@ -146,33 +139,6 @@ export default async function GeralPage({
               <SeletorRota opcoes={todos} de={de?.chave} para={para?.chave}>
                 {podeRotear ? (
                   <>
-                    {resumo.length > 0 && (
-                      <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4" aria-label="Tempo por modo">
-                        {resumo.map((r) => (
-                          <li key={r.modo} className="rounded-md border border-border bg-surface p-3">
-                            <p className="text-sm text-muted-foreground">{NOME_MODO[r.modo]}</p>
-                            {r.segundos != null ? (
-                              <>
-                                <p className="text-lg font-semibold">{formatarDuracao(r.segundos)}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {r.metros != null && formatarDistancia(r.metros)}
-                                  {r.segundosSemTransito != null &&
-                                    r.segundos - r.segundosSemTransito > 300 &&
-                                    ` · +${formatarDuracao(r.segundos - r.segundosSemTransito)} de trânsito`}
-                                </p>
-                              </>
-                            ) : (
-                              <p className="text-sm">Sem rota disponível</p>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {resumo.find((r) => r.erro) && (
-                      <p className="text-sm break-words text-alert">
-                        O Google recusou parte do cálculo: {resumo.find((r) => r.erro)?.erro}
-                      </p>
-                    )}
                     <RotaViewer key={`${de.chave}-${para.chave}`} origem={de} destino={para} resumo={resumo} />
                   </>
                 ) : (
