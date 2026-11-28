@@ -6,7 +6,7 @@ import { Ajuda } from "@/components/ajuda";
 import { AcaoForm } from "@/components/acao-form";
 import { FormEstalagem } from "@/components/aventura/form-estalagem";
 import { ReacaoBotoes } from "@/components/aventura/reacao-botoes";
-import { Badge } from "@/components/ui/badge";
+import { type ItemVitrine, VitrineEstalagens } from "@/components/aventura/vitrine-estalagens";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinkSalao } from "@/components/mestre/link-salao";
@@ -72,25 +72,32 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
           {lista.length === 0 ? (
             <p className="text-muted-foreground">Nenhuma estalagem sugerida ainda. Seja o primeiro a achar uma boa!</p>
           ) : (
-            <ol className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {lista.map((e) => {
+            <VitrineEstalagens
+              temEncontro={!!encontro}
+              itens={lista.map((e): ItemVitrine => {
                 const ehEscolhida = e.id === escolhida;
                 const minha = e.created_by === pessoa.id;
                 const possoEditar = minha || perm.editar;
                 const possoRemover = minha || perm.excluir;
-                return (
-                  <li
-                    key={e.id}
-                    className={`flex h-full flex-col gap-3 rounded-lg border p-3 ${ehEscolhida ? "border-bottle bg-bottle/10" : "border-border bg-surface"}`}
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-display text-lg font-semibold text-wood">{e.posicao}º</span>
-                      <span className="font-medium">{e.name}</span>
-                      {ehEscolhida && <Badge>Estalagem escolhida</Badge>}
-                    </div>
-
-                    {e.photos.length > 0 && (
-                      <div className="-mx-1 flex gap-2 overflow-x-auto px-1">
+                const viagem = doEncontro.get(e.id);
+                return {
+                  id: e.id,
+                  nome: e.name,
+                  precoCentavos: e.total_price_cents,
+                  precoTexto: formatarCentavos(e.total_price_cents),
+                  capacidade: e.capacity,
+                  curtidas: e.placar.curtidas,
+                  descurtidas: e.placar.descurtidas,
+                  minha: e.placar.minha,
+                  posicao: e.posicao,
+                  temFotos: e.photos.length > 0,
+                  foto: e.photos[0] ?? null,
+                  criadaEm: e.created_at,
+                  segundosDoEncontro: viagem?.segundos ?? null,
+                  escolhida: ehEscolhida,
+                  blocos: {
+                    fotos: e.photos.length > 0 && (
+                      <div key="fotos" className="-mx-1 flex gap-2 overflow-x-auto px-1">
                         {e.photos.map((foto, i) => (
                           // Fotos vêm de sites externos (links colados pelos membros).
                           // eslint-disable-next-line @next/next/no-img-element
@@ -104,34 +111,52 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
                           />
                         ))}
                       </div>
-                    )}
-
-                    <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                      <dt className="text-muted-foreground">Preço total</dt>
-                      <dd className="font-medium">{formatarCentavos(e.total_price_cents)}</dd>
-                      {e.capacity && (
-                        <>
-                          <dt className="text-muted-foreground">Capacidade</dt>
-                          <dd>{e.capacity} pessoas</dd>
-                        </>
-                      )}
-                      {e.address && (
-                        <>
-                          <dt className="text-muted-foreground">Endereço</dt>
-                          <dd>{e.address}</dd>
-                        </>
-                      )}
-                    </dl>
-                    <ViagemAteEstalagem
-                      estalagem={e}
-                      temEncontro={!!encontro}
-                      doEncontro={doEncontro.get(e.id)}
-                      galera={distanciasDaGalera(dados.usuarios, dados.nucleos, tempos, e)}
-                    />
-                    {e.notes && <p className="text-sm whitespace-pre-line">{e.notes}</p>}
-                    <p className="text-xs text-muted-foreground">Sugerida por {dados.nomeDaPessoa(e.created_by)}</p>
-                    {e.url && (
+                    ),
+                    detalhes: (
+                      <dl key="detalhes" className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                        <dt className="text-muted-foreground">Preço total</dt>
+                        <dd className="font-medium">{formatarCentavos(e.total_price_cents)}</dd>
+                        {e.capacity && (
+                          <>
+                            <dt className="text-muted-foreground">Capacidade</dt>
+                            <dd>{e.capacity} pessoas</dd>
+                          </>
+                        )}
+                        {e.address && (
+                          <>
+                            <dt className="text-muted-foreground">Endereço</dt>
+                            <dd>{e.address}</dd>
+                          </>
+                        )}
+                      </dl>
+                    ),
+                    viagem: (
+                      <ViagemAteEstalagem
+                        key="viagem"
+                        estalagem={e}
+                        temEncontro={!!encontro}
+                        doEncontro={viagem}
+                        galera={distanciasDaGalera(dados.usuarios, dados.nucleos, tempos, e)}
+                      />
+                    ),
+                    viagemCurta: viagem?.segundos != null && (
+                      <p key="viagemCurta" className="text-sm text-muted-foreground">
+                        {formatarDuracao(viagem.segundos)} de carro do encontro
+                      </p>
+                    ),
+                    notas: e.notes && (
+                      <p key="notas" className="text-sm whitespace-pre-line">
+                        {e.notes}
+                      </p>
+                    ),
+                    autor: (
+                      <p key="autor" className="text-xs text-muted-foreground">
+                        Sugerida por {dados.nomeDaPessoa(e.created_by)}
+                      </p>
+                    ),
+                    anuncio: e.url && (
                       <a
+                        key="anuncio"
                         href={e.url}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -140,19 +165,20 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
                         Ver anúncio <ExternalLink className="size-4" aria-hidden />
                         <span className="sr-only">(abre em nova aba)</span>
                       </a>
-                    )}
-
-                    <ReacaoBotoes
-                      tipo="estalagem"
-                      alvoId={e.id}
-                      eventoId={id}
-                      placar={e.placar}
-                      rotulo={e.name}
-                      desativado={!!escolhida}
-                    />
-
-                    {(possoEditar || possoRemover || perm.editar) && (
-                      <div className="mt-auto flex flex-wrap gap-2 border-t border-border pt-2">
+                    ),
+                    reacoes: (
+                      <ReacaoBotoes
+                        key="reacoes"
+                        tipo="estalagem"
+                        alvoId={e.id}
+                        eventoId={id}
+                        placar={e.placar}
+                        rotulo={e.name}
+                        desativado={!!escolhida}
+                      />
+                    ),
+                    acoes: (possoEditar || possoRemover || perm.editar) && (
+                      <div key="acoes" className="mt-auto flex flex-wrap gap-2 border-t border-border pt-2">
                         {possoEditar && (
                           <Button asChild variant="outline" size="sm">
                             <Link href={`/aventuras/${id}/estalagens/${e.id}`}>
@@ -195,11 +221,11 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
                           </AcaoForm>
                         )}
                       </div>
-                    )}
-                  </li>
-                );
+                    ),
+                  },
+                };
               })}
-            </ol>
+            />
           )}
         </CardContent>
       </Card>
