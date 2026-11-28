@@ -72,4 +72,4 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 - 27/11/2026: pendência de presença desde o início da aventura (decisão 112).
 - 27/11/2026: corrigido o erro "Os dias precisam ser um número a partir de 1" ao salvar presença com "Período todo" (o texto era cortado em 3 letras). Leitura dos dias virou função testada (`lerDiasPresenca`).
 - 28/11/2026: vitrine das estalagens com modos de exibição, filtros, ordenação e destaque da mais curtida (decisão 113). 252 testes Vitest e 10 Playwright passando.
-- 28/11/2026: permissão "Decidir a estalagem" (migração 25), curtidas encerradas após decidir, desfazer decisão, e marcação das mais votadas/definida no "Para" das rotas (decisão 114). 258 testes Vitest e 10 Playwright passando. Aguardando o dono aplicar a migração 25.
+- 28/11/2026: permissão "Decidir a estalagem" (migração 25), curtidas encerradas após decidir, desfazer decisão, e marcação das mais votadas/definida no "Para" das rotas (decisão 114). 258 testes Vitest e 10 Playwright passando. Migração 25 aplicada pelo dono; publicado (PR #16).
