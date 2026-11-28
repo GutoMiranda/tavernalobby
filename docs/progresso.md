@@ -71,3 +71,4 @@ Legenda: [ ] a fazer · [~] em andamento · [x] pronto (lint + typecheck + teste
 - 27/11/2026: dicas "?" nas telas principais (abrem ao passar o mouse ou tocar), "Como funciona?" abrindo no hover e passo a passo na página inicial (decisão 111). 244 testes Vitest e 10 Playwright passando.
 - 27/11/2026: pendência de presença desde o início da aventura (decisão 112).
 - 27/11/2026: corrigido o erro "Os dias precisam ser um número a partir de 1" ao salvar presença com "Período todo" (o texto era cortado em 3 letras). Leitura dos dias virou função testada (`lerDiasPresenca`).
+- 28/11/2026: vitrine das estalagens com modos de exibição, filtros, ordenação e destaque da mais curtida (decisão 113). 252 testes Vitest e 10 Playwright passando.
