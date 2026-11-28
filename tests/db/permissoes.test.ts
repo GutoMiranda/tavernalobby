@@ -46,7 +46,7 @@ beforeAll(async () => {
 describe("Permissões por pessoa", () => {
   it("o Mestre pode tudo (inclusive a tela de permissões); membro novo não pode nada", async () => {
     const doMestre = await permissoes(admin);
-    expect(Object.keys(doMestre)).toHaveLength(10);
+    expect(Object.keys(doMestre)).toHaveLength(11);
     expect(Object.values(doMestre).every((p) => p.every(Boolean))).toBe(true);
     const daBia = await permissoes(bia);
     expect(Object.values(daBia).some((p) => p.some(Boolean))).toBe(false);

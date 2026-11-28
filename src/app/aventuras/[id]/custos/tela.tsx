@@ -368,7 +368,7 @@ export async function TelaCustos({ id, gerenciar }: { id: string; gerenciar: boo
                               . Muda sozinho quando os itens mudam.
                             </>
                           ) : item.automatico === "mais_votada" ? (
-                            "Prévia com a estalagem mais votada. Quando a estalagem for escolhida, a conta passa a usar a escolhida."
+                            "Prévia com a estalagem mais votada. Quando a estalagem for definida, a conta passa a usar a definida."
                           ) : (
                             "Calculado com o preço da estalagem escolhida."
                           )}

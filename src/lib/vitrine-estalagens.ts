@@ -102,3 +102,18 @@ export function montarVitrine<T extends ItemVitrineBase>(
   const demais = resto.filter((i) => passaNoFiltro(i, filtros)).sort(comparar(ordem));
   return { destaques, demais, escondidas: resto.length - demais.length };
 }
+
+/** Texto da estalagem na lista "Para" das rotas, com a marcação de definida, mais votada ou posição. */
+export function rotuloEstalagemNaRota(e: {
+  nome: string;
+  definida: boolean;
+  maisCurtida: boolean;
+  empate: boolean;
+  curtidas: number;
+  posicao: number;
+}): string {
+  const curtidas = e.curtidas > 0 ? ` (${e.curtidas} ${e.curtidas === 1 ? "curtida" : "curtidas"})` : "";
+  if (e.definida) return `✅ Estalagem definida: ${e.nome}`;
+  if (e.maisCurtida) return `⭐ Mais votada${e.empate ? " (empate)" : ""}: ${e.nome}${curtidas}`;
+  return `Estalagem ${e.posicao}º: ${e.nome}${curtidas}`;
+}

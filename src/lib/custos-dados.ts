@@ -113,7 +113,7 @@ export const carregarCustos = cache(
         itens.unshift({
           id: ID_ESTALAGEM_AUTO,
           category: "acomodacao",
-          description: `${escolhida ? "Estalagem escolhida" : "Estalagem mais votada (prévia)"}: ${base.name}`,
+          description: `${escolhida ? "Estalagem definida" : "Estalagem mais votada (prévia)"}: ${base.name}`,
           amount_cents: base.total_price_cents,
           eligibility: "presentes",
           proportional_to_days: true,

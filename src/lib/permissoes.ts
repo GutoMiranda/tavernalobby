@@ -1,8 +1,9 @@
-/** Áreas (abas) em que cada pessoa recebe permissão e o que cada ação quer dizer. Espelha a migração 19. */
+/** Áreas (abas) em que cada pessoa recebe permissão e o que cada ação quer dizer. Espelha as migrações 19 e 25. */
 export const AREAS = [
   "aventura",
   "datas",
   "estalagens",
+  "decisao",
   "presenca",
   "armazem",
   "custos",
@@ -17,7 +18,16 @@ export type PermissaoArea = { ver: boolean; editar: boolean; excluir: boolean };
 export type Permissoes = Record<Area, PermissaoArea>;
 
 /** Nome temático + palavra comum, e o que "editar" e "excluir" liberam em cada área. */
-export const AREA_INFO: Record<Area, { nome: string; comum: string; editar: string; excluir: string }> = {
+export const AREA_INFO: Record<
+  Area,
+  {
+    nome: string;
+    comum: string;
+    editar: string;
+    excluir: string;
+    /** Só a caixa "editar" faz sentido. */ soEditar?: boolean;
+  }
+> = {
   aventura: {
     nome: "Aventuras",
     comum: "encontros",
@@ -28,8 +38,16 @@ export const AREA_INFO: Record<Area, { nome: string; comum: string; editar: stri
   estalagens: {
     nome: "Estalagens",
     comum: "hospedagem",
-    editar: "editar qualquer estalagem e escolher a final",
+    editar: "editar qualquer estalagem",
     excluir: "remover estalagens de outras pessoas",
+  },
+  decisao: {
+    nome: "Decidir a estalagem",
+    comum: "destino final",
+    editar:
+      "definir a estalagem final (encerra as curtidas e fixa custos e rotas) e desfazer a decisão se precisar trocar",
+    excluir: "—",
+    soEditar: true,
   },
   presenca: { nome: "Presença", comum: "quem vai", editar: "confirmar presença por qualquer pessoa", excluir: "—" },
   armazem: {

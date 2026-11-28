@@ -246,7 +246,7 @@ export default async function PainelAventuraPage({
             )}
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">{escolhida ? "Estalagem escolhida" : "Estalagem"}</p>
+            <p className="text-sm text-muted-foreground">{escolhida ? "Estalagem definida" : "Estalagem"}</p>
             {lider ? (
               <>
                 <p className="font-medium">
