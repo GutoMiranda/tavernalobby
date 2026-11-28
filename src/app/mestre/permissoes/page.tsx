@@ -77,13 +77,19 @@ export default async function PermissoesPage({ searchParams }: { searchParams: P
                   </details>
                 </th>
                 <td className="py-2 text-center">
-                  <input
-                    type="checkbox"
-                    name={`${a}:ver`}
-                    defaultChecked={marcado(p?.can_view)}
-                    aria-label={`${info.nome}: ver`}
-                    className={CAIXA}
-                  />
+                  {info.soEditar ? (
+                    <span className="text-muted-foreground" aria-label="Não se aplica">
+                      —
+                    </span>
+                  ) : (
+                    <input
+                      type="checkbox"
+                      name={`${a}:ver`}
+                      defaultChecked={marcado(p?.can_view)}
+                      aria-label={`${info.nome}: ver`}
+                      className={CAIXA}
+                    />
+                  )}
                 </td>
                 <td className="py-2 text-center">
                   <input

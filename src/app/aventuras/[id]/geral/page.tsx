@@ -7,13 +7,16 @@ import { RotaViewer } from "@/components/mapas/rota-viewer";
 import { SeletorRota } from "@/components/mapas/seletor-rota";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { exigirMembro, getPermissoes } from "@/lib/auth";
+import { ranking } from "@/lib/aventura";
 import { carregarAventura, nomeDoPonto } from "@/lib/aventura-dados";
 import { type RotaResumo, rotasEmCache } from "@/lib/rotas";
 import { formatarDuracao } from "@/lib/viagem";
+import { maisCurtidas, rotuloEstalagemNaRota } from "@/lib/vitrine-estalagens";
 
 export const metadata: Metadata = { title: "Geral" };
 
-type Local = { chave: string; nome: string; detalhe?: string; lat: number; lng: number };
+/** nome: usado no compartilhar; rotulo: texto na lista de escolha (com marcações). */
+type Local = { chave: string; nome: string; rotulo?: string; detalhe?: string; lat: number; lng: number };
 const nomeDoPontoLocal = (l: Local) => l.nome.replace(/^Ponto de encontro: /, "");
 
 export default async function GeralPage({
@@ -49,15 +52,30 @@ export default async function GeralPage({
       lng: p.lng!,
     }));
   const encontro = encontros[0];
-  const estalagens: Local[] = dados.estalagens
+  // Na ordem do ranking, com a definida primeiro e as mais votadas marcadas.
+  const ranqueadas = ranking(dados.estalagens, dados.reacoesEstalagens);
+  const topo = maisCurtidas(ranqueadas.map((e) => ({ id: e.id, curtidas: e.placar.curtidas })));
+  const estalagens: Local[] = ranqueadas
     .filter((e) => e.lat != null && e.lng != null)
-    .map((e) => ({
-      chave: `e:${e.id}`,
-      nome: `${e.id === evento.chosen_accommodation_id ? "Estalagem escolhida: " : "Estalagem: "}${e.name}`,
-      detalhe: e.address ?? undefined,
-      lat: e.lat!,
-      lng: e.lng!,
-    }));
+    .sort((a, b) => Number(b.id === evento.chosen_accommodation_id) - Number(a.id === evento.chosen_accommodation_id))
+    .map((e) => {
+      const definida = e.id === evento.chosen_accommodation_id;
+      return {
+        chave: `e:${e.id}`,
+        nome: `${definida ? "Estalagem definida: " : "Estalagem: "}${e.name}`,
+        rotulo: rotuloEstalagemNaRota({
+          nome: e.name,
+          definida,
+          maisCurtida: topo.has(e.id),
+          empate: topo.size > 1,
+          curtidas: e.placar.curtidas,
+          posicao: e.posicao,
+        }),
+        detalhe: e.address ?? undefined,
+        lat: e.lat!,
+        lng: e.lng!,
+      };
+    });
   const escolhida = estalagens.find((e) => e.chave === `e:${evento.chosen_accommodation_id}`);
   const todos = [...origens, ...encontros, ...estalagens];
   const minhaOrigem = origens.find((o) => o.chave === `n:${pessoa.household_id}`);

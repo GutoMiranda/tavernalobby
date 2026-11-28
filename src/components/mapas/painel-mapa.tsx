@@ -296,7 +296,7 @@ export function PainelMapa({
                         {e.foto && `${e.posicao}º · `}
                         {e.nome}
                       </span>
-                      {e.escolhida && <Badge>Escolhida</Badge>}
+                      {e.escolhida && <Badge>Definida</Badge>}
                     </span>
                     <span className="text-sm">{e.preco} no total</span>
                     {e.capacidade && <span className="text-sm text-muted-foreground">Até {e.capacidade} pessoas</span>}

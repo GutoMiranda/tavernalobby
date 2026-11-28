@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-type Opcao = { chave: string; nome: string };
+type Opcao = { chave: string; nome: string; rotulo?: string };
 
 /**
  * Escolha de origem e destino da rota. Troca o endereço sem recarregar a página e mostra "Calculando…"
@@ -45,7 +45,7 @@ export function SeletorRota({
           <select id="de" name="de" defaultValue={de} className={select}>
             {opcoes.map((l) => (
               <option key={l.chave} value={l.chave}>
-                {l.nome}
+                {l.rotulo ?? l.nome}
               </option>
             ))}
           </select>
@@ -55,7 +55,7 @@ export function SeletorRota({
           <select id="para" name="para" defaultValue={para} className={select}>
             {opcoes.map((l) => (
               <option key={l.chave} value={l.chave}>
-                {l.nome}
+                {l.rotulo ?? l.nome}
               </option>
             ))}
           </select>

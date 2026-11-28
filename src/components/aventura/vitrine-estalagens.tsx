@@ -281,7 +281,7 @@ function Cabecalho({ e }: { e: ItemVitrine }) {
     <div className="flex flex-wrap items-center gap-2">
       <span className="font-display text-lg font-semibold text-wood">{e.posicao}º</span>
       <span className="font-medium">{e.nome}</span>
-      {e.escolhida && <Badge>Estalagem escolhida</Badge>}
+      {e.escolhida && <Badge>Estalagem definida</Badge>}
     </div>
   );
 }
@@ -355,7 +355,7 @@ function CardGaleria({ e }: { e: ItemVitrine }) {
           </p>
           <p className="text-sm font-medium">{e.precoTexto}</p>
         </div>
-        {e.escolhida && <Badge className="absolute top-2 left-2">Estalagem escolhida</Badge>}
+        {e.escolhida && <Badge className="absolute top-2 left-2">Estalagem definida</Badge>}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-3">
         {e.blocos.reacoes}
@@ -382,7 +382,7 @@ function LinhaLista({ e, destaque }: { e: ItemVitrine; destaque?: string }) {
               <Crown className="size-3.5" aria-hidden /> {destaque}
             </Badge>
           )}
-          {e.escolhida && <Badge>Escolhida</Badge>}
+          {e.escolhida && <Badge>Definida</Badge>}
         </span>
         <span className="text-sm text-muted-foreground">
           <strong className="text-foreground">{e.precoTexto}</strong>
@@ -406,7 +406,7 @@ function CardDestaque({ e, selo, lado }: { e: ItemVitrine; selo: string; lado: b
         <div className="flex flex-1 flex-col gap-3 p-4">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <h3 className="font-display text-2xl leading-tight font-semibold text-wood">{e.nome}</h3>
-            {e.escolhida && <Badge>Estalagem escolhida</Badge>}
+            {e.escolhida && <Badge>Estalagem definida</Badge>}
           </div>
           <p className="text-xl font-semibold">{e.precoTexto}</p>
           {e.blocos.detalhes}

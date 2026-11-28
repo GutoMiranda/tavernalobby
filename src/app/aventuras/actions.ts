@@ -310,36 +310,30 @@ export async function removerEstalagem(_: EstadoAcao, d: FormData): Promise<Esta
 }
 
 export async function escolherEstalagem(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
-  const { supabase } = await exigirPermissao("estalagens", "editar");
+  const { supabase } = await exigirPermissao("decisao", "editar");
   const eventId = txt(d, "evento", 40);
-  const { data: atual } = await supabase.from("events").select("phase").eq("id", eventId).single<{ phase: Fase }>();
-  // Trocar a estalagem depois de avançar não volta a fase; só a primeira escolha leva para a presença.
-  const avanca = !atual || atual.phase === "datas" || atual.phase === "estalagens";
-  const { error } = await supabase
-    .from("events")
-    .update({ chosen_accommodation_id: txt(d, "id", 40), ...(avanca ? { phase: "presenca" } : {}) })
-    .eq("id", eventId);
+  const { data, error } = await supabase.rpc("decide_accommodation", {
+    p_event_id: eventId,
+    p_accommodation_id: txt(d, "id", 40),
+  });
   if (error) return { erro: mensagemErro(error) };
   revalidarAventura(eventId);
-  return { ok: avanca ? "Estalagem escolhida! Agora é confirmar a presença." : "Estalagem trocada." };
+  return {
+    ok:
+      data === "avancou"
+        ? "Estalagem definida! As curtidas foram encerradas e agora é confirmar a presença."
+        : "Estalagem definida trocada.",
+  };
 }
 
-/** Desfaz a estalagem escolhida: volta a votação de estalagens (se ainda estava na presença). */
+/** Desfaz a estalagem definida: reabre as curtidas (e a votação de estalagens, se ainda estava na presença). */
 export async function desfazerEstalagem(_: EstadoAcao, d: FormData): Promise<EstadoAcao> {
-  const { supabase } = await exigirPermissao("estalagens", "editar");
+  const { supabase } = await exigirPermissao("decisao", "editar");
   const eventId = txt(d, "evento", 40);
-  const { data: atual } = await supabase.from("events").select("phase").eq("id", eventId).single<{ phase: Fase }>();
-  const { error, count } = await supabase
-    .from("events")
-    .update(
-      { chosen_accommodation_id: null, ...(atual?.phase === "presenca" ? { phase: "estalagens" } : {}) },
-      { count: "exact" },
-    )
-    .eq("id", eventId);
+  const { error } = await supabase.rpc("undo_accommodation_decision", { p_event_id: eventId });
   if (error) return { erro: mensagemErro(error) };
-  if (!count) return { erro: "Você não tem permissão para fazer isso." };
   revalidarAventura(eventId);
-  return { ok: "Escolha desfeita. A votação de estalagens está aberta de novo." };
+  return { ok: "Decisão desfeita. As curtidas das estalagens estão abertas de novo." };
 }
 
 // ---------------------------------------------------------------- preencher pelo link

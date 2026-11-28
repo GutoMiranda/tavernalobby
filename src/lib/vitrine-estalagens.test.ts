@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { FILTROS_VAZIOS, type ItemVitrineBase, maisCurtidas, montarVitrine } from "./vitrine-estalagens";
+import {
+  FILTROS_VAZIOS,
+  type ItemVitrineBase,
+  maisCurtidas,
+  montarVitrine,
+  rotuloEstalagemNaRota,
+} from "./vitrine-estalagens";
 
 const item = (id: string, extra: Partial<ItemVitrineBase> = {}): ItemVitrineBase => ({
   id,
@@ -65,5 +71,17 @@ describe("Vitrine das estalagens", () => {
     expect(ordem("maior_preco")).toEqual(["a", "c", "b"]);
     expect(ordem("mais_novas")).toEqual(["b", "c", "a"]);
     expect(ordem("mais_perto")).toEqual(["c", "a", "b"]);
+  });
+
+  it("marca a definida, a mais votada e a posição na lista das rotas", () => {
+    const base = { nome: "Chalé", definida: false, maisCurtida: false, empate: false, curtidas: 0, posicao: 3 };
+    expect(rotuloEstalagemNaRota({ ...base, definida: true, curtidas: 2 })).toBe("✅ Estalagem definida: Chalé");
+    expect(rotuloEstalagemNaRota({ ...base, maisCurtida: true, curtidas: 3 })).toBe(
+      "⭐ Mais votada: Chalé (3 curtidas)",
+    );
+    expect(rotuloEstalagemNaRota({ ...base, maisCurtida: true, empate: true, curtidas: 1 })).toBe(
+      "⭐ Mais votada (empate): Chalé (1 curtida)",
+    );
+    expect(rotuloEstalagemNaRota(base)).toBe("Estalagem 3º: Chalé");
   });
 });

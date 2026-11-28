@@ -21,7 +21,8 @@ import { distanciasDaGalera, formatarDistancia, formatarDuracao } from "@/lib/vi
 import { desfazerEstalagem, escolherEstalagem, removerEstalagem } from "@/app/aventuras/actions";
 
 export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar: boolean }) {
-  const { supabase, pessoa, perm, atalhoSalao } = await contextoDaTela("estalagens", gerenciar);
+  const { supabase, pessoa, perm, permissoes, atalhoSalao } = await contextoDaTela("estalagens", gerenciar);
+  const podeDecidir = permissoes.decisao.editar;
   const dados = await carregarAventura(supabase, id);
   const { evento } = dados;
   const lista = ranking(dados.estalagens, dados.reacoesEstalagens, pessoa.id);
@@ -44,6 +45,7 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
       : [],
   );
   const escolhida = evento.chosen_accommodation_id;
+  const definida = dados.estalagens.find((e) => e.id === escolhida);
 
   return (
     <div className="flex flex-col gap-4">
@@ -64,11 +66,19 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
                 : "Curta ou descurta as sugestões."
             }
           >
-            Qualquer membro sugere. Quem organiza escolhe a final. A parte de cada um aparece depois, em Custos,
-            conforme a presença confirmada.
+            Qualquer membro sugere e curte. Quem tem a permissão “Decidir a estalagem” define a final: as curtidas se
+            encerram e custos e rotas passam a usar a definida. A parte de cada um aparece depois, em Custos, conforme a
+            presença confirmada.
           </Ajuda>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
+          {definida && (
+            <p className="rounded-md border border-bottle bg-bottle/10 p-3 text-sm">
+              <strong>Estalagem definida: {definida.name}.</strong> As curtidas estão encerradas; custos e rotas já usam
+              esta estalagem.
+              {podeDecidir && " Para trocar, use “Trocar a definida para esta” em outra ou “Desfazer decisão”."}
+            </p>
+          )}
           {lista.length === 0 ? (
             <p className="text-muted-foreground">Nenhuma estalagem sugerida ainda. Seja o primeiro a achar uma boa!</p>
           ) : (
@@ -177,7 +187,7 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
                         desativado={!!escolhida}
                       />
                     ),
-                    acoes: (possoEditar || possoRemover || perm.editar) && (
+                    acoes: (possoEditar || possoRemover || podeDecidir) && (
                       <div key="acoes" className="mt-auto flex flex-wrap gap-2 border-t border-border pt-2">
                         {possoEditar && (
                           <Button asChild variant="outline" size="sm">
@@ -186,10 +196,10 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
                             </Link>
                           </Button>
                         )}
-                        {perm.editar && ehEscolhida && (
+                        {podeDecidir && ehEscolhida && (
                           <AcaoForm
                             action={desfazerEstalagem}
-                            textoBotao="Desfazer escolha"
+                            textoBotao="Desfazer decisão"
                             variante="outline"
                             tamanho="sm"
                             textoEnviando="Desfazendo…"
@@ -197,12 +207,12 @@ export async function TelaEstalagens({ id, gerenciar }: { id: string; gerenciar:
                             <input type="hidden" name="evento" value={id} />
                           </AcaoForm>
                         )}
-                        {perm.editar && !ehEscolhida && (
+                        {podeDecidir && !ehEscolhida && (
                           <AcaoForm
                             action={escolherEstalagem}
-                            textoBotao={escolhida ? "Trocar para esta" : "Escolher esta estalagem"}
+                            textoBotao={escolhida ? "Trocar a definida para esta" : "Decidir: é esta!"}
                             tamanho="sm"
-                            textoEnviando="Escolhendo…"
+                            textoEnviando="Decidindo…"
                           >
                             <input type="hidden" name="id" value={e.id} />
                             <input type="hidden" name="evento" value={id} />
